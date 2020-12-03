@@ -13,7 +13,7 @@ brew "shellcheck"
 brew "stow"
 brew "tidy-html5"
 brew "zsh"
-brew "zsh-syntax-highlight"
+brew "zsh-syntax-highlighting"
 
 tap "d12frosted/emacs-plus"
 brew "emacs-plus@27", fetch_HEAD: true
