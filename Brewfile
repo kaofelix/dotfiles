@@ -15,5 +15,8 @@ brew "tidy-html5"
 brew "zsh"
 brew "zsh-syntax-highlighting"
 
+tap "homebrew/cask-fonts"
+cask "font-source-code-pro"
+
 tap "d12frosted/emacs-plus"
 brew "emacs-plus@27", fetch_HEAD: true
