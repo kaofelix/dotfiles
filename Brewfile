@@ -1,6 +1,7 @@
 brew "aspell"
 brew "bash"
 brew "bat"
+brew "cmake"
 brew "coreutils"
 brew "direnv"
 brew "fasd"
