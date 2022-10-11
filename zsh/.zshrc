@@ -19,7 +19,7 @@ plugins=(
     brew
 )
 
-fpath=($fpath /usr/local/share/zsh/site-functions/)
+fpath=($fpath ${HOMEBREW_PREFIX}/share/zsh/site-functions/)
 fpath+=~/.zfunc
 source $ZSH/oh-my-zsh.sh
 
@@ -46,6 +46,6 @@ alias ec='emacsclient'
 alias _r='. ~/.zshrc'
 alias la='ls -a'
 alias cat='bat --paging=never'
-source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source ${HOMEBREW_PREFIX}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 source ~/.emacs.d/vterm.sh
