@@ -14,14 +14,16 @@ source ~/.zplug/init.zsh
 zplug 'zplug/zplug', hook-build:'zplug --self-manage'
 zplug "zsh-users/zsh-syntax-highlighting"
 
+zplug "plugins/brew", from:oh-my-zsh
 zplug "plugins/direnv", from:oh-my-zsh
-zplug "plugins/fasd", from:oh-my-zsh
+zplug "plugins/emacs", from:oh-my-zsh
 zplug "plugins/fzf", from:oh-my-zsh
 zplug "plugins/git", from:oh-my-zsh
 zplug "plugins/github", from:oh-my-zsh
 zplug "plugins/golang", from:oh-my-zsh
+zplug "plugins/virtualenvwrapper", from:oh-my-zsh
 zplug "plugins/wd", from:oh-my-zsh
-zplug "plugins/brew", from:oh-my-zsh
+zplug "plugins/z", from:oh-my-zsh
 
 zplug "lib/completion", from:oh-my-zsh
 zplug "lib/clipboard", from:oh-my-zsh
@@ -67,8 +69,6 @@ export ALTERNATE_EDITOR="emacs"
 ##################################
 ## Custom functions and aliases ##
 ##################################
-alias e='emacsclient -n'
-alias ec='emacsclient'
 alias _r='. ~/.zshrc'
 alias la='ls -a'
 alias cat='bat --paging=never'
