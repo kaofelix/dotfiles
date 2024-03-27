@@ -2,6 +2,7 @@ DOTFILES_DIR=$(dirname $(readlink -f "${(%):-%N}"))
 
 source "${HOME}/.zgenom/zgenom.zsh"
 zgenom autoupdate
+
 if ! zgenom saved; then
     echo "Creating a zgenom save"
 
@@ -14,6 +15,7 @@ if ! zgenom saved; then
     zgenom ohmyzsh plugins/brew
     zgenom ohmyzsh plugins/direnv
     zgenom ohmyzsh plugins/docker-compose
+    zgenom ohmyzsh plugins/fzf
     zgenom ohmyzsh plugins/git
     zgenom ohmyzsh plugins/github
     zgenom ohmyzsh plugins/golang
