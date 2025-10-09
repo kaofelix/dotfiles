@@ -81,4 +81,5 @@ alias va='. .venv/bin/activate'
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "/Users/kaofelix/.bun/_bun" ] && source "/Users/kaofelix/.bun/_bun"
 
