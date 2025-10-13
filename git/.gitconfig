@@ -1,7 +1,7 @@
 # -*- coding: utf-8; mode:conf -*-
 [user]
     name = Kao Félix
-    email = kcfelix@gmail.com
+    email = me@kaofelix.dev
 [color]
     diff = auto
     status = auto
