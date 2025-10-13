@@ -25,10 +25,11 @@ have all the goodness.
 git clone git@github.com:kaofelix/kao-emacs-config.git
 ```
 
-Then I can `stow`my zsh stuff to it's proper place
+Then I can `stow`my stuff to it's proper place
 
 ``` shell
 stow zsh -t ~/
+stow bin -t ~/
 ```
 
 Now I'm home again.

@@ -1,0 +1,255 @@
+#!/bin/bash
+
+# Git Worktree Manager - Single script version
+# Usage: wt <command> [args]
+
+WT_VERSION="1.0.0"
+
+# Get repository info
+_get_repo_info() {
+    local repo_root
+    repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [ $? -ne 0 ]; then
+        echo "Error: Not in a Git repository" >&2
+        return 1
+    fi
+
+    REPO_ROOT="$repo_root"
+    REPO_NAME=$(basename "$repo_root")
+}
+
+# Get worktree path for a branch
+_get_worktree_path() {
+    local branch_name="$1"
+    local parent_dir=$(dirname "$REPO_ROOT")
+    echo "${parent_dir}/${REPO_NAME}--${branch_name}"
+}
+
+# Main function
+main() {
+    local command="$1"
+    shift
+
+    case "$command" in
+        create|add|new)
+            _wt_create "$@"
+            ;;
+        remove|rm|delete)
+            _wt_remove "$@"
+            ;;
+        go|switch|cd)
+            _wt_go "$@"
+            ;;
+        --print-path)
+            _wt_print_path "$@"
+            ;;
+        list|ls)
+            _wt_list "$@"
+            ;;
+        prune|clean)
+            _wt_prune "$@"
+            ;;
+        version|--version|-v)
+            _wt_version "$@"
+            ;;
+        help|--help|-h)
+            _wt_help "$@"
+            ;;
+        "")
+            _wt_help
+            ;;
+        *)
+            echo "Unknown command: $command" >&2
+            _wt_help
+            return 1
+            ;;
+    esac
+}
+
+# Create a new worktree
+_wt_create() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: wt create <branch-name> [base-branch]" >&2
+        echo "Example: wt create feature/auth" >&2
+        echo "Example: wt create bugfix/issue-123 main" >&2
+        return 1
+    fi
+
+    _get_repo_info || return 1
+
+    local branch_name="$1"
+    local base_branch="${2:-main}"
+    local worktree_path
+    worktree_path=$(_get_worktree_path "$branch_name")
+
+    # Check if worktree already exists
+    if [ -d "$worktree_path" ]; then
+        echo "Worktree already exists: $worktree_path" >&2
+        echo "Use 'wt remove $branch_name' to remove it" >&2
+        return 1
+    fi
+
+    # Create the worktree
+    echo "Creating worktree: $worktree_path → branch: $branch_name"
+    if git worktree add "$worktree_path" -b "$branch_name" "$base_branch" 2>/dev/null; then
+        echo "✅ Worktree created successfully!"
+        echo "📁 Path: $worktree_path"
+        echo "🌿 Branch: $branch_name"
+        echo "🚀 Switch: cd $worktree_path or: wt go $branch_name"
+    else
+        # If branch creation failed, try using existing branch
+        echo "Creating worktree from existing branch..."
+        if git worktree add "$worktree_path" "$branch_name" 2>/dev/null; then
+            echo "✅ Worktree created from existing branch!"
+            echo "📁 Path: $worktree_path"
+            echo "🌿 Branch: $branch_name"
+            echo "🚀 Switch: cd $worktree_path or: wt go $branch_name"
+        else
+            echo "❌ Failed to create worktree" >&2
+            return 1
+        fi
+    fi
+}
+
+# Remove a worktree
+_wt_remove() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: wt remove <branch-name>" >&2
+        echo "Example: wt remove feature/auth" >&2
+        return 1
+    fi
+
+    _get_repo_info || return 1
+
+    local branch_name="$1"
+    local worktree_path
+    worktree_path=$(_get_worktree_path "$branch_name")
+
+    # Check if worktree exists
+    if [ ! -d "$worktree_path" ]; then
+        echo "Worktree not found: $worktree_path" >&2
+        echo "Available worktrees:" >&2
+        _wt_list
+        return 1
+    fi
+
+    # Remove the worktree
+    echo "Removing worktree: $worktree_path (branch: $branch_name)"
+    if git worktree remove "$worktree_path" 2>/dev/null; then
+        echo "✅ Worktree removed successfully!"
+    else
+        echo "❌ Failed to remove worktree. Trying force removal..."
+        if git worktree remove --force "$worktree_path" 2>/dev/null; then
+            echo "✅ Worktree force-removed!"
+        else
+            echo "❌ Force removal also failed" >&2
+            return 1
+        fi
+    fi
+}
+
+# Switch to a worktree
+_wt_go() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: wt go <branch-name>" >&2
+        echo "Example: wt go feature/auth" >&2
+        return 1
+    fi
+
+    _get_repo_info || return 1
+
+    local branch_name="$1"
+    local worktree_path
+    worktree_path=$(_get_worktree_path "$branch_name")
+
+    # Check if worktree exists
+    if [ ! -d "$worktree_path" ]; then
+        echo "Worktree not found: $worktree_path" >&2
+        echo "Available worktrees:" >&2
+        _wt_list
+        return 1
+    fi
+
+    # Switch to the worktree
+    cd "$worktree_path" || {
+        echo "❌ Failed to switch to: $worktree_path" >&2
+        return 1
+    }
+    echo "✅ Switched to: $worktree_path"
+}
+
+# Print worktree path (for shell function wrapper)
+_wt_print_path() {
+    if [ $# -eq 0 ]; then
+        return 1
+    fi
+
+    _get_repo_info || return 1
+
+    local branch_name="$1"
+    local worktree_path
+    worktree_path=$(_get_worktree_path "$branch_name")
+
+    # Check if worktree exists
+    if [ ! -d "$worktree_path" ]; then
+        echo "Worktree not found: $worktree_path" >&2
+        return 1
+    fi
+
+    # Just print the path
+    echo "$worktree_path"
+}
+
+# List worktrees
+_wt_list() {
+    _get_repo_info || return 1
+
+    echo "📁 Worktrees for: $REPO_NAME"
+    echo "📂 Main repo: $REPO_ROOT"
+    echo ""
+    git worktree list
+}
+
+# Prune worktrees
+_wt_prune() {
+    _get_repo_info || return 1
+
+    echo "🧹 Pruning removed worktrees..."
+    git worktree prune
+    echo "✅ Done"
+}
+
+# Show version
+_wt_version() {
+    echo "wt - Git Worktree Manager v$WT_VERSION"
+}
+
+# Show help
+_wt_help() {
+    cat << EOF
+wt - Git Worktree Manager v$WT_VERSION
+
+Usage: wt <command> [args]
+
+Commands:
+  create <branch> [base]    Create new worktree with branch
+  remove <branch>           Remove worktree for branch
+  go <branch>               Switch to worktree directory
+  list                      List all worktrees
+  prune                     Prune removed worktrees
+  version                   Show version
+  help                      Show this help
+
+Examples:
+  wt create feature/auth          # Create from main
+  wt create hotfix/123 develop    # Create from develop
+  wt go feature/auth              # Switch to worktree
+  wt remove feature/auth          # Remove worktree
+  wt list                         # List all worktrees
+
+Worktree naming: ../reponame--branch-name
+EOF
+}
+
+# Run main function with all arguments
+main "$@"
