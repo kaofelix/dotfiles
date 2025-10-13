@@ -1,0 +1,10 @@
+.DS_Store
+*.elc
+*.pyc
+*~
+*/\#*\#
+*.o
+.ropeproject
+.sass-cache
+*flymake*
+.idea/
