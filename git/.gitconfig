@@ -8,7 +8,7 @@
     branch = auto
     interactive = auto
 [core]
-    excludesfile = /Users/kaofelix/.gitignore
+    excludesfile = /Users/kaofelix/.global-gitignore
     autocrlf = input
 [gui]
     fontdiff = -family Menlo -size 11 -weight normal -slant roman -underline 0 -overstrike 0
