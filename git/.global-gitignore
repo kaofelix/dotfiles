@@ -8,3 +8,5 @@
 .sass-cache
 *flymake*
 .idea/
+*.local*
+.testrun-root
