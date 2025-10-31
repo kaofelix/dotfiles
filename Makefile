@@ -1,4 +1,4 @@
-STOW_PACKAGES = bin zsh git
+STOW_PACKAGES = bin zsh git claude
 STOW_DIR = .
 TARGET_DIR = ${HOME}
 
