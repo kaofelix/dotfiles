@@ -1,0 +1,57 @@
+#compdef claude-agents
+
+# Zsh completion for claude-agents script
+
+_claude_agents() {
+    local -a commands agents archived_agents
+    commands=(
+        'list:List all active agents'
+        'list-archived:List all archived agents'
+        'list-all:List both active and archived agents'
+        'archive:Archive an agent (move to archive folder)'
+        'unarchive:Unarchive an agent (move back to active folder)'
+        'help:Show help message'
+        '-h:Show help message'
+        '--help:Show help message'
+    )
+
+    # Get agent names dynamically
+    local agents_dir="$HOME/.claude/agents"
+    local archive_dir="$HOME/.claude/agents_archive"
+
+    if [[ -d "$agents_dir" ]]; then
+        agents=(${agents_dir}/*.md(:t:r))
+    fi
+
+    if [[ -d "$archive_dir" ]]; then
+        archived_agents=(${archive_dir}/*.md(:t:r))
+    fi
+
+    _arguments -C \
+        '1: :->command' \
+        '*:: :->args' && return 0
+
+    case $state in
+        command)
+            _describe 'command' commands
+            ;;
+        args)
+            case $line[1] in
+                archive)
+                    _describe 'agent' agents
+                    ;;
+                unarchive)
+                    _describe 'archived agent' archived_agents
+                    ;;
+                help|-h|--help)
+                    # No further completion for help
+                    ;;
+                *)
+                    # Default: no completion for other commands
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_claude_agents "$@"

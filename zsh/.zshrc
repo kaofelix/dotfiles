@@ -28,6 +28,7 @@ if ! zgenom saved; then
 
     zgenom load ${HOMEBREW_PREFIX}/share/zsh/site-functions/ --completion
     zgenom load ${HOME}/.zfunc --completion
+    zgenom load ${HOME}/.local/share/zsh/site-functions --completion
 
     # completions
     zgenom load zsh-users/zsh-completions
