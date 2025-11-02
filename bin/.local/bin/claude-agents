@@ -25,15 +25,13 @@ Claude Code Agent Manager
 Usage: $0 [COMMAND] [OPTIONS]
 
 COMMANDS:
-    list                    List all active agents
-    list-archived           List all archived agents
-    list-all                List both active and archived agents
+    list                    List all agents (active and archived)
     archive <agent>         Archive an agent (move to archive folder)
     unarchive <agent>       Unarchive an agent (move back to active folder)
     help, -h, --help        Show this help message
 
 EXAMPLES:
-    $0 list                 List active agents
+    $0 list                 List all agents with status
     $0 archive tdd-test     Archive agent matching 'tdd-test'
     $0 unarchive tdd-test   Unarchive agent matching 'tdd-test'
 
@@ -141,12 +139,6 @@ main() {
 
     case "${1:-help}" in
         "list")
-            list_agents "$AGENTS_DIR" "Active" "$GREEN"
-            ;;
-        "list-archived")
-            list_agents "$ARCHIVE_DIR" "Archived" "$YELLOW"
-            ;;
-        "list-all")
             list_agents "$AGENTS_DIR" "Active" "$GREEN"
             echo
             list_agents "$ARCHIVE_DIR" "Archived" "$YELLOW"

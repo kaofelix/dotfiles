@@ -5,9 +5,7 @@
 _claude_agents() {
     local -a commands agents archived_agents
     commands=(
-        'list:List all active agents'
-        'list-archived:List all archived agents'
-        'list-all:List both active and archived agents'
+        'list:List all agents (active and archived)'
         'archive:Archive an agent (move to archive folder)'
         'unarchive:Unarchive an agent (move back to active folder)'
         'help:Show help message'
