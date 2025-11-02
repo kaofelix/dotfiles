@@ -27,13 +27,17 @@ Usage: $0 [COMMAND] [OPTIONS]
 COMMANDS:
     list                    List all agents (active and archived)
     archive <agent>         Archive an agent (move to archive folder)
+    archive-all             Archive all active agents
     unarchive <agent>       Unarchive an agent (move back to active folder)
+    unarchive-all           Unarchive all archived agents
     help, -h, --help        Show this help message
 
 EXAMPLES:
     $0 list                 List all agents with status
     $0 archive tdd-test     Archive agent matching 'tdd-test'
+    $0 archive-all          Archive all active agents
     $0 unarchive tdd-test   Unarchive agent matching 'tdd-test'
+    $0 unarchive-all        Unarchive all archived agents
 
 Fuzzy completion is available for archive/unarchive commands using FZF.
 
@@ -133,6 +137,50 @@ unarchive_agent() {
     echo -e "${GREEN}✓ Agent unarchived successfully${NC}"
 }
 
+# Archive all active agents
+archive_all_agents() {
+    local agents=($(find "$AGENTS_DIR" -name "*.md" -type f 2>/dev/null))
+
+    if [[ ${#agents[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}No active agents to archive.${NC}"
+        return
+    fi
+
+    echo -e "${BLUE}Archiving all active agents...${NC}"
+    local count=0
+
+    for agent_file in "${agents[@]}"; do
+        local basename=$(basename "$agent_file")
+        echo -e "  ${BLUE}Archiving: $basename${NC}"
+        mv "$agent_file" "$ARCHIVE_DIR/"
+        ((count++))
+    done
+
+    echo -e "${GREEN}✓ Successfully archived $count agent(s)${NC}"
+}
+
+# Unarchive all archived agents
+unarchive_all_agents() {
+    local archived_agents=($(find "$ARCHIVE_DIR" -name "*.md" -type f 2>/dev/null))
+
+    if [[ ${#archived_agents[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}No archived agents to unarchive.${NC}"
+        return
+    fi
+
+    echo -e "${BLUE}Unarchiving all archived agents...${NC}"
+    local count=0
+
+    for agent_file in "${archived_agents[@]}"; do
+        local basename=$(basename "$agent_file")
+        echo -e "  ${BLUE}Unarchiving: $basename${NC}"
+        mv "$agent_file" "$AGENTS_DIR/"
+        ((count++))
+    done
+
+    echo -e "${GREEN}✓ Successfully unarchived $count agent(s)${NC}"
+}
+
 # Main script logic
 main() {
     ensure_directories
@@ -146,8 +194,14 @@ main() {
         "archive")
             archive_agent "$2"
             ;;
+        "archive-all")
+            archive_all_agents
+            ;;
         "unarchive")
             unarchive_agent "$2"
+            ;;
+        "unarchive-all")
+            unarchive_all_agents
             ;;
         "help"|"-h"|"--help")
             print_usage

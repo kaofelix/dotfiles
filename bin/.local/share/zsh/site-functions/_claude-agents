@@ -7,7 +7,9 @@ _claude_agents() {
     commands=(
         'list:List all agents (active and archived)'
         'archive:Archive an agent (move to archive folder)'
+        'archive-all:Archive all active agents'
         'unarchive:Unarchive an agent (move back to active folder)'
+        'unarchive-all:Unarchive all archived agents'
         'help:Show help message'
         '-h:Show help message'
         '--help:Show help message'
