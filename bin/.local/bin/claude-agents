@@ -1,0 +1,172 @@
+#!/bin/bash
+
+# Claude Code Agent Manager
+# A simple script to manage Claude Code agents with fuzzy completion
+
+set -e
+
+# Configuration
+AGENTS_DIR="$HOME/.claude/agents"
+ARCHIVE_DIR="$HOME/.claude/agents_archive"
+FZF_CMD="fzf"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Helper functions
+print_usage() {
+    cat << EOF
+Claude Code Agent Manager
+
+Usage: $0 [COMMAND] [OPTIONS]
+
+COMMANDS:
+    list                    List all active agents
+    list-archived           List all archived agents
+    list-all                List both active and archived agents
+    archive <agent>         Archive an agent (move to archive folder)
+    unarchive <agent>       Unarchive an agent (move back to active folder)
+    help, -h, --help        Show this help message
+
+EXAMPLES:
+    $0 list                 List active agents
+    $0 archive tdd-test     Archive agent matching 'tdd-test'
+    $0 unarchive tdd-test   Unarchive agent matching 'tdd-test'
+
+Fuzzy completion is available for archive/unarchive commands using FZF.
+
+EOF
+}
+
+# Ensure directories exist
+ensure_directories() {
+    mkdir -p "$AGENTS_DIR" "$ARCHIVE_DIR"
+}
+
+# List agents with their status
+list_agents() {
+    local dir="$1"
+    local status="$2"
+    local color="$3"
+
+    if [[ ! -d "$dir" ]] || [[ -z "$(ls -A "$dir" 2>/dev/null)" ]]; then
+        echo -e "${color}No $status agents found.${NC}"
+        return
+    fi
+
+    echo -e "${color}$status agents:${NC}"
+    find "$dir" -name "*.md" -type f | while read -r agent; do
+        local basename=$(basename "$agent" .md)
+        local size=$(du -h "$agent" | cut -f1)
+        local modified=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$agent" 2>/dev/null || stat -c "%y" "$agent" 2>/dev/null | cut -d' ' -f1,2 | cut -d'.' -f1)
+        echo -e "  ${color}• ${basename}${NC} (${size}, ${modified})"
+    done
+}
+
+# Select agent using FZF
+select_agent() {
+    local dir="$1"
+    local prompt="$2"
+
+    if ! command -v fzf >/dev/null 2>&1; then
+        echo -e "${RED}Error: fzf is not installed. Please install fzf to use fuzzy selection.${NC}" >&2
+        return 1
+    fi
+
+    find "$dir" -name "*.md" -type f -exec basename {} .md \; | \
+        sort | \
+        FZF_DEFAULT_OPTS="--height=40% --layout=reverse --border --prompt='$prompt'" \
+        $FZF_CMD
+}
+
+# Archive an agent
+archive_agent() {
+    local agent_pattern="$1"
+    local agent_file
+
+    if [[ -z "$agent_pattern" ]]; then
+        agent_file=$(select_agent "$AGENTS_DIR" "Select agent to archive: ")
+    else
+        agent_file=$(find "$AGENTS_DIR" -name "*${agent_pattern}*.md" -type f | head -1)
+        if [[ -z "$agent_file" ]]; then
+            echo -e "${RED}Error: No agent found matching '$agent_pattern'${NC}" >&2
+            return 1
+        fi
+    fi
+
+    if [[ -z "$agent_file" ]]; then
+        echo -e "${YELLOW}No agent selected.${NC}" >&2
+        return 1
+    fi
+
+    local basename=$(basename "$agent_file")
+    echo -e "${BLUE}Archiving agent: $basename${NC}"
+    mv "$agent_file" "$ARCHIVE_DIR/"
+    echo -e "${GREEN}✓ Agent archived successfully${NC}"
+}
+
+# Unarchive an agent
+unarchive_agent() {
+    local agent_pattern="$1"
+    local agent_file
+
+    if [[ -z "$agent_pattern" ]]; then
+        agent_file=$(select_agent "$ARCHIVE_DIR" "Select agent to unarchive: ")
+    else
+        agent_file=$(find "$ARCHIVE_DIR" -name "*${agent_pattern}*.md" -type f | head -1)
+        if [[ -z "$agent_file" ]]; then
+            echo -e "${RED}Error: No archived agent found matching '$agent_pattern'${NC}" >&2
+            return 1
+        fi
+    fi
+
+    if [[ -z "$agent_file" ]]; then
+        echo -e "${YELLOW}No agent selected.${NC}" >&2
+        return 1
+    fi
+
+    local basename=$(basename "$agent_file")
+    echo -e "${BLUE}Unarchiving agent: $basename${NC}"
+    mv "$agent_file" "$AGENTS_DIR/"
+    echo -e "${GREEN}✓ Agent unarchived successfully${NC}"
+}
+
+# Main script logic
+main() {
+    ensure_directories
+
+    case "${1:-help}" in
+        "list")
+            list_agents "$AGENTS_DIR" "Active" "$GREEN"
+            ;;
+        "list-archived")
+            list_agents "$ARCHIVE_DIR" "Archived" "$YELLOW"
+            ;;
+        "list-all")
+            list_agents "$AGENTS_DIR" "Active" "$GREEN"
+            echo
+            list_agents "$ARCHIVE_DIR" "Archived" "$YELLOW"
+            ;;
+        "archive")
+            archive_agent "$2"
+            ;;
+        "unarchive")
+            unarchive_agent "$2"
+            ;;
+        "help"|"-h"|"--help")
+            print_usage
+            ;;
+        *)
+            echo -e "${RED}Error: Unknown command '$1'${NC}" >&2
+            echo
+            print_usage
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
