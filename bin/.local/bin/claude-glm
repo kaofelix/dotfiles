@@ -8,4 +8,4 @@ export ANTHROPIC_DEFAULT_HAIKU_MODEL="glm-4.5-air"
 export MAX_THINKING_TOKENS="32768"
 export MAX_MCP_OUTPUT_TOKENS="32768"
 
-ccr code "$@"
+ccr code --disallowedTools "WebSearch" --mcp-config "${HOME}/.claude/zai-mcp.json"  "$@"
