@@ -1,0 +1,37 @@
+{
+  "LOG": false,
+  "LOG_LEVEL": "debug",
+  "HOST": "127.0.0.1",
+  "PORT": 3456,
+  "API_TIMEOUT_MS": "600000",
+  "transformers": [
+    {
+      "path": "${HOME}/.claude-code-router/plugins/zai.js",
+      "options": {}
+    },
+    {
+      "path": "${HOME}/.claude-code-router/plugins/zai-debug.js",
+      "options": {}
+    }
+  ],
+  "Providers": [
+    {
+      "name": "ZAI",
+      "api_base_url": "https://api.z.ai/api/coding/paas/v4/chat/completions",
+      "api_key": "${Z_AI_API_KEY}",
+      "models": ["glm-4.6", "glm-4.5", "glm-4.5v", "glm-4.5-air"],
+      "transformer": {
+        "use": ["zai", "reasoning"]
+      }
+    }
+  ],
+  "Router": {
+    "default": "ZAI,glm-4.6",
+    "background": "ZAI,glm-4.6",
+    "think": "ZAI,glm-4.6",
+    "longContext": "ZAI,glm-4.6",
+    "longContextThreshold": 204800,
+    "webSearch": "ZAI,glm-4.6",
+    "image": "ZAI,glm-4.5v"
+  }
+}
