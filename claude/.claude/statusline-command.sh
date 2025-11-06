@@ -31,8 +31,8 @@ fi
 # Use tput for colors instead of raw ANSI codes
 cyan_color=$(tput setaf 6)
 blue_color=$(tput setaf 4)
-yellow_color=$(tput setaf 3)
+white_color=$(tput setaf 7)
 reset_color=$(tput sgr0)
 
 # Display the status line
-printf "${cyan_color}[ ${yellow_color}%s${blue_color}%s${reset_color}" "$current_dir" "$git_info ${cyan_color}]"
+printf "${cyan_color}[ ${blue_color}%s${white_color}%s${reset_color}" "$current_dir" "$git_info ${cyan_color}]"
