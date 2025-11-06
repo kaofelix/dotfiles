@@ -49,6 +49,10 @@ fi
 
 setopt promptsubst
 
+autoload -U edit-command-line
+zle -N edit-command-line
+bindkey '^X^E' edit-command-line  # Ctrl+X Ctrl+E
+
 COMPLETION_WAITING_DOTS="true"
 DISABLE_AUTO_TITLE="true"
 export FZF_DEFAULT_OPTS='--layout=reverse'
