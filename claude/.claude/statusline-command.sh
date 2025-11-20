@@ -32,7 +32,8 @@ fi
 cyan_color=$(tput setaf 6)
 blue_color=$(tput setaf 4)
 white_color=$(tput setaf 7)
+orange_color=$(tput setaf 3)
 reset_color=$(tput sgr0)
 
 # Display the status line
-printf "${cyan_color}[ ${blue_color}%s${white_color}%s${reset_color}" "$current_dir" "$git_info ${cyan_color}]"
+printf "${cyan_color}[ ${blue_color}%s${white_color}%s${reset_color}" "$current_dir" "$git_info ${cyan_color}] ${orange_color}${model}"
