@@ -6,11 +6,11 @@
   "API_TIMEOUT_MS": "600000",
   "transformers": [
     {
-      "path": "${HOME}/.claude-code-router/plugins/zai.js",
+      "path": "${HOME}/.claude-code-router/zai.js",
       "options": {}
     },
     {
-      "path": "${HOME}/.claude-code-router/plugins/zai-debug.js",
+      "path": "${HOME}/.claude-code-router/zai-debug.js",
       "options": {}
     }
   ],
