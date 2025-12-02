@@ -20,4 +20,4 @@ brew "zsh-syntax-highlighting"
 cask "font-source-code-pro"
 
 tap "d12frosted/emacs-plus"
-brew "emacs-plus@28", fetch_HEAD: true
+brew "emacs-plus", args: ["--with-imagemagick"]
