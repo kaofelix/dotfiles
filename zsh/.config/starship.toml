@@ -18,6 +18,10 @@ style="cyan"
 
 [git_status]
 format = '([$all_status$ahead_behind]($style) )'
+stashed = ""
 
 [character]
 success_symbol = '[❯](bold cyan)'
+
+[docker_context]
+disabled = true
