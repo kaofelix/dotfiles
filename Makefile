@@ -13,6 +13,17 @@ $(STOW_PACKAGES):
 	stow -v -R $@ --target=$(TARGET_DIR)
 	@echo ""
 
+# Unstow all packages
+.PHONY: unstow
+unstow:
+	@echo "🗑️  Unstowing all packages..."
+	@for pkg in $(STOW_PACKAGES); do \
+		echo "📦 $$pkg"; \
+		stow -v -D $$pkg --target=$(TARGET_DIR); \
+		echo ""; \
+	done
+	@echo "✅ All packages unstowed!"
+
 # Download ZaiTransformer files
 .PHONY: download-zai
 download-zai:
