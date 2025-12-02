@@ -84,7 +84,7 @@ alias va='. .venv/bin/activate'
 _clow() {
     crush run "$*" | glow
 }
-alias clow=noglob _clow
+alias clow='noglob _clow'
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
