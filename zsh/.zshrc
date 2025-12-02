@@ -33,9 +33,6 @@ if ! zgenom saved; then
     # completions
     zgenom load zsh-users/zsh-completions
 
-    # theme
-    zgenom load "${DOTFILES_DIR}/.oh-my-zsh/custom/themes/honukai.zsh-theme"
-
     # save all to init script
     zgenom save
 
@@ -47,6 +44,7 @@ if ! zgenom saved; then
     # executed every 7 days.
 fi
 
+eval "$(starship init zsh)"
 setopt promptsubst
 
 autoload -U edit-command-line
