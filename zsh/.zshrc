@@ -83,6 +83,11 @@ alias cat='bat --paging=never'
 
 alias va='. .venv/bin/activate'
 
+_clow() {
+    crush run "$*" | glow
+}
+alias clow=noglob _clow
+
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
