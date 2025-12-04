@@ -10,6 +10,14 @@
 [core]
     excludesfile = /Users/kaofelix/.global-gitignore
     autocrlf = input
+    pager = LESS='FR --redraw-on-quit' delta
+[interactive]
+    diffFilter = delta --color-only
+[delta]
+    navigate = true
+    side-by-side = true
+[merge]
+    conflictStyle = zdiff3
 [gui]
     fontdiff = -family Menlo -size 11 -weight normal -slant roman -underline 0 -overstrike 0
 [alias]
@@ -55,42 +63,16 @@
     ra = !git r --all
     l = "!. ~/.githelpers && pretty_git_log"
     la = !git l --all        
-        
-[github]
-    user = kaofelix
-    token = b22db9adf3e01b9af1c0bc6ae0fd1bd2
-    oauth-token = 8f132bcfd2ab355fe42bb513f70dac125e43c496
 [branch]
     autosetuprebase = always
-[difftool]
-    prompt = false
-[difftool "Kaleidoscope"]
-    cmd = ksdiff --partial-changeset --relative-path \"$MERGED\" -- \"$LOCAL\" \"$REMOTE\"
-[diff]
-    tool = Kaleidoscope
-[mergetool]
-    prompt = false
-[mergetool "Kaleidoscope"]
-    cmd = ksdiff --merge --output \"$MERGED\" --base \"$BASE\" -- \"$LOCAL\" --snapshot \"$REMOTE\" --snapshot
-    trustExitCode = true
-[merge]
-    tool = Kaleidoscope
-    summary = true
+[rebase]
+	autoStash = true
 [push]
     default = simple
 [filter "media"]
 	clean = git-media-clean %f
 	smudge = git-media-smudge %f
-[difftool "sourcetree"]
-	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-    path = 
-
-[mergetool "sourcetree"]
-    cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
-    trustExitCode = true
 [filter "lfs"]
 	clean = git lfs clean %f
 	smudge = git lfs smudge %f
 	required = true
-[rebase]
-	autoStash = true
