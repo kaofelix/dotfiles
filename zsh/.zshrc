@@ -11,7 +11,6 @@ if ! zgenom saved; then
 
     # plugins
     zgenom ohmyzsh plugins/aliases
-    zgenom ohmyzsh plugins/bun
     zgenom ohmyzsh plugins/brew
     zgenom ohmyzsh plugins/direnv
     zgenom ohmyzsh plugins/docker-compose
@@ -85,11 +84,6 @@ _clow() {
     crush run "$*" | glow
 }
 alias clow='noglob _clow'
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-[ -s "/Users/kaofelix/.bun/_bun" ] && source "/Users/kaofelix/.bun/_bun"
 
 if [ -f "$HOME/.zshrc.local" ]; then
     source "$HOME/.zshrc.local"
