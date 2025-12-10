@@ -1,4 +1,4 @@
-STOW_PACKAGES = bin zsh git claude
+STOW_PACKAGES = bin zsh git claude opencode
 STOW_DIR = .
 TARGET_DIR = ${HOME}
 
@@ -10,7 +10,7 @@ stow: $(STOW_PACKAGES)
 
 $(STOW_PACKAGES):
 	@echo "📦 $@"
-	stow -v -R $@ --target=$(TARGET_DIR)
+	stow -v -R $@ --target=$(TARGET_DIR) --adopt
 	@echo ""
 
 # Unstow all packages
