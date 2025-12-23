@@ -1,0 +1,3 @@
+[submodule "ast-grep-skill"]
+	path = ast-grep-skill
+	url = https://github.com/ast-grep/claude-skill.git

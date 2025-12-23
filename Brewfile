@@ -1,4 +1,5 @@
 brew "aspell"
+brew "ast-grep"
 brew "bash"
 brew "bat"
 brew "cmake"

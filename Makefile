@@ -1,4 +1,4 @@
-STOW_PACKAGES = bin zsh git claude opencode
+STOW_PACKAGES = bin zsh git claude opencode pi
 STOW_DIR = .
 TARGET_DIR = ${HOME}
 
@@ -32,3 +32,11 @@ download-zai:
 	@curl -sL https://raw.githubusercontent.com/Bedolla/ZaiTransformer/main/zai.js -o claude/.claude-code-router/zai.js
 	@curl -sL https://raw.githubusercontent.com/Bedolla/ZaiTransformer/main/zai-debug.js -o claude/.claude-code-router/zai-debug.js
 	@echo "✅ ZaiTransformer files downloaded successfully!"
+
+# Copy ast-grep skill from submodule
+.PHONY: copy-skill
+copy-skill:
+	@echo "📋 Copying ast-grep skill..."
+	@mkdir -p pi/.pi/agent/skills/
+	@cp -r ast-grep-skill/ast-grep/skills/ast-grep pi/.pi/agent/skills/
+	@echo "✅ ast-grep skill copied successfully!"
