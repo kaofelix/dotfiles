@@ -8,7 +8,14 @@ TARGET_DIR = ${HOME}
 stow: $(STOW_PACKAGES)
 	@echo "🚚 All packages stowed!"
 
-$(STOW_PACKAGES):
+# pi package
+pi:
+	@echo "📦 $@"
+	stow -v -R $@ --target=$(TARGET_DIR) --adopt
+	@echo ""
+
+# Other packages (no dependencies)
+bin zsh git claude opencode:
 	@echo "📦 $@"
 	stow -v -R $@ --target=$(TARGET_DIR) --adopt
 	@echo ""
@@ -32,11 +39,3 @@ download-zai:
 	@curl -sL https://raw.githubusercontent.com/Bedolla/ZaiTransformer/main/zai.js -o claude/.claude-code-router/zai.js
 	@curl -sL https://raw.githubusercontent.com/Bedolla/ZaiTransformer/main/zai-debug.js -o claude/.claude-code-router/zai-debug.js
 	@echo "✅ ZaiTransformer files downloaded successfully!"
-
-# Copy ast-grep skill from submodule
-.PHONY: copy-skill
-copy-skill:
-	@echo "📋 Copying ast-grep skill..."
-	@mkdir -p pi/.pi/agent/skills/
-	@cp -r ast-grep-skill/ast-grep/skills/ast-grep pi/.pi/agent/skills/
-	@echo "✅ ast-grep skill copied successfully!"

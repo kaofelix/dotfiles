@@ -1,3 +1,6 @@
-[submodule "ast-grep-skill"]
-	path = ast-grep-skill
+[submodule "skills/ast-grep-skill"]
+	path = skills/ast-grep-skill
 	url = https://github.com/ast-grep/claude-skill.git
+[submodule "skills/pi-skills"]
+	path = skills/pi-skills
+	url = https://github.com/badlogic/pi-skills.git
