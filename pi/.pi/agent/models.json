@@ -1,0 +1,62 @@
+{
+  "providers": {
+    "zai-coding": {
+      "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+      "apiKey": "ZAI_API_KEY",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "glm-4.7",
+          "reasoning": true,
+          "name": "GLM-4.7 (Coding Plan)",
+          "input": ["text"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 204800,
+          "maxTokens": 131072,
+          "compat": {
+            "supportsDeveloperRole": false
+          }
+        },
+        {
+          "id": "glm-4.6",
+          "reasoning": true,
+          "name": "GLM-4.6 (Coding Plan)",
+          "input": ["text"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 204800,
+          "maxTokens": 131072,
+          "compat": {
+            "supportsDeveloperRole": false
+          }
+        },
+        {
+          "id": "glm-4.6V",
+          "reasoning": true,
+          "name": "GLM-4.6V (Coding Plan)",
+          "input": ["text", "image"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 16384,
+          "compat": {
+            "supportsDeveloperRole": false
+          }
+        }
+      ]
+    }
+  }
+}
