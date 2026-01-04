@@ -7,7 +7,6 @@ Manage which skills are loaded by symlinking from the skills folder
 import os
 import re
 import shlex
-import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -204,13 +203,10 @@ def enable_skill(skill_name: str) -> int:
     # Create target directory if needed
     SKILLS_TARGET.mkdir(parents=True, exist_ok=True)
 
-    # Remove existing target if present (symlink or directory)
+    # Remove existing symlink if present
     if target.exists() or target.is_symlink():
         print(f"{YELLOW}Skill '{skill_name}' already present, re-linking...{NC}")
-        if target.is_dir() and not target.is_symlink():
-            shutil.rmtree(target)
-        else:
-            target.unlink()
+        target.unlink()
 
     # Create symlink
     target.symlink_to(skill.src_path)
@@ -235,11 +231,8 @@ def disable_skill(skill_name: str) -> int:
         print(f"{YELLOW}Skill '{skill_name}' not currently enabled{NC}")
         return 0
 
-    # Remove symlink or directory
-    if skill.installed_path.is_dir() and not skill.installed_path.is_symlink():
-        shutil.rmtree(skill.installed_path)
-    else:
-        skill.installed_path.unlink()
+    # Remove symlink
+    skill.installed_path.unlink()
     print(f"{GREEN}✓ Disabled: {skill_name}{NC}")
     return 0
 
@@ -271,11 +264,8 @@ def select_skills() -> int:
     selected_set = set(selected)
     for skill in skills:
         if skill.is_installed() and skill.name not in selected_set:
-            # Remove symlink or directory
-            if skill.installed_path.is_dir() and not skill.installed_path.is_symlink():
-                shutil.rmtree(skill.installed_path)
-            else:
-                skill.installed_path.unlink()
+            # Remove symlink
+            skill.installed_path.unlink()
             disabled_count += 1
 
     # Then, enable selected skills that aren't present
