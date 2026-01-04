@@ -155,10 +155,9 @@ def gum_choose(skills: list[Skill]) -> list[str] | None:
     cmd_parts.extend(["--unselected-prefix", "  "])
     cmd_parts.append("--no-limit")
 
-    # Add pre-selected items
+    # Add pre-selected items as comma-separated list
     if selected_skills:
-        cmd_parts.append("--selected")
-        cmd_parts.extend(selected_skills)
+        cmd_parts.append(f"--selected={','.join(selected_skills)}")
 
     # Add all choices as arguments
     cmd_parts.extend(choices)
