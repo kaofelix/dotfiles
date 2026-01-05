@@ -1,13 +1,13 @@
 /**
- * Permission Gate Hook
+ * Permission Gate Extension
  *
  * Prompts for confirmation before running potentially dangerous bash commands.
  * Patterns checked: rm -rf, sudo, chmod/chown 777
  */
 
-import type { HookAPI } from "@mariozechner/pi-coding-agent/hooks";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent/extensions";
 
-export default function (pi: HookAPI) {
+export default function (pi: ExtensionAPI) {
   const dangerousPatterns = [
     /\brm\s+(-rf?|--recursive)/i,
     /\bsudo\b/i,
