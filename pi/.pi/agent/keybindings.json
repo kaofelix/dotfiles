@@ -1,0 +1,16 @@
+{
+  "cursorUp": ["up", "ctrl+p"],
+  "cursorDown": ["down", "ctrl+n"],
+  "selectUp": ["up", "ctrl+p"],
+  "selectDown": ["down", "ctrl+n"],
+  "cursorLeft": ["left", "ctrl+b"],
+  "cursorRight": ["right", "ctrl+f"],
+  "cursorWordLeft": ["alt+left", "alt+b"],
+  "cursorWordRight": ["alt+right", "alt+f"],
+  "deleteCharForward": ["delete", "ctrl+d"],
+  "deleteCharBackward": ["backspace", "ctrl+h"],
+  "deleteWordBackward": ["ctrl+w", "alt+backspace", "ctrl+alt+h"],
+  "newLine": ["shift+enter", "alt+enter", "ctrl+j"],
+  "cycleModelForward": "ctrl+shift+[",
+  "cycleModelBackward": "ctrl+shift+]"
+}
