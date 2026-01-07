@@ -1,0 +1,369 @@
+#!/usr/bin/env python3
+"""
+Ralph-style infinite loop using the pi agent.
+
+Ralph is a technique where an AI agent continuously iterates on a task
+by reading a prompt file and executing actions in an infinite loop.
+
+Usage:
+    ralph-pi [prompt_file]
+    ralph-pi PROMPT.md
+    ralph-pi
+
+The prompt file should contain instructions for the agent. Each iteration,
+the agent reads the prompt, performs actions, and the loop continues.
+"""
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Optional
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Ralph-style infinite loop using the pi agent",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  ralph-pi PROMPT.md           # Loop with PROMPT.md
+  ralph-pi                     # Look for PROMPT.md in current dir
+  ralph-pi -p PROMPT.md        # Non-interactive mode (single run)
+  ralph-pi --pi-args="-c"      # Pass args to pi (e.g., continue session)
+
+The PROMPT.md file format:
+  # Task: <description>
+
+  ## Instructions
+  - First instruction
+  - Second instruction
+
+  ## Context
+  Any additional context...
+        """
+    )
+    parser.add_argument(
+        "prompt_file",
+        nargs="?",
+        default="PROMPT.md",
+        help="Path to prompt file (default: PROMPT.md)",
+    )
+    parser.add_argument(
+        "-p",
+        "--print",
+        action="store_true",
+        help="Non-interactive mode: run once and exit",
+    )
+    parser.add_argument(
+        "--pi-args",
+        default="",
+        help="Additional arguments to pass to pi (e.g., '--continue')",
+    )
+    parser.add_argument(
+        "-d",
+        "--delay",
+        type=float,
+        default=1.0,
+        help="Delay between iterations in seconds (default: 1.0)",
+    )
+    parser.add_argument(
+        "-m",
+        "--max-iterations",
+        type=int,
+        default=None,
+        help="Maximum number of iterations (default: unlimited)",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        type=Path,
+        default=Path.home() / ".pi" / "ralph-logs",
+        help="Directory for iteration logs (default: ~/.pi/ralph-logs)",
+    )
+    parser.add_argument(
+        "--model",
+        help="Model to use (e.g., 'claude-sonnet-4')",
+    )
+    parser.add_argument(
+        "--thinking",
+        choices=["off", "minimal", "low", "medium", "high", "xhigh"],
+        help="Thinking level for the agent",
+    )
+    return parser.parse_args()
+
+
+def print_banner():
+    """Print Ralph banner."""
+    banner = """
+    ╔═══════════════════════════════════════════════════════════╗
+    ║                                                           ║
+    ║   ████████╗██╗   ██╗    ██████╗ ████████╗██████╗ ███████╗ ║
+    ║   ╚══██╔══╝██║   ██║   ██╔═══██╗╚══██╔══╝██╔══██╗██╔════╝ ║
+    ║      ██║   ██║   ██║   ██║   ██║   ██║   ██║  ██║█████╗   ║
+    ║      ██║   ╚██╗ ██╔╝   ██║   ██║   ██║   ██║  ██║██╔══╝   ║
+    ║      ██║    ╚████╔╝    ╚██████╔╝   ██║   ██████╔╝███████╗ ║
+    ║      ╚═╝     ╚═══╝      ╚═════╝    ╚═╝   ╚═════╝ ╚══════╝ ║
+    ║                                                           ║
+    ║        Infinite Agent Loops with the pi agent             ║
+    ║                                                           ║
+    ╚═══════════════════════════════════════════════════════════╝
+    """
+    print(banner)
+
+
+def validate_prompt_file(prompt_file: Path) -> tuple[bool, str]:
+    """Validate that the prompt file exists and is readable."""
+    if not prompt_file.exists():
+        return False, f"Prompt file not found: {prompt_file}"
+    if not prompt_file.is_file():
+        return False, f"Prompt path is not a file: {prompt_file}"
+    if not os.access(prompt_file, os.R_OK):
+        return False, f"Cannot read prompt file: {prompt_file}"
+    return True, ""
+
+
+def build_pi_command(args: argparse.Namespace) -> list[str]:
+    """Build the pi command with appropriate arguments."""
+    cmd = ["pi", "--mode", "rpc", "--no-session"]
+
+    # Add model if specified
+    if args.model:
+        cmd.extend(["--model", args.model])
+
+    # Add thinking level if specified
+    if args.thinking:
+        cmd.extend(["--thinking", args.thinking])
+
+    # Add any additional pi arguments
+    if args.pi_args:
+        # Parse additional args safely
+        import shlex
+        extra_args = shlex.split(args.pi_args)
+        cmd.extend(extra_args)
+
+    return cmd
+
+
+def start_pi_process(cmd: list[str]) -> subprocess.Popen:
+    """Start the pi agent in RPC mode."""
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,  # Line buffered
+        )
+        return process
+    except FileNotFoundError:
+        print("Error: 'pi' command not found. Please install pi-coding-agent:")
+        print("  npm install -g @mariozechner/pi-coding-agent")
+        sys.exit(1)
+
+
+def send_prompt(
+    process: subprocess.Popen,
+    prompt_content: str,
+    prompt_file: Path
+) -> dict:
+    """Send prompt to pi and wait for response."""
+    # Read the prompt file as a file attachment
+    prompt_request = {
+        "type": "prompt",
+        "message": f"@{prompt_file} Read the prompt and execute. The prompt contains instructions for this iteration. Work through the task systematically."
+    }
+
+    try:
+        # Send the prompt as JSON
+        process.stdin.write(json.dumps(prompt_request) + "\n")
+        process.stdin.flush()
+
+        # Read responses until we get a turn_complete message
+        response = {}
+        while True:
+            try:
+                line = process.stdout.readline()
+                if not line:
+                    break
+
+                event = json.loads(line.strip())
+
+                # Print streaming text for user feedback
+                if event.get("type") == "message_update":
+                    msg_event = event.get("assistantMessageEvent", {})
+                    if msg_event.get("type") == "text_delta":
+                        sys.stdout.write(msg_event.get("delta", ""))
+                        sys.stdout.flush()
+
+                # Collect the final response
+                if event.get("type") == "turn_complete":
+                    response = event
+                    break
+
+            except json.JSONDecodeError:
+                continue
+
+        return response
+
+    except (BrokenPipeError, IOError) as e:
+        print(f"\nError communicating with pi: {e}")
+        return {}
+
+
+def log_iteration(
+    iteration: int,
+    response: dict,
+    output_dir: Path,
+    prompt_file: Path
+) -> None:
+    """Log iteration data to file."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    log_file = output_dir / f"iteration_{iteration:04d}.jsonl"
+
+    with open(log_file, "w") as f:
+        log_entry = {
+            "iteration": iteration,
+            "prompt_file": str(prompt_file),
+            "timestamp": time.time(),
+            "response": response,
+        }
+        f.write(json.dumps(log_entry) + "\n")
+
+
+def run_once(args: argparse.Namespace) -> None:
+    """Run a single iteration (non-interactive mode)."""
+    prompt_file = Path(args.prompt_file)
+
+    # Validate prompt file
+    valid, error = validate_prompt_file(prompt_file)
+    if not valid:
+        print(f"Error: {error}", file=sys.stderr)
+        sys.exit(1)
+
+    # Build and start pi command
+    cmd = build_pi_command(args)
+    process = start_pi_process(cmd)
+
+    try:
+        # Send prompt
+        print(f"\n{'='*60}")
+        print(f"Iteration 1: Reading {prompt_file}")
+        print(f"{'='*60}\n")
+
+        response = send_prompt(process, "", prompt_file)
+
+        # Log the iteration
+        log_iteration(1, response, args.output_dir, prompt_file)
+
+        print(f"\n{'='*60}")
+        print("Iteration complete. Response:")
+        print(f"{'='*60}")
+        print(json.dumps(response, indent=2))
+
+    finally:
+        # Clean up
+        process.stdin.close()
+        process.terminate()
+        process.wait(timeout=5)
+
+
+def run_loop(args: argparse.Namespace) -> None:
+    """Run the Ralph loop."""
+    prompt_file = Path(args.prompt_file)
+
+    # Validate prompt file
+    valid, error = validate_prompt_file(prompt_file)
+    if not valid:
+        print(f"Error: {error}", file=sys.stderr)
+        sys.exit(1)
+
+    # Show the prompt content
+    print(f"\n{'='*60}")
+    print(f"Prompt File: {prompt_file}")
+    print(f"{'='*60}\n")
+
+    try:
+        with open(prompt_file, "r") as f:
+            print(f.read())
+    except Exception as e:
+        print(f"Error reading prompt file: {e}")
+        sys.exit(1)
+
+    print(f"\n{'='*60}")
+    print("Starting Ralph loop. Press Ctrl+C to stop.")
+    print(f"{'='*60}\n")
+
+    # Build and start pi command
+    cmd = build_pi_command(args)
+    process = start_pi_process(cmd)
+
+    iteration = 0
+
+    try:
+        while True:
+            # Check max iterations
+            if args.max_iterations and iteration >= args.max_iterations:
+                print(f"\nReached maximum iterations ({args.max_iterations}). Stopping.")
+                break
+
+            iteration += 1
+
+            print(f"\n{'─'*60}")
+            print(f"Iteration {iteration}: Reading {prompt_file}")
+            print(f"{'─'*60}\n")
+
+            # Send prompt and get response
+            response = send_prompt(process, "", prompt_file)
+
+            # Log the iteration
+            log_iteration(iteration, response, args.output_dir, prompt_file)
+
+            print(f"\n{'─'*60}")
+            print(f"Iteration {iteration} complete")
+            print(f"{'─'*60}")
+
+            # Check if prompt file still exists
+            if not prompt_file.exists():
+                print(f"\nPrompt file disappeared: {prompt_file}")
+                break
+
+            # Delay before next iteration
+            if args.delay > 0:
+                time.sleep(args.delay)
+
+    except KeyboardInterrupt:
+        print(f"\n\nRalph loop stopped by user after {iteration} iterations.")
+    finally:
+        # Clean up
+        print("\nShutting down pi agent...")
+        try:
+            process.stdin.write(json.dumps({"type": "abort"}) + "\n")
+            process.stdin.flush()
+        except:
+            pass
+        process.stdin.close()
+        process.terminate()
+        process.wait(timeout=5)
+        print("Done.")
+
+
+def main():
+    args = parse_args()
+
+    if not args.print:
+        print_banner()
+
+    # Run single iteration or loop
+    if args.print:
+        run_once(args)
+    else:
+        run_loop(args)
+
+
+if __name__ == "__main__":
+    main()

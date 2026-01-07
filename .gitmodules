@@ -4,3 +4,6 @@
 [submodule "skills/pi-skills"]
 	path = skills/pi-skills
 	url = https://github.com/badlogic/pi-skills.git
+[submodule "pi-extensions"]
+	path = pi-extensions
+	url = git@github.com:tmustier/pi-extensions.git
