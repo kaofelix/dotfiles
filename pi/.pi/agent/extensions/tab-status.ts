@@ -1,1 +1,1 @@
-../../../../pi-extensions/extensions/tab-status.ts
+../../../../pi-extensions/tab-status/tab-status.ts
