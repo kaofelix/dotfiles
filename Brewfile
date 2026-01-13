@@ -21,6 +21,7 @@ brew "shellcheck"
 brew "starship"
 brew "stow"
 brew "tidy-html5"
+brew "tmux"
 brew "zsh"
 brew "zsh-syntax-highlighting"
 
