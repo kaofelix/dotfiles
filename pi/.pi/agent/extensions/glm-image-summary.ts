@@ -183,12 +183,11 @@ export default function (pi: ExtensionAPI) {
 				onUpdate?.(readResult);
 				return readResult;
 			} catch (error: any) {
-				// On error, return an error result so the agent knows the analysis failed
+				// Throw an error so it shows as red in the UI
 				const errorMsg = `Image analysis failed with glm-4.6v: ${error.message}. The image may not be supported (e.g., animated GIFs) or there was a connection issue.`;
-				return {
-					content: [{ type: "text", text: errorMsg }] as TextContent[],
-					details: { error: true } as ReadToolDetails,
-				};
+				const err = new Error(errorMsg);
+				(err as any).isToolError = true; // Mark as a tool error for better handling
+				throw err;
 			}
 		},
 	});
