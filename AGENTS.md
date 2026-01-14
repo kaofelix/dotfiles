@@ -20,6 +20,7 @@ Example: `zsh/.zshrc` → `~/.zshrc`
 - `git/`
 - `claude/`
 - `bin/`
+- `pi/`
 
 The `bin` package installs scripts to `~/.local/bin/` (user-local binary directory)
 
@@ -52,3 +53,12 @@ Listed in Brewfile
 3. Include comprehensive help/usage information
 4. Test script functionality
 5. Run `make bin` to stow scripts
+
+## PI Coding Agent
+
+This repo has stuff also for the pi coding agent.
+
+- Config and extensions are in the `pi/` stow package containing a
+  `.pi` folder that gets stowed in `~/.pi`. Always edit files in the package, never in the target folder
+- When asked to create a pi extension, add it to `./pi/.pi/agent/extensions/`
+- Skills are in the `skills/` folder. When asked to create a new skill, always add it to the top level dir. Subdirs like `pi-skills` are git submodules copied from other places
