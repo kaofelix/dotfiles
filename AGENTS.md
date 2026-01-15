@@ -54,6 +54,12 @@ Listed in Brewfile
 4. Test script functionality
 5. Run `make bin` to stow scripts
 
+### Updating Git Submodules
+Some directories in this repo are git submodules (e.g., `pi-skills/`, `pi/.pi/agent/extensions/watch`).
+- To update a submodule: `cd <submodule>` and make/pull changes
+- When committing submodule changes in the main repo, use a simple commit message like `update <submodule-name>` (no need to describe what changed inside the submodule)
+- The main repo commit just advances the submodule pointer to the new version
+
 ## PI Coding Agent
 
 This repo has stuff also for the pi coding agent.
