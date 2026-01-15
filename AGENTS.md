@@ -56,7 +56,13 @@ Listed in Brewfile
 
 ### Updating Git Submodules
 Some directories in this repo are git submodules (e.g., `pi-skills/`, `pi/.pi/agent/extensions/watch`).
-- To update a submodule: `cd <submodule>` and make/pull changes
+
+**Useful commands:**
+- `git submodule foreach git pull` - Pull latest changes in all submodules
+- `git submodule update --remote` - Update all submodules to latest remote branch commits
+- `git submodule foreach 'git status'` - Check status of all submodules
+
+**Commit workflow:**
 - When committing submodule changes in the main repo, use a simple commit message like `update <submodule-name>` (no need to describe what changed inside the submodule)
 - The main repo commit just advances the submodule pointer to the new version
 
