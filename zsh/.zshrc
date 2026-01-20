@@ -81,6 +81,8 @@ unalias gob
 
 alias va='. .venv/bin/activate'
 
+alias upi='cd ~/Code/pi-mono/ && (git pull && npm install && npm run build) || cd -'
+
 _clow() {
     crush run "$*" | glow
 }
