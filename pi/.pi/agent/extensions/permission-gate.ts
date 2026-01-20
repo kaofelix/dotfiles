@@ -2,7 +2,7 @@
  * Permission Gate Extension
  *
  * Prompts for confirmation before running potentially dangerous bash commands.
- * Patterns checked: rm -rf, sudo, chmod/chown 777
+ * Patterns checked: rm -rf, sudo, chmod/chown 777, git push
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent/extensions";
@@ -12,6 +12,7 @@ export default function (pi: ExtensionAPI) {
     /\brm\s+(-rf?|--recursive)/i,
     /\bsudo\b/i,
     /\b(chmod|chown)\b.*777/i,
+    /\bgit\s+push\b/i,
   ];
 
   pi.on("tool_call", async (event, ctx) => {
