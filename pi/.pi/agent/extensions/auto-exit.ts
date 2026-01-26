@@ -17,7 +17,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("agent_end", async (_event, ctx) => {
-    if (!pi.getFlag("--auto-exit")) {
+    if (!pi.getFlag("auto-exit")) {
       return;
     }
 
