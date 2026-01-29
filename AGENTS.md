@@ -54,18 +54,6 @@ Listed in Brewfile
 4. Test script functionality
 5. Run `make bin` to stow scripts
 
-### Updating Git Submodules
-Some directories in this repo are git submodules (e.g., `pi-skills/`, `pi/.pi/agent/extensions/watch`).
-
-**Useful commands:**
-- `git submodule foreach git pull` - Pull latest changes in all submodules
-- `git submodule update --remote` - Update all submodules to latest remote branch commits
-- `git submodule foreach 'git status'` - Check status of all submodules
-
-**Commit workflow:**
-- When committing submodule changes in the main repo, use a simple commit message like `update <submodule-name>` (no need to describe what changed inside the submodule)
-- The main repo commit just advances the submodule pointer to the new version
-
 ## PI Coding Agent
 
 This repo has stuff also for the pi coding agent.
@@ -73,4 +61,3 @@ This repo has stuff also for the pi coding agent.
 - Config and extensions are in the `pi/` stow package containing a
   `.pi` folder that gets stowed in `~/.pi`. Always edit files in the package, never in the target folder
 - When asked to create a pi extension, add it to `./pi/.pi/agent/extensions/`
-- Skills are in the `skills/` folder. When asked to create a new skill, always add it to the top level dir. Subdirs like `pi-skills` are git submodules copied from other places
