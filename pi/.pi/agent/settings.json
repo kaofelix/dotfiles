@@ -1,0 +1,32 @@
+{
+  "defaultProvider": "synthetic",
+  "defaultModel": "hf:moonshotai/Kimi-K2.5",
+  "defaultThinkingLevel": "medium",
+  "lastChangelogVersion": "0.51.0",
+  "hideThinkingBlock": true,
+  "collapseChangelog": true,
+  "doubleEscapeAction": "tree",
+  "editorPaddingX": 0,
+  "showHardwareCursor": true,
+  "packages": [
+    "https://github.com/badlogic/pi-skills",
+    "npm:@marckrenn/pi-sub-core",
+    "npm:@marckrenn/pi-sub-bar",
+    "npm:pi-watch",
+    "npm:@benvargas/pi-synthetic-provider"
+  ],
+  "skills": [
+    "~/.agents/skills",
+    "-skills/beads/SKILL.md",
+    "-skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md",
+    "-skills/pi-skills/gccli/SKILL.md",
+    "-skills/pi-skills/gdcli/SKILL.md",
+    "-skills/pi-skills/gmcli/SKILL.md",
+    "-skills/pi-skills/transcribe/SKILL.md",
+    "-skills/pi-skills/vscode/SKILL.md",
+    "-skills/pi-skills/youtube-transcript/SKILL.md"
+  ],
+  "prompts": [
+    "-prompts/code-compare.md"
+  ]
+}
