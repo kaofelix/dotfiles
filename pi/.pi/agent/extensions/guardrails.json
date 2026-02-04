@@ -1,0 +1,14 @@
+{
+  "permissionGate": {
+    "patterns": [
+      { "pattern": "rm\\s+-rf", "description": "recursive force delete" },
+      { "pattern": "\\bsudo\\b", "description": "superuser command" },
+      { "pattern": ":\\s*\\|\\s*sh", "description": "piped shell execution" },
+      { "pattern": "\\bdd\\s+if=", "description": "disk write operation" },
+      { "pattern": "mkfs\\.", "description": "filesystem format" },
+      { "pattern": "\\bchmod\\s+-R\\s+777", "description": "insecure recursive permissions" },
+      { "pattern": "\\bchown\\s+-R", "description": "recursive ownership change" },
+      { "pattern": "\\bgit\\s+push\\b", "description": "pushing changes to remote repository" }
+    ]
+  }
+}
