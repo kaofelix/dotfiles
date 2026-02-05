@@ -11,28 +11,34 @@
   "packages": [
     {
       "source": "git:github.com/juanibiapina/browse-cli",
-      "skills": ["skills/browse"]
+      "skills": [
+        "skills/browse"
+      ]
     },
     {
       "source": "git:github.com/steipete/agent-scripts",
-      "skills": ["skills/brave-search"]
+      "skills": [
+        "skills/brave-search",
+        "skills/swiftui-view-refactor",
+        "skills/swiftui-performance-audit",
+        "skills/swiftui-liquid-glass",
+        "skills/swift-concurrency-expert",
+        "skills/native-app-performance",
+        "skills/markdown-converter"
+      ]
     },
     "npm:@marckrenn/pi-sub-core",
     "npm:@marckrenn/pi-sub-bar",
     "npm:pi-watch",
     "npm:@benvargas/pi-synthetic-provider",
-    {
-      "source": "git:github.com/aliou/pi-extensions",
-      "extensions": ["extensions/guardrails/index.ts"],
-      "prompts": [],
-      "themes": [],
-      "skills": []
-    }
+    "npm:@aliou/pi-guardrails@0.5.4"
   ],
   "skills": [
     "~/.agents/skills",
     "-skills/beads/SKILL.md",
     "-skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md"
   ],
-  "prompts": ["-prompts/code-compare.md"]
+  "prompts": [
+    "-prompts/code-compare.md"
+  ]
 }
