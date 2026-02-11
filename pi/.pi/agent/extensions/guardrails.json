@@ -8,7 +8,9 @@
       { "pattern": "mkfs\\.", "description": "filesystem format" },
       { "pattern": "\\bchmod\\s+-R\\s+777", "description": "insecure recursive permissions" },
       { "pattern": "\\bchown\\s+-R", "description": "recursive ownership change" },
-      { "pattern": "\\bgit\\s+push\\b", "description": "pushing changes to remote repository" }
+      { "pattern": "\\bgit\\s+push\\b", "description": "pushing changes to remote repository" },
+      { "pattern": "\\bsem\\b(?:\\s+[-\\w.:/]+){0,4}\\s+(delete|del|rm|remove|destroy|purge)\\b", "description": "Semaphore destructive command (with subcommand variants)" },
+      { "pattern": "(^|\\s)--force(\\s|$)", "description": "force flag usage" }
     ]
   }
 }
