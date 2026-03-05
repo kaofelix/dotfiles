@@ -1,0 +1,10 @@
+{
+  "name": "zai",
+  "version": "1.0.0",
+  "description": "ZAI provider extension for pi (overrides built-in)",
+  "main": "index.ts",
+  "dependencies": {
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-coding-agent": "*"
+  }
+}
