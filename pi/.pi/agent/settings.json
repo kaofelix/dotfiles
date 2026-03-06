@@ -11,27 +11,22 @@
   "packages": [
     {
       "source": "git:github.com/juanibiapina/browse-cli",
-      "skills": [
-        "skills/browse"
-      ]
+      "skills": ["skills/browse"]
     },
     {
       "source": "git:github.com/steipete/agent-scripts",
       "skills": [
-        "skills/brave-search",
         "skills/swiftui-view-refactor",
         "skills/swiftui-performance-audit",
         "skills/swiftui-liquid-glass",
         "skills/swift-concurrency-expert",
-        "skills/native-app-performance",
-        "skills/markdown-converter"
+        "skills/native-app-performance"
       ]
     },
-    "npm:@marckrenn/pi-sub-core",
     "npm:@marckrenn/pi-sub-bar",
     "npm:pi-watch",
-    "npm:@benvargas/pi-synthetic-provider",
-    "npm:@aliou/pi-guardrails@0.5.4"
+    "npm:@aliou/pi-guardrails@0.5.4",
+    "npm:pi-mermaid@0.3.0"
   ],
   "skills": [
     "~/.agents/skills",
