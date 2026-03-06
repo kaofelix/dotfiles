@@ -1,0 +1,12 @@
+{
+  "name": "pi-tavily-extension",
+  "version": "1.0.0",
+  "description": "Tavily extension for Pi coding agent - web search and content extraction",
+  "private": true,
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "dependencies": {
+    "@tavily/core": "^0.0.2"
+  }
+}
