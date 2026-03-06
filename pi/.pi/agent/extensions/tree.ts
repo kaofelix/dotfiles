@@ -69,12 +69,23 @@ export default function (_pi: ExtensionAPI) {
 				return;
 			}
 
+			// Find the last branch_summary in the branch (walking from current position back)
+			// This ensures summaries chain sequentially rather than all going to root
+			let targetId = topId;
+			for (let i = branch.length - 1; i >= 0; i--) {
+				const entry = ctx.sessionManager.getEntry(branch[i]!.id);
+				if (entry?.type === "branch_summary") {
+					targetId = entry.id;
+					break;
+				}
+			}
+
 			// Show animated summarizing indicator
 			ctx.ui.setWidget("branch:fold", (tui, theme) => new AnimatedDot(tui, theme, "Summarizing..."));
 
 			let navResult;
 			try {
-				navResult = await ctx.navigateTree(topId, {
+				navResult = await ctx.navigateTree(targetId, {
 					summarize: true,
 				});
 			} finally {
