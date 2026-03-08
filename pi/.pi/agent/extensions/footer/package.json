@@ -1,0 +1,19 @@
+{
+  "name": "pi-footer-extension",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@marckrenn/pi-sub-bar": "^1.3.0"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-tui": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.ts",
+      "./node_modules/@marckrenn/pi-sub-core/index.ts"
+    ]
+  }
+}
