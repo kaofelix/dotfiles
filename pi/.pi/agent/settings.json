@@ -25,7 +25,7 @@
     },
     "npm:@marckrenn/pi-sub-bar",
     "npm:pi-watch",
-    "npm:@aliou/pi-guardrails@0.5.4",
+    "npm:@aliou/pi-guardrails@0.9.2",
     "npm:pi-mermaid@0.3.0"
   ],
   "skills": [

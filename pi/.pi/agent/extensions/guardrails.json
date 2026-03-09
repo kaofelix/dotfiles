@@ -1,16 +1,82 @@
 {
   "permissionGate": {
     "patterns": [
-      { "pattern": "rm\\s+-rf", "description": "recursive force delete" },
-      { "pattern": "\\bsudo\\b", "description": "superuser command" },
-      { "pattern": ":\\s*\\|\\s*sh", "description": "piped shell execution" },
-      { "pattern": "\\bdd\\s+if=", "description": "disk write operation" },
-      { "pattern": "mkfs\\.", "description": "filesystem format" },
-      { "pattern": "\\bchmod\\s+-R\\s+777", "description": "insecure recursive permissions" },
-      { "pattern": "\\bchown\\s+-R", "description": "recursive ownership change" },
-      { "pattern": "\\bgit\\s+push\\b", "description": "pushing changes to remote repository" },
-      { "pattern": "\\bsem\\b(?:\\s+[-\\w.:/]+){0,4}\\s+(delete|del|rm|remove|destroy|purge)\\b", "description": "Semaphore destructive command (with subcommand variants)" },
-      { "pattern": "(^|\\s)--force(\\s|$)", "description": "force flag usage" }
+      {
+        "pattern": "rm\\s+-rf",
+        "description": "recursive force delete",
+        "regex": true
+      },
+      {
+        "pattern": "\\bsudo\\b",
+        "description": "superuser command",
+        "regex": true
+      },
+      {
+        "pattern": ":\\s*\\|\\s*sh",
+        "description": "piped shell execution",
+        "regex": true
+      },
+      {
+        "pattern": "\\bdd\\s+if=",
+        "description": "disk write operation",
+        "regex": true
+      },
+      {
+        "pattern": "mkfs\\.",
+        "description": "filesystem format",
+        "regex": true
+      },
+      {
+        "pattern": "\\bchmod\\s+-R\\s+777",
+        "description": "insecure recursive permissions",
+        "regex": true
+      },
+      {
+        "pattern": "\\bchown\\s+-R",
+        "description": "recursive ownership change",
+        "regex": true
+      },
+      {
+        "pattern": "\\bgit\\s+push\\b",
+        "description": "pushing changes to remote repository",
+        "regex": true
+      },
+      {
+        "pattern": "\\bsem\\b(?:\\s+[-\\w.:/]+){0,4}\\s+(delete|del|rm|remove|destroy|purge)\\b",
+        "description": "Semaphore destructive command (with subcommand variants)",
+        "regex": true
+      },
+      {
+        "pattern": "(^|\\s)--force(\\s|$)",
+        "description": "force flag usage",
+        "regex": true
+      }
     ]
-  }
+  },
+  "policies": {
+    "rules": [
+      {
+        "id": "secret-env-files",
+        "name": "Secret Environment Files",
+        "description": "Block access to .env and .envrc files containing secrets",
+        "patterns": [
+          { "pattern": ".env" },
+          { "pattern": ".env.*" },
+          { "pattern": ".envrc" }
+        ],
+        "allowedPatterns": [
+          { "pattern": ".env.example" },
+          { "pattern": ".env.sample" },
+          { "pattern": ".env.test" },
+          { "pattern": "*.example.env" },
+          { "pattern": "*.sample.env" },
+          { "pattern": "*.test.env" }
+        ],
+        "protection": "noAccess",
+        "onlyIfExists": true,
+        "enabled": true
+      }
+    ]
+  },
+  "version": "0.8.0-20260228"
 }
