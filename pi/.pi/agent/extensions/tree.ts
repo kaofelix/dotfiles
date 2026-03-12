@@ -4,7 +4,7 @@
  * Commands:
  *   /branch:fold - Fold current branch into a summary at the top
  *   /branch:drop - Drop current branch, go to top without summary
- *   /undo - Go back to the previous message (parent in tree)
+ *   /undo - Go back to the last user message
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -132,7 +132,7 @@ export default function (_pi: ExtensionAPI) {
 	});
 
 	_pi.registerCommand("undo", {
-		description: "Go back to the previous message",
+		description: "Go back to the last user message",
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) {
 				ctx.ui.notify("undo requires interactive mode", "error");
@@ -140,20 +140,29 @@ export default function (_pi: ExtensionAPI) {
 			}
 
 			const branch = ctx.sessionManager.getBranch();
-			const currentId = branch[branch.length - 1]?.id;
 
-			if (!currentId) {
+			if (branch.length === 0) {
 				ctx.ui.notify("Nothing to undo", "error");
 				return;
 			}
 
-			const currentEntry = ctx.sessionManager.getEntry(currentId);
-			if (!currentEntry?.parentId) {
-				ctx.ui.notify("Already at the start", "info");
+			// Find the last user message before the current position
+			// Skip the very last entry if it's a user message (we want the one before)
+			let targetId: string | undefined;
+			for (let i = branch.length - 2; i >= 0; i--) {
+				const entry = ctx.sessionManager.getEntry(branch[i]!.id);
+				if (entry?.type === "message" && entry.message.role === "user") {
+					targetId = entry.id;
+					break;
+				}
+			}
+
+			if (!targetId) {
+				ctx.ui.notify("No previous user message to go back to", "info");
 				return;
 			}
 
-			await ctx.navigateTree(currentEntry.parentId, { summarize: false });
+			await ctx.navigateTree(targetId, { summarize: false });
 		},
 	});
 }
