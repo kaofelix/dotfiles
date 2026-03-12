@@ -49,8 +49,8 @@ class AnimatedDot extends Text {
 
 export default function (_pi: ExtensionAPI) {
 	_pi.registerCommand("branch:fold", {
-		description: "Fold current branch into a summary at the top",
-		handler: async (_args, ctx) => {
+		description: "Fold current branch into a summary at the top (optional: provide custom instructions for the summary)",
+		handler: async (args, ctx) => {
 			if (!ctx.hasUI) {
 				ctx.ui.notify("branch:fold requires interactive mode", "error");
 				return;
@@ -87,6 +87,7 @@ export default function (_pi: ExtensionAPI) {
 			try {
 				navResult = await ctx.navigateTree(targetId, {
 					summarize: true,
+					customInstructions: args || undefined,
 				});
 			} finally {
 				ctx.ui.setWidget("branch:fold", undefined);
