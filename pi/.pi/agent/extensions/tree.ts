@@ -4,7 +4,8 @@
  * Commands:
  *   /branch:fold - Fold current branch into a summary at the top
  *   /branch:drop - Drop current branch, go to top without summary
- *   /undo - Go back to the last user message
+ *   /undo - Go back to the last user message (pushes current position to redo stack)
+ *   /redo - Go forward to the position before the last undo
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -48,6 +49,9 @@ class AnimatedDot extends Text {
 }
 
 export default function (_pi: ExtensionAPI) {
+	// Stack to track positions for redo
+	const redoStack: string[] = [];
+
 	_pi.registerCommand("branch:fold", {
 		description: "Fold current branch into a summary at the top (optional: provide custom instructions for the summary)",
 		handler: async (args, ctx) => {
@@ -159,6 +163,31 @@ export default function (_pi: ExtensionAPI) {
 
 			if (!targetId) {
 				ctx.ui.notify("No previous user message to go back to", "info");
+				return;
+			}
+
+			// Push current position to redo stack before navigating
+			const currentLeafId = ctx.sessionManager.getLeafId();
+			if (currentLeafId) {
+				redoStack.push(currentLeafId);
+			}
+
+			await ctx.navigateTree(targetId, { summarize: false });
+		},
+	});
+
+	_pi.registerCommand("redo", {
+		description: "Go forward to the position before the last undo",
+		handler: async (_args, ctx) => {
+			if (!ctx.hasUI) {
+				ctx.ui.notify("redo requires interactive mode", "error");
+				return;
+			}
+
+			const targetId = redoStack.pop();
+
+			if (!targetId) {
+				ctx.ui.notify("Nothing to redo", "info");
 				return;
 			}
 
