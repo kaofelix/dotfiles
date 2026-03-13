@@ -4,8 +4,8 @@
  * Commands:
  *   /branch:fold - Fold current branch into a summary at the top
  *   /branch:drop - Drop current branch, go to top without summary
- *   /undo - Go back to the last user message (pushes current position to redo stack)
- *   /redo - Go forward to the position before the last undo
+ *   /tree:back - Go back to the last user message
+ *   /tree:forward - Go forward to the position before the last back
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -49,8 +49,8 @@ class AnimatedDot extends Text {
 }
 
 export default function (_pi: ExtensionAPI) {
-	// Stack to track positions for redo
-	const redoStack: string[] = [];
+	// Stack to track positions for tree:forward
+	const forwardStack: string[] = [];
 
 	_pi.registerCommand("branch:fold", {
 		description: "Fold current branch into a summary at the top (optional: provide custom instructions for the summary)",
@@ -135,18 +135,18 @@ export default function (_pi: ExtensionAPI) {
 		},
 	});
 
-	_pi.registerCommand("undo", {
+	_pi.registerCommand("tree:back", {
 		description: "Go back to the last user message",
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) {
-				ctx.ui.notify("undo requires interactive mode", "error");
+				ctx.ui.notify("tree:back requires interactive mode", "error");
 				return;
 			}
 
 			const branch = ctx.sessionManager.getBranch();
 
 			if (branch.length === 0) {
-				ctx.ui.notify("Nothing to undo", "error");
+				ctx.ui.notify("Nothing to go back to", "error");
 				return;
 			}
 
@@ -166,28 +166,28 @@ export default function (_pi: ExtensionAPI) {
 				return;
 			}
 
-			// Push current position to redo stack before navigating
+			// Push current position to forward stack before navigating
 			const currentLeafId = ctx.sessionManager.getLeafId();
 			if (currentLeafId) {
-				redoStack.push(currentLeafId);
+				forwardStack.push(currentLeafId);
 			}
 
 			await ctx.navigateTree(targetId, { summarize: false });
 		},
 	});
 
-	_pi.registerCommand("redo", {
-		description: "Go forward to the position before the last undo",
+	_pi.registerCommand("tree:forward", {
+		description: "Go forward to the position before the last back",
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) {
-				ctx.ui.notify("redo requires interactive mode", "error");
+				ctx.ui.notify("tree:forward requires interactive mode", "error");
 				return;
 			}
 
-			const targetId = redoStack.pop();
+			const targetId = forwardStack.pop();
 
 			if (!targetId) {
-				ctx.ui.notify("Nothing to redo", "info");
+				ctx.ui.notify("Nothing to go forward to", "info");
 				return;
 			}
 
