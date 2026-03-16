@@ -77,7 +77,10 @@ alias ec='emacsclient'
 alias _r='. ~/.zshrc'
 alias la='ls -a'
 alias cat='bat --paging=never'
-unalias gob
+
+if alias gob 2>/dev/null; then
+    unalias gob
+fi
 
 alias va='. .venv/bin/activate'
 
