@@ -22,11 +22,11 @@ test('context usage scales the last block to the remaining window capacity', () 
 test('context usage line renders spaced frame around bars without extra gap after the frame', () => {
   assert.equal(
     renderContextUsageLine(theme, { tokens: 125_000, contextWindow: 200_000, percent: 62.5 }),
-    '<dim>⟦</dim>{toolPendingBg}<accent>█</accent>{/toolPendingBg} {toolPendingBg}<accent>▂</accent>{/toolPendingBg}<dim>⟧</dim> <dim>125k/200k</dim> <accent>62.5%</accent>',
+    '<dim>⟦</dim>{toolPendingBg}<accent>█</accent>{/toolPendingBg} {toolPendingBg}<accent>▂</accent>{/toolPendingBg}<dim>⟧</dim> <dim>125k/200k</dim> <dim>62.5%</dim>',
   );
 });
 
-test('context usage line switches to warning and error colors at high usage', () => {
+test('context usage line switches the percentage to warning and error colors at high usage', () => {
   assert.equal(
     renderContextUsageLine(theme, { tokens: 170_000, contextWindow: 200_000, percent: 85 }),
     '<dim>⟦</dim>{toolPendingBg}<warning>█</warning>{/toolPendingBg} {toolPendingBg}<warning>▆</warning>{/toolPendingBg}<dim>⟧</dim> <dim>170k/200k</dim> <warning>85.0%</warning>',
@@ -41,7 +41,7 @@ test('context usage line switches to warning and error colors at high usage', ()
 test('context usage line derives the percentage when tokens and window are known', () => {
   assert.equal(
     renderContextUsageLine(theme, { tokens: 125_000, contextWindow: 200_000, percent: null }),
-    '<dim>⟦</dim>{toolPendingBg}<accent>█</accent>{/toolPendingBg} {toolPendingBg}<accent>▂</accent>{/toolPendingBg}<dim>⟧</dim> <dim>125k/200k</dim> <accent>62.5%</accent>',
+    '<dim>⟦</dim>{toolPendingBg}<accent>█</accent>{/toolPendingBg} {toolPendingBg}<accent>▂</accent>{/toolPendingBg}<dim>⟧</dim> <dim>125k/200k</dim> <dim>62.5%</dim>',
   );
 });
 

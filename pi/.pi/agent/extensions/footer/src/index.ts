@@ -2,7 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 import { formatBranchSuffix, renderDimmedFooterPath } from "./branch-status.ts";
 import { renderContextUsageLine } from "./context-usage.ts";
-import { buildFooterRightSide, composeFooterLine } from "./footer-line.ts";
+import { buildFooterRightSide, composeFooterLine, renderFooterRightSide } from "./footer-line.ts";
 import { getSubbarFormatter, getSubbarSettings, type SubbarFormatter, type SubbarSettings } from "./subbar-adapter.ts";
 
 function sanitizeStatusText(text: string): string {
@@ -111,25 +111,6 @@ export default function (pi: ExtensionAPI) {
 						}
 					}
 
-					let firstLine = pwdLine;
-					if (usageRight) {
-						const leftWidth = visibleWidth(pwdLine);
-						const rightWidth = visibleWidth(usageRight);
-						if (leftWidth + 1 + rightWidth <= width) {
-							const padding = " ".repeat(width - leftWidth - rightWidth);
-							firstLine = pwdLine + padding + usageRight;
-						} else {
-							const availableLeft = Math.max(1, width - rightWidth - 1);
-							const leftTruncated = truncateToWidth(pwdLine, availableLeft, theme.fg("dim", "..."));
-							firstLine = leftTruncated + " " + usageRight;
-						}
-					}
-
-					const contextLeft = renderContextUsageLine(theme, {
-						tokens: contextUsage?.tokens ?? null,
-						contextWindow: contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0,
-						percent: contextUsage?.percent ?? null,
-					});
 					const rightSide = buildFooterRightSide(
 						ctx.model
 							? {
@@ -141,13 +122,36 @@ export default function (pi: ExtensionAPI) {
 						footerData.getAvailableProviderCount(),
 						pi.getThinkingLevel() || "off",
 					);
-					const contextLine = truncateToWidth(
-						composeFooterLine(contextLeft, rightSide.preferred, rightSide.fallback, width, (text) => theme.fg("dim", text)),
+					const firstLine = truncateToWidth(
+						composeFooterLine(pwdLine, rightSide.preferred, rightSide.fallback, width, (text) =>
+							renderFooterRightSide(theme, text, pi.getThinkingLevel() || "off", !!ctx.model?.reasoning),
+						),
 						width,
 						theme.fg("dim", "..."),
 					);
 
-					const lines = [firstLine, contextLine];
+					const contextLeft = renderContextUsageLine(theme, {
+						tokens: contextUsage?.tokens ?? null,
+						contextWindow: contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0,
+						percent: contextUsage?.percent ?? null,
+					});
+
+					let secondLine = contextLeft;
+					if (usageRight) {
+						const leftWidth = visibleWidth(contextLeft);
+						const rightWidth = visibleWidth(usageRight);
+						if (leftWidth + 1 + rightWidth <= width) {
+							const padding = " ".repeat(width - leftWidth - rightWidth);
+							secondLine = contextLeft + padding + usageRight;
+						} else {
+							const availableLeft = Math.max(1, width - rightWidth - 1);
+							const leftTruncated = truncateToWidth(contextLeft, availableLeft, theme.fg("dim", "..."));
+							secondLine = leftTruncated + " " + usageRight;
+						}
+					}
+					secondLine = truncateToWidth(secondLine, width, theme.fg("dim", "..."));
+
+					const lines = [firstLine, secondLine];
 
 					const extensionStatuses = footerData.getExtensionStatuses();
 					if (extensionStatuses.size > 0) {

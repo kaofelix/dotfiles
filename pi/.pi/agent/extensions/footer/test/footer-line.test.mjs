@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildFooterRightSide, composeFooterLine } from '../src/footer-line.ts';
+import { buildFooterRightSide, composeFooterLine, renderFooterRightSide } from '../src/footer-line.ts';
 
 test('buildFooterRightSide preserves the old model/provider/thinking format', () => {
   assert.deepEqual(
@@ -21,6 +21,32 @@ test('buildFooterRightSide preserves the old model/provider/thinking format', ()
       preferred: 'no-model',
       fallback: 'no-model',
     },
+  );
+});
+
+test('renderFooterRightSide keeps provider dim, model muted, and thinking suffix colorized', () => {
+  const theme = {
+    fg(color, text) {
+      return `<${color}>${text}</${color}>`;
+    },
+    getThinkingBorderColor(level) {
+      return (text) => `<border:${level}>${text}</border:${level}>`;
+    },
+  };
+
+  assert.equal(
+    renderFooterRightSide(theme, '(anthropic) claude-sonnet-4 • high', 'high', true),
+    '<dim>(anthropic) </dim><muted>claude-sonnet-4</muted><dim> • </dim><border:high>high</border:high>',
+  );
+
+  assert.equal(
+    renderFooterRightSide(theme, 'claude-sonnet-4 • thinking off', 'off', true),
+    '<muted>claude-sonnet-4</muted><dim> • </dim><border:off>thinking off</border:off>',
+  );
+
+  assert.equal(
+    renderFooterRightSide(theme, '(anthropic) claude-sonnet-4', 'off', false),
+    '<dim>(anthropic) </dim><muted>claude-sonnet-4</muted>',
   );
 });
 

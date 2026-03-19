@@ -6,6 +6,37 @@ export type FooterModelInfo = {
 	reasoning?: boolean;
 };
 
+type ThemeLike = {
+	fg(color: string, text: string): string;
+	getThinkingBorderColor?: (level: 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh') => (text: string) => string;
+};
+
+type ThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+
+function isThinkingLevel(value: string): value is ThinkingLevel {
+	return ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'].includes(value);
+}
+
+function getThinkingColor(theme: ThemeLike, level: ThinkingLevel): (text: string) => string {
+	if (theme.getThinkingBorderColor) return theme.getThinkingBorderColor(level);
+
+	switch (level) {
+		case 'minimal':
+			return (text: string) => theme.fg('thinkingMinimal', text);
+		case 'low':
+			return (text: string) => theme.fg('thinkingLow', text);
+		case 'medium':
+			return (text: string) => theme.fg('thinkingMedium', text);
+		case 'high':
+			return (text: string) => theme.fg('thinkingHigh', text);
+		case 'xhigh':
+			return (text: string) => theme.fg('thinkingXhigh', text);
+		case 'off':
+		default:
+			return (text: string) => theme.fg('thinkingOff', text);
+	}
+}
+
 export function buildFooterRightSide(
 	model: FooterModelInfo | undefined,
 	availableProviderCount: number,
@@ -20,6 +51,33 @@ export function buildFooterRightSide(
 
 	const preferred = availableProviderCount > 1 && model ? `(${model.provider}) ${fallback}` : fallback;
 	return { preferred, fallback };
+}
+
+function renderModelWithDimmedProvider(theme: ThemeLike, text: string): string {
+	const providerMatch = text.match(/^(\([^)]*\)\s)(.+)$/);
+	if (!providerMatch) return theme.fg('muted', text);
+	return theme.fg('dim', providerMatch[1]) + theme.fg('muted', providerMatch[2]);
+}
+
+export function renderFooterRightSide(
+	theme: ThemeLike,
+	text: string,
+	thinkingLevel: string,
+	hasReasoning: boolean,
+): string {
+	if (!hasReasoning || !isThinkingLevel(thinkingLevel)) {
+		return renderModelWithDimmedProvider(theme, text);
+	}
+
+	const suffix = thinkingLevel === 'off' ? 'thinking off' : thinkingLevel;
+	const splitToken = ` • ${suffix}`;
+	if (!text.endsWith(splitToken)) {
+		return renderModelWithDimmedProvider(theme, text);
+	}
+
+	const prefix = text.slice(0, -splitToken.length);
+	const colorThinking = getThinkingColor(theme, thinkingLevel);
+	return renderModelWithDimmedProvider(theme, prefix) + theme.fg('dim', ' • ') + colorThinking(suffix);
 }
 
 export function composeFooterLine(

@@ -21,10 +21,16 @@ function formatTokens(count: number): string {
   return `${Math.round(count / 1000000)}M`;
 }
 
-function getUsageColor(percent: number): "accent" | "warning" | "error" {
+function getBarColor(percent: number): "accent" | "warning" | "error" {
   if (percent > 90) return "error";
   if (percent > 70) return "warning";
   return "accent";
+}
+
+function getPercentColor(percent: number): "dim" | "warning" | "error" {
+  if (percent > 90) return "error";
+  if (percent > 70) return "warning";
+  return "dim";
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -56,22 +62,22 @@ export function getContextBlockLevels(
   const levels: number[] = [];
 
   for (let i = 0; i < blockCount; i++) {
-	const blockCapacity = Math.min(
-	  blockSize,
-	  Math.max(0, contextWindow - i * blockSize),
-	);
-	const blockTokens = Math.min(remainingTokens, blockCapacity);
-	remainingTokens -= blockTokens;
+    const blockCapacity = Math.min(
+      blockSize,
+      Math.max(0, contextWindow - i * blockSize),
+    );
+    const blockTokens = Math.min(remainingTokens, blockCapacity);
+    remainingTokens -= blockTokens;
 
-	if (blockTokens <= 0 || blockCapacity <= 0) {
-	  levels.push(0);
-	  continue;
-	}
+    if (blockTokens <= 0 || blockCapacity <= 0) {
+      levels.push(0);
+      continue;
+    }
 
-	const ratio = blockTokens / blockCapacity;
-	levels.push(
-	  clamp(Math.round(ratio * BLOCK_GLYPHS.length), 1, BLOCK_GLYPHS.length),
-	);
+    const ratio = blockTokens / blockCapacity;
+    levels.push(
+      clamp(Math.round(ratio * BLOCK_GLYPHS.length), 1, BLOCK_GLYPHS.length),
+    );
   }
 
   return levels;
@@ -82,26 +88,27 @@ export function renderContextUsageLine(
   usage: ContextUsageInfo,
 ): string {
   if (usage.tokens === null || usage.contextWindow <= 0) {
-	return theme.fg("dim", "context unavailable");
+    return theme.fg("dim", "context unavailable");
   }
 
   const percentValue =
-	usage.percent ?? (usage.tokens / usage.contextWindow) * 100;
-  const color = getUsageColor(percentValue);
+    usage.percent ?? (usage.tokens / usage.contextWindow) * 100;
+  const barColor = getBarColor(percentValue);
+  const percentColor = getPercentColor(percentValue);
   const blocks = getContextBlockLevels(usage.tokens, usage.contextWindow)
-	.map((level) => {
-	  const glyph =
-		level === 0 ? " " : theme.fg(color, BLOCK_GLYPHS[level - 1]);
-	  return renderContextSlot(theme, glyph);
-	})
-	.join(" ");
+    .map((level) => {
+      const glyph =
+        level === 0 ? " " : theme.fg(barColor, BLOCK_GLYPHS[level - 1]);
+      return renderContextSlot(theme, glyph);
+    })
+    .join(" ");
 
   const framedBlocks = `${theme.fg("dim", "⟦")}${blocks}${theme.fg("dim", "⟧")}`;
   const usageTokens = theme.fg(
-	"dim",
-	`${formatTokens(usage.tokens)}/${formatTokens(usage.contextWindow)}`,
+    "dim",
+    `${formatTokens(usage.tokens)}/${formatTokens(usage.contextWindow)}`,
   );
-  const percent = theme.fg(color, `${percentValue.toFixed(1)}%`);
+  const percent = theme.fg(percentColor, `${percentValue.toFixed(1)}%`);
 
   return `${framedBlocks} ${usageTokens} ${percent}`;
 }
