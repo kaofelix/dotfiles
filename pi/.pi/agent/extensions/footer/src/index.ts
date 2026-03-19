@@ -1,7 +1,8 @@
-import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 import { formatBranchSuffix, renderDimmedFooterPath } from "./branch-status.ts";
+import { renderContextUsageLine } from "./context-usage.ts";
+import { buildFooterRightSide, composeFooterLine } from "./footer-line.ts";
 import { getSubbarFormatter, getSubbarSettings, type SubbarFormatter, type SubbarSettings } from "./subbar-adapter.ts";
 
 function sanitizeStatusText(text: string): string {
@@ -9,14 +10,6 @@ function sanitizeStatusText(text: string): string {
 		.replace(/[\r\n\t]/g, " ")
 		.replace(/ +/g, " ")
 		.trim();
-}
-
-function formatTokens(count: number): string {
-	if (count < 1000) return count.toString();
-	if (count < 10000) return `${(count / 1000).toFixed(1)}k`;
-	if (count < 1000000) return `${Math.round(count / 1000)}k`;
-	if (count < 10000000) return `${(count / 1000000).toFixed(1)}M`;
-	return `${Math.round(count / 1000000)}M`;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -62,27 +55,7 @@ export default function (pi: ExtensionAPI) {
 				dispose: unsubscribe,
 				invalidate() {},
 				render(width: number): string[] {
-					let totalInput = 0;
-					let totalOutput = 0;
-					let totalCacheRead = 0;
-					let totalCacheWrite = 0;
-					let totalCost = 0;
-
-					for (const entry of ctx.sessionManager.getEntries()) {
-						if (entry.type === "message" && entry.message.role === "assistant") {
-							const message = entry.message as AssistantMessage;
-							totalInput += message.usage.input;
-							totalOutput += message.usage.output;
-							totalCacheRead += message.usage.cacheRead;
-							totalCacheWrite += message.usage.cacheWrite;
-							totalCost += message.usage.cost.total;
-						}
-					}
-
 					const contextUsage = ctx.getContextUsage();
-					const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
-					const contextPercentValue = contextUsage?.percent ?? 0;
-					const contextPercent = contextUsage?.percent !== null ? contextPercentValue.toFixed(1) : "?";
 
 					let pwd = process.cwd();
 					const home = process.env.HOME || process.env.USERPROFILE;
@@ -110,83 +83,6 @@ export default function (pi: ExtensionAPI) {
 							pwd = pwd.slice(0, Math.max(1, width));
 						}
 					}
-
-					const statsParts: string[] = [];
-					if (totalInput) statsParts.push(`↑${formatTokens(totalInput)}`);
-					if (totalOutput) statsParts.push(`↓${formatTokens(totalOutput)}`);
-					if (totalCacheRead) statsParts.push(`R${formatTokens(totalCacheRead)}`);
-					if (totalCacheWrite) statsParts.push(`W${formatTokens(totalCacheWrite)}`);
-
-					const usingSubscription = ctx.model ? ctx.modelRegistry.isUsingOAuth(ctx.model) : false;
-					if (totalCost || usingSubscription) {
-						const costStr = `$${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
-						statsParts.push(costStr);
-					}
-
-					let contextPercentStr: string;
-					const autoIndicator = " (auto)";
-					const contextPercentDisplay =
-						contextPercent === "?"
-							? `?/${formatTokens(contextWindow)}${autoIndicator}`
-							: `${contextPercent}%/${formatTokens(contextWindow)}${autoIndicator}`;
-					if (contextPercentValue > 90) {
-						contextPercentStr = theme.fg("error", contextPercentDisplay);
-					} else if (contextPercentValue > 70) {
-						contextPercentStr = theme.fg("warning", contextPercentDisplay);
-					} else {
-						contextPercentStr = contextPercentDisplay;
-					}
-					statsParts.push(contextPercentStr);
-
-					let statsLeft = statsParts.join(" ");
-					const modelName = ctx.model?.id || "no-model";
-					let statsLeftWidth = visibleWidth(statsLeft);
-
-					if (statsLeftWidth > width) {
-						const plainStatsLeft = statsLeft.replace(/\x1b\[[0-9;]*m/g, "");
-						statsLeft = `${plainStatsLeft.substring(0, width - 3)}...`;
-						statsLeftWidth = visibleWidth(statsLeft);
-					}
-
-					const minPadding = 2;
-
-					let rightSideWithoutProvider = modelName;
-					if (ctx.model?.reasoning) {
-						const thinkingLevel = pi.getThinkingLevel() || "off";
-						rightSideWithoutProvider =
-							thinkingLevel === "off" ? `${modelName} • thinking off` : `${modelName} • ${thinkingLevel}`;
-					}
-
-					let rightSide = rightSideWithoutProvider;
-					if (footerData.getAvailableProviderCount() > 1 && ctx.model) {
-						rightSide = `(${ctx.model.provider}) ${rightSideWithoutProvider}`;
-						if (statsLeftWidth + minPadding + visibleWidth(rightSide) > width) {
-							rightSide = rightSideWithoutProvider;
-						}
-					}
-
-					const rightSideWidth = visibleWidth(rightSide);
-					const totalNeeded = statsLeftWidth + minPadding + rightSideWidth;
-
-					let statsLine: string;
-					if (totalNeeded <= width) {
-						const padding = " ".repeat(width - statsLeftWidth - rightSideWidth);
-						statsLine = statsLeft + padding + rightSide;
-					} else {
-						const availableForRight = width - statsLeftWidth - minPadding;
-						if (availableForRight > 3) {
-							const plainRightSide = rightSide.replace(/\x1b\[[0-9;]*m/g, "");
-							const truncatedPlain = plainRightSide.substring(0, availableForRight);
-							const padding = " ".repeat(width - statsLeftWidth - truncatedPlain.length);
-							statsLine = statsLeft + padding + truncatedPlain;
-						} else {
-							statsLine = statsLeft;
-						}
-					}
-
-					const dimStatsLeft = theme.fg("dim", statsLeft);
-					const remainder = statsLine.slice(statsLeft.length);
-					const dimRemainder = theme.fg("dim", remainder);
 
 					const pwdLine = renderDimmedFooterPath(theme, pwd);
 
@@ -229,7 +125,29 @@ export default function (pi: ExtensionAPI) {
 						}
 					}
 
-					const lines = [firstLine, dimStatsLeft + dimRemainder];
+					const contextLeft = renderContextUsageLine(theme, {
+						tokens: contextUsage?.tokens ?? null,
+						contextWindow: contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0,
+						percent: contextUsage?.percent ?? null,
+					});
+					const rightSide = buildFooterRightSide(
+						ctx.model
+							? {
+									id: ctx.model.id,
+									provider: ctx.model.provider,
+									reasoning: ctx.model.reasoning,
+							  }
+							: undefined,
+						footerData.getAvailableProviderCount(),
+						pi.getThinkingLevel() || "off",
+					);
+					const contextLine = truncateToWidth(
+						composeFooterLine(contextLeft, rightSide.preferred, rightSide.fallback, width, (text) => theme.fg("dim", text)),
+						width,
+						theme.fg("dim", "..."),
+					);
+
+					const lines = [firstLine, contextLine];
 
 					const extensionStatuses = footerData.getExtensionStatuses();
 					if (extensionStatuses.size > 0) {
