@@ -11,7 +11,9 @@
   "packages": [
     {
       "source": "git:github.com/juanibiapina/browse-cli",
-      "skills": ["skills/browse"]
+      "skills": [
+        "skills/browse"
+      ]
     },
     {
       "source": "git:github.com/steipete/agent-scripts",
@@ -23,10 +25,16 @@
         "skills/native-app-performance"
       ]
     },
-    "npm:@marckrenn/pi-sub-bar",
+    {
+      "source": "git:github.com/anthropics/skills",
+      "skills": [
+        "skills/pdf"
+      ]
+    },
     "npm:pi-watch",
     "npm:@aliou/pi-guardrails@0.9.2",
-    "npm:pi-mermaid@0.3.0"
+    "npm:pi-mermaid@0.3.0",
+    "npm:pi-mcp-adapter@2.1.1"
   ],
   "skills": [
     "~/.agents/skills",
