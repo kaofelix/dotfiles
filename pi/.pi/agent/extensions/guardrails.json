@@ -75,6 +75,15 @@
         "protection": "noAccess",
         "onlyIfExists": true,
         "enabled": true
+      },
+      {
+        "id": "dex-store",
+        "name": "Dex task store",
+        "description": "Block agents from reading the dex task store directly",
+        "patterns": [{ "pattern": ".dex/**" }],
+        "protection": "noAccess",
+        "blockMessage": "Do not read {file} directly. Always use the dex CLI to inspect or manage dex tasks.",
+        "enabled": true
       }
     ]
   },
