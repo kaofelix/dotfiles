@@ -78,7 +78,7 @@ alias _r='. ~/.zshrc'
 alias la='ls -a'
 alias cat='bat --paging=never'
 
-if alias gob 2>/dev/null; then
+if alias gob &>/dev/null; then
     unalias gob
 fi
 
