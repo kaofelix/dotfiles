@@ -84,7 +84,15 @@ fi
 
 alias va='. .venv/bin/activate'
 
-alias upi='cd ~/Code/pi-mono/ && (git pull && npm install && npm run build) && cd -'
+upi() {
+    cd ~/Code/pi-mono/
+    git pull
+    npm install
+    npm run build
+    git restore packages/ai/src/models.generated.ts
+    cd -
+}
+
 
 _clow() {
     crush run "$*" | glow
