@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VERSION="0.1.0"
+
+print_help() {
+  cat <<'EOF'
+ffmpeg-reencode - Re-encode a video with a sensible quality/size baseline
+
+Usage:
+  ffmpeg-reencode INPUT [OUTPUT] [options]
+
+Arguments:
+  INPUT                  Input video file
+  OUTPUT                 Output file (optional)
+
+Options:
+  -c, --codec CODEC      Video codec: h264, h265, av1 (default: h264)
+  -p, --preset PRESET    Encoder preset (default: slow)
+  -q, --crf CRF          Quality target via CRF
+                         Defaults: h264=21, h265=28, av1=32
+  -a, --audio BITRATE    Audio bitrate (default: 160k)
+  --copy-audio           Copy audio stream instead of re-encoding it
+  --no-faststart         Disable MP4 faststart optimization
+  -o, --output FILE      Explicit output path
+  -h, --help             Show help
+  -v, --version          Show version
+
+Examples:
+  ffmpeg-reencode input.mov
+  ffmpeg-reencode input.mov output.mp4
+  ffmpeg-reencode input.mov -c h265
+  ffmpeg-reencode input.mov --copy-audio -q 20
+
+Defaults chosen for a practical baseline:
+  h264: libx264 -preset slow -crf 21 -pix_fmt yuv420p
+  audio: aac -b:a 160k
+  container: mp4 with +faststart
+EOF
+}
+
+die() {
+  echo "Error: $*" >&2
+  exit 1
+}
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+default_crf_for_codec() {
+  case "$1" in
+    h264) echo 21 ;;
+    h265) echo 28 ;;
+    av1) echo 32 ;;
+    *) die "unsupported codec: $1" ;;
+  esac
+}
+
+encoder_for_codec() {
+  case "$1" in
+    h264) echo libx264 ;;
+    h265) echo libx265 ;;
+    av1) echo libsvtav1 ;;
+    *) die "unsupported codec: $1" ;;
+  esac
+}
+
+extension_for_codec() {
+  case "$1" in
+    h264|h265) echo mp4 ;;
+    av1) echo mp4 ;;
+    *) die "unsupported codec: $1" ;;
+  esac
+}
+
+build_output_path() {
+  local input="$1"
+  local codec="$2"
+  local ext="$3"
+  local dir base stem
+
+  dir=$(dirname "$input")
+  base=$(basename "$input")
+  stem="${base%.*}"
+  echo "${dir}/${stem}-${codec}.${ext}"
+}
+
+main() {
+  require_cmd ffmpeg
+
+  local input=""
+  local output=""
+  local codec="h264"
+  local preset="slow"
+  local crf=""
+  local audio_bitrate="160k"
+  local copy_audio=0
+  local faststart=1
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -h|--help)
+        print_help
+        exit 0
+        ;;
+      -v|--version)
+        echo "ffmpeg-reencode $VERSION"
+        exit 0
+        ;;
+      -c|--codec)
+        [[ $# -ge 2 ]] || die "missing value for $1"
+        codec="$2"
+        shift 2
+        ;;
+      -p|--preset)
+        [[ $# -ge 2 ]] || die "missing value for $1"
+        preset="$2"
+        shift 2
+        ;;
+      -q|--crf)
+        [[ $# -ge 2 ]] || die "missing value for $1"
+        crf="$2"
+        shift 2
+        ;;
+      -a|--audio)
+        [[ $# -ge 2 ]] || die "missing value for $1"
+        audio_bitrate="$2"
+        shift 2
+        ;;
+      --copy-audio)
+        copy_audio=1
+        shift
+        ;;
+      --no-faststart)
+        faststart=0
+        shift
+        ;;
+      -o|--output)
+        [[ $# -ge 2 ]] || die "missing value for $1"
+        output="$2"
+        shift 2
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        die "unknown option: $1"
+        ;;
+      *)
+        if [[ -z "$input" ]]; then
+          input="$1"
+        elif [[ -z "$output" ]]; then
+          output="$1"
+        else
+          die "unexpected argument: $1"
+        fi
+        shift
+        ;;
+    esac
+  done
+
+  [[ -n "$input" ]] || die "missing input file"
+  [[ -f "$input" ]] || die "input file not found: $input"
+
+  local encoder ext
+  encoder=$(encoder_for_codec "$codec")
+  ext=$(extension_for_codec "$codec")
+
+  if [[ -z "$crf" ]]; then
+    crf=$(default_crf_for_codec "$codec")
+  fi
+
+  if [[ -z "$output" ]]; then
+    output=$(build_output_path "$input" "$codec" "$ext")
+  fi
+
+  local -a cmd
+  cmd=(ffmpeg -hide_banner -i "$input" -map 0:v:0 -map 0:a? -map 0:s?)
+
+  case "$codec" in
+    h264)
+      cmd+=( -c:v "$encoder" -preset "$preset" -crf "$crf" -pix_fmt yuv420p )
+      ;;
+    h265)
+      cmd+=( -c:v "$encoder" -preset "$preset" -crf "$crf" -pix_fmt yuv420p )
+      ;;
+    av1)
+      cmd+=( -c:v "$encoder" -preset 4 -crf "$crf" -pix_fmt yuv420p )
+      if [[ "$preset" != "slow" ]]; then
+        echo "Note: AV1 currently uses libsvtav1 preset scale; ignoring --preset '$preset' and using preset 4" >&2
+      fi
+      ;;
+  esac
+
+  if [[ "$copy_audio" -eq 1 ]]; then
+    cmd+=( -c:a copy )
+  else
+    cmd+=( -c:a aac -b:a "$audio_bitrate" )
+  fi
+
+  cmd+=( -c:s copy )
+
+  if [[ "$faststart" -eq 1 ]]; then
+    cmd+=( -movflags +faststart )
+  fi
+
+  cmd+=( "$output" )
+
+  echo "Input:   $input"
+  echo "Output:  $output"
+  echo "Codec:   $codec ($encoder)"
+  echo "Preset:  $preset"
+  echo "CRF:     $crf"
+  if [[ "$copy_audio" -eq 1 ]]; then
+    echo "Audio:   copy"
+  else
+    echo "Audio:   aac $audio_bitrate"
+  fi
+  if [[ "$faststart" -eq 1 ]]; then
+    echo "MP4:     +faststart"
+  fi
+  echo
+  printf 'Running:'
+  printf ' %q' "${cmd[@]}"
+  echo
+  echo
+
+  "${cmd[@]}"
+}
+
+main "$@"
