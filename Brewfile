@@ -25,7 +25,9 @@ brew "tmux"
 brew "zsh"
 brew "zsh-syntax-highlighting"
 
+cask "1password-cli"
 cask "font-source-code-pro"
+cask "vivaldi"
 
 tap "d12frosted/emacs-plus"
 brew "emacs-plus", args: ["--with-imagemagick"]
