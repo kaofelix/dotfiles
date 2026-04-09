@@ -54,6 +54,32 @@ COMPLETION_WAITING_DOTS="true"
 DISABLE_AUTO_TITLE="true"
 export FZF_DEFAULT_OPTS='--layout=reverse'
 
+## Set tmux pane title to current working directory (smartly shortened)
+precmd_tmux_title() {
+    if [[ -n $TMUX ]]; then
+        local dir="${PWD/#$HOME/~}"
+        local max_len=35
+
+        if [[ ${#dir} -gt $max_len && "$dir" == */* ]]; then
+            # Keep first segment and last 1-2 segments
+            local first="${dir%%/*}"
+            local last="${dir##*/}"
+            local parent="${dir%/*}"
+            parent="${parent##*/}"
+
+            # Try ~/parent/last first, then ~/.../parent/last
+            local short="${first}/.../${parent}/${last}"
+            if [[ ${#short} -gt $max_len ]]; then
+                short="${first}/.../${last}"
+            fi
+            dir="$short"
+        fi
+
+        command tmux select-pane -T "$dir" 2>/dev/null
+    fi
+}
+precmd_functions+=(precmd_tmux_title)
+
 ##################
 ## Shell Config ##
 ##################
