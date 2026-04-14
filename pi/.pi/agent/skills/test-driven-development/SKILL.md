@@ -13,13 +13,15 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 ## When to Use
 
-**Always:**
 - New features
 - Bug fixes
 - Refactoring
 - Behavior changes
 
-**Exceptions:**
+## When Not to Use
+
+- Pure style and visual changes (e.g. CSS)
+- Purely declarative code with no behavior
 - Generated code
 - Configuration files
 - Scripting and automation not related to project core
