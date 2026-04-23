@@ -18,6 +18,8 @@ export default function (pi: ExtensionAPI) {
 	let subBarSettings: SubbarSettings | undefined;
 	let lastContext: ExtensionContext | undefined;
 	let formatUsageStatusWithWidth: SubbarFormatter | undefined;
+	let isShutdown = false;
+	const eventUnsubscribers: Array<() => void> = [];
 
 	async function refreshDirtyState(ctx: ExtensionContext): Promise<void> {
 		const repoCheck = await pi.exec("git", ["-C", ctx.cwd, "rev-parse", "--is-inside-work-tree"]);
@@ -46,6 +48,10 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	function installFooter(ctx: ExtensionContext): void {
+		if (isShutdown) {
+			return;
+		}
+
 		ctx.ui.setFooter((tui, theme, footerData) => {
 			const unsubscribe = footerData.onBranchChange(() => {
 				void refreshDirtyState(ctx).then(() => tui.requestRender());
@@ -169,8 +175,15 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	async function refreshAndRender(ctx: ExtensionContext): Promise<void> {
+		if (isShutdown) {
+			return;
+		}
+
 		lastContext = ctx;
 		await refreshDirtyState(ctx);
+		if (isShutdown) {
+			return;
+		}
 		refreshSubBarIntegration();
 		requestSubCoreCurrentUsage();
 		installFooter(ctx);
@@ -178,11 +191,19 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		await refreshAndRender(ctx);
-		ctx.ui.setWidget("usage", undefined);
+		if (!isShutdown) {
+			ctx.ui.setWidget("usage", undefined);
+		}
 	});
 
-	pi.on("session_switch", async (_event, ctx) => {
-		await refreshAndRender(ctx);
+	pi.on("session_shutdown", async (_event, ctx) => {
+		isShutdown = true;
+		lastContext = undefined;
+		ctx.ui.setFooter(undefined);
+		ctx.ui.setWidget("usage", undefined);
+		for (const unsubscribe of eventUnsubscribers.splice(0)) {
+			unsubscribe();
+		}
 	});
 
 	pi.on("turn_end", async (_event, ctx) => {
@@ -198,38 +219,44 @@ export default function (pi: ExtensionAPI) {
 		installFooter(ctx);
 	});
 
-	pi.events.on("sub-core:update-current", (payload) => {
-		const data = payload as { state?: { usage?: any } };
-		subBarUsage = data.state?.usage;
-		if (lastContext) {
-			lastContext.ui.setWidget("usage", undefined);
-			installFooter(lastContext);
-		}
-	});
+	eventUnsubscribers.push(
+		pi.events.on("sub-core:update-current", (payload) => {
+			const data = payload as { state?: { usage?: any } };
+			subBarUsage = data.state?.usage;
+			if (!isShutdown && lastContext) {
+				lastContext.ui.setWidget("usage", undefined);
+				installFooter(lastContext);
+			}
+		}),
+	);
 
-	pi.events.on("sub-core:ready", (payload) => {
-		const data = payload as { state?: { usage?: any } };
-		subBarUsage = data.state?.usage;
-		if (lastContext) {
-			lastContext.ui.setWidget("usage", undefined);
-			installFooter(lastContext);
-		}
-	});
+	eventUnsubscribers.push(
+		pi.events.on("sub-core:ready", (payload) => {
+			const data = payload as { state?: { usage?: any } };
+			subBarUsage = data.state?.usage;
+			if (!isShutdown && lastContext) {
+				lastContext.ui.setWidget("usage", undefined);
+				installFooter(lastContext);
+			}
+		}),
+	);
 
-	pi.events.on("sub-core:update-all", (payload) => {
-		const data = payload as { state?: { entries?: Array<{ usage?: any }>; currentProvider?: string } };
-		const entries = data.state?.entries ?? [];
-		const byProvider = new Map<string, any>();
-		for (const entry of entries) {
-			if (entry?.usage?.provider) byProvider.set(entry.usage.provider, entry.usage);
-		}
-		const currentProvider = data.state?.currentProvider;
-		if (currentProvider && byProvider.has(currentProvider)) {
-			subBarUsage = byProvider.get(currentProvider);
-		}
-		if (lastContext) {
-			lastContext.ui.setWidget("usage", undefined);
-			installFooter(lastContext);
-		}
-	});
+	eventUnsubscribers.push(
+		pi.events.on("sub-core:update-all", (payload) => {
+			const data = payload as { state?: { entries?: Array<{ usage?: any }>; currentProvider?: string } };
+			const entries = data.state?.entries ?? [];
+			const byProvider = new Map<string, any>();
+			for (const entry of entries) {
+				if (entry?.usage?.provider) byProvider.set(entry.usage.provider, entry.usage);
+			}
+			const currentProvider = data.state?.currentProvider;
+			if (currentProvider && byProvider.has(currentProvider)) {
+				subBarUsage = byProvider.get(currentProvider);
+			}
+			if (!isShutdown && lastContext) {
+				lastContext.ui.setWidget("usage", undefined);
+				installFooter(lastContext);
+			}
+		}),
+	);
 }

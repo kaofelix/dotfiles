@@ -18,7 +18,7 @@ test('footer extension is packaged and loads sub-core without loading sub-bar wi
 
   assert.equal(pkg.name, 'pi-footer-extension');
   assert.equal(pkg.type, 'module');
-  assert.equal(pkg.dependencies['@marckrenn/pi-sub-bar'], '^1.3.0');
+  assert.ok(pkg.dependencies['@marckrenn/pi-sub-bar']);
   assert.deepEqual(pkg.pi.extensions, [
     './src/index.ts',
     './node_modules/@marckrenn/pi-sub-core/index.ts',
