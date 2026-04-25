@@ -1,0 +1,23 @@
+onboarding = false
+
+[ui.sound]
+enabled = false
+
+[ui.toast]
+enabled = true
+
+[keys]
+prefix = "ctrl+l"
+rename_tab = ","
+split_vertical = "|"
+previous_workspace = "ctrl+alt+["
+next_workspace = "ctrl+alt+]"
+previous_tab = "alt+["
+next_tab = "alt+]"
+focus_pane_left = "shift+left"
+focus_pane_down = "shift+down"
+focus_pane_up = "shift+up"
+focus_pane_right = "shift+right"
+
+[theme]
+name = "gruvbox"
