@@ -4,8 +4,8 @@ onboarding = false
 enabled = false
 
 [ui.toast]
-enabled = true
 
+delivery = "terminal"
 [keys]
 prefix = "ctrl+l"
 rename_tab = ","
