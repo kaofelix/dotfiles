@@ -47,8 +47,12 @@ export default function (pi: ExtensionAPI) {
 		pi.events.emit("sub-core:request", request);
 	}
 
+	function hasFooterUi(ctx: ExtensionContext): boolean {
+		return ctx.hasUI !== false;
+	}
+
 	function installFooter(ctx: ExtensionContext): void {
-		if (isShutdown) {
+		if (isShutdown || !hasFooterUi(ctx)) {
 			return;
 		}
 
@@ -194,7 +198,7 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	async function refreshAndRender(ctx: ExtensionContext): Promise<void> {
-		if (isShutdown) {
+		if (isShutdown || !hasFooterUi(ctx)) {
 			return;
 		}
 
@@ -209,6 +213,9 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	pi.on("session_start", async (_event, ctx) => {
+		if (!hasFooterUi(ctx)) {
+			return;
+		}
 		await refreshAndRender(ctx);
 		if (!isShutdown) {
 			ctx.ui.setWidget("usage", undefined);
@@ -218,8 +225,10 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_shutdown", async (_event, ctx) => {
 		isShutdown = true;
 		lastContext = undefined;
-		ctx.ui.setFooter(undefined);
-		ctx.ui.setWidget("usage", undefined);
+		if (hasFooterUi(ctx)) {
+			ctx.ui.setFooter(undefined);
+			ctx.ui.setWidget("usage", undefined);
+		}
 		for (const unsubscribe of eventUnsubscribers.splice(0)) {
 			unsubscribe();
 		}
@@ -234,6 +243,9 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.on("model_select", async (_event, ctx) => {
+		if (!hasFooterUi(ctx)) {
+			return;
+		}
 		refreshSubBarIntegration();
 		installFooter(ctx);
 	});
@@ -242,7 +254,7 @@ export default function (pi: ExtensionAPI) {
 		pi.events.on("sub-core:update-current", (payload) => {
 			const data = payload as { state?: { usage?: any } };
 			subBarUsage = data.state?.usage;
-			if (!isShutdown && lastContext) {
+			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
 				lastContext.ui.setWidget("usage", undefined);
 				installFooter(lastContext);
 			}
@@ -253,7 +265,7 @@ export default function (pi: ExtensionAPI) {
 		pi.events.on("sub-core:ready", (payload) => {
 			const data = payload as { state?: { usage?: any } };
 			subBarUsage = data.state?.usage;
-			if (!isShutdown && lastContext) {
+			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
 				lastContext.ui.setWidget("usage", undefined);
 				installFooter(lastContext);
 			}
@@ -272,7 +284,7 @@ export default function (pi: ExtensionAPI) {
 			if (currentProvider && byProvider.has(currentProvider)) {
 				subBarUsage = byProvider.get(currentProvider);
 			}
-			if (!isShutdown && lastContext) {
+			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
 				lastContext.ui.setWidget("usage", undefined);
 				installFooter(lastContext);
 			}
