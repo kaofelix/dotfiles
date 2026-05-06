@@ -142,16 +142,35 @@ export default function (pi: ExtensionAPI) {
 						percent: contextUsage?.percent ?? null,
 					});
 
-					let secondLine = contextLeft;
+					// Calculate total session cost (mirrors default footer behavior)
+					let totalCost = 0;
+					for (const entry of ctx.sessionManager.getEntries()) {
+						if (entry.type === "message" && entry.message.role === "assistant") {
+							const usage = (entry.message as any).usage;
+							if (usage?.cost?.total) {
+								totalCost += usage.cost.total;
+							}
+						}
+					}
+
+					const usingSubscription =
+						ctx.model ? (ctx.modelRegistry as any)?.isUsingOAuth?.(ctx.model) : false;
+					const costSuffix =
+						totalCost > 0 || usingSubscription
+							? theme.fg("dim", ` \u2022 $${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`)
+							: "";
+					const contextWithCost = contextLeft + costSuffix;
+
+					let secondLine = contextWithCost;
 					if (usageRight) {
-						const leftWidth = visibleWidth(contextLeft);
+						const leftWidth = visibleWidth(contextWithCost);
 						const rightWidth = visibleWidth(usageRight);
 						if (leftWidth + 1 + rightWidth <= width) {
 							const padding = " ".repeat(width - leftWidth - rightWidth);
-							secondLine = contextLeft + padding + usageRight;
+							secondLine = contextWithCost + padding + usageRight;
 						} else {
 							const availableLeft = Math.max(1, width - rightWidth - 1);
-							const leftTruncated = truncateToWidth(contextLeft, availableLeft, theme.fg("dim", "..."));
+							const leftTruncated = truncateToWidth(contextWithCost, availableLeft, theme.fg("dim", "..."));
 							secondLine = leftTruncated + " " + usageRight;
 						}
 					}
