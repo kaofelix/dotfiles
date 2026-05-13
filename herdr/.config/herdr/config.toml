@@ -1,11 +1,11 @@
 onboarding = false
 
 [ui.sound]
-enabled = false
+enabled = true
 
 [ui.toast]
+delivery = "herdr"
 
-delivery = "terminal"
 [keys]
 prefix = "ctrl+l"
 new_workspace = "w"
