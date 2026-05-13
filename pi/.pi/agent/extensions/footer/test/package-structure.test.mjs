@@ -7,12 +7,13 @@ const packageDir = path.resolve('pi/.pi/agent/extensions/footer');
 const packageJsonPath = path.join(packageDir, 'package.json');
 const indexPath = path.join(packageDir, 'src/index.ts');
 const adapterPath = path.join(packageDir, 'src/subbar-adapter.ts');
+const subCoreIfUiPath = path.join(packageDir, 'src/sub-core-if-ui.ts');
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-test('footer extension is packaged and loads sub-core without loading sub-bar widget', () => {
+test('footer extension is packaged with a UI-gated sub-core loader', () => {
   assert.ok(fs.existsSync(packageJsonPath), `missing ${packageJsonPath}`);
   const pkg = readJson(packageJsonPath);
 
@@ -21,8 +22,9 @@ test('footer extension is packaged and loads sub-core without loading sub-bar wi
   assert.ok(pkg.dependencies['@marckrenn/pi-sub-bar']);
   assert.deepEqual(pkg.pi.extensions, [
     './src/index.ts',
-    './node_modules/@marckrenn/pi-sub-core/index.ts',
+    './src/sub-core-if-ui.ts',
   ]);
+  assert.ok(fs.existsSync(subCoreIfUiPath), `missing ${subCoreIfUiPath}`);
 });
 
 test('footer extension isolates sub-bar imports behind a local adapter', () => {
