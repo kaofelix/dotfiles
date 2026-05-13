@@ -11,9 +11,7 @@
   "packages": [
     {
       "source": "git:github.com/juanibiapina/browse-cli",
-      "skills": [
-        "skills/browse"
-      ]
+      "skills": ["skills/browse"]
     },
     {
       "source": "git:github.com/steipete/agent-scripts",
@@ -27,22 +25,17 @@
     },
     {
       "source": "git:github.com/anthropics/skills",
-      "skills": [
-        "skills/pdf"
-      ]
+      "skills": ["skills/pdf"]
     },
     "npm:pi-watch",
-    "npm:@aliou/pi-guardrails@0.11.0",
-    "npm:pi-mcp-adapter@2.4.0",
-    "npm:pi-verbosity-control@0.2.0",
-    "npm:@aliou/pi-synthetic@0.13.2"
+    "npm:@aliou/pi-guardrails@0.11.2",
+    "npm:pi-mcp-adapter@2.6.0",
+    "npm:@aliou/pi-synthetic@0.17.1"
   ],
   "skills": [
     "~/.agents/skills",
     "-skills/beads/SKILL.md",
     "-skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md"
   ],
-  "prompts": [
-    "-prompts/code-compare.md"
-  ]
+  "prompts": ["-prompts/code-compare.md"]
 }

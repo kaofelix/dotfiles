@@ -1,0 +1,9 @@
+{
+  "configVersion": "0.17.0",
+  "webSearch": true,
+  "quotasCommand": true,
+  "usageStatus": false,
+  "quotaWarnings": false,
+  "subBarIntegration": true,
+  "proxiedModels": true
+}
