@@ -11,19 +11,13 @@
 	autocrlf = input
 	pager = LESS='FR --redraw-on-quit' delta
 
-[interactive]
-	diffFilter = delta --color-only
-
-[delta]
-	navigate = true
-	side-by-side = true
-
 [merge]
 	conflictStyle = zdiff3
 
 [diff]
 	algorithm = histogram
 	colorMoved = default
+    external = difft
 
 [fetch]
 	prune = true
