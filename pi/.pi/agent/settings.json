@@ -40,15 +40,14 @@
       ]
     },
     "npm:pi-watch",
-    "npm:@aliou/pi-guardrails@0.11.2",
-    "npm:pi-mcp-adapter@2.6.0",
-    "npm:@aliou/pi-synthetic@0.17.1"
+    "npm:@aliou/pi-guardrails",
+    "npm:pi-mcp-adapter",
+    "npm:@aliou/pi-synthetic",
+    "npm:pi-autoresearch"
   ],
   "skills": [
     "~/.agents/skills",
     "-skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md"
   ],
-  "prompts": [
-    "-prompts/code-compare.md"
-  ]
+  "prompts": ["-prompts/code-compare.md"]
 }
