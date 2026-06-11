@@ -30,4 +30,4 @@ cask "font-source-code-pro"
 cask "vivaldi"
 
 tap "d12frosted/emacs-plus"
-brew "emacs-plus", args: ["--with-imagemagick"]
+cask "emacs-plus-app@master"
