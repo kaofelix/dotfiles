@@ -1,5 +1,9 @@
 onboarding = false
 
+[ui]
+prompt_new_tab_name = false
+show_agent_labels_on_pane_borders = true
+
 [ui.sound]
 enabled = true
 
@@ -8,19 +12,18 @@ delivery = "herdr"
 
 [keys]
 prefix = "ctrl+l"
-new_workspace = "w"
-new_tab = "n"
-rename_tab = ","
-split_vertical = "|"
+new_tab = "prefix+n"
+rename_tab = "prefix+,"
+split_vertical = "prefix+|"
 previous_workspace = "ctrl+alt+["
 next_workspace = "ctrl+alt+]"
 previous_tab = "alt+["
 next_tab = "alt+]"
-fullscreen = "z"
+fullscreen = "prefix+z"
 focus_pane_left = "shift+left"
 focus_pane_down = "shift+down"
 focus_pane_up = "shift+up"
 focus_pane_right = "shift+right"
 
 [theme]
-name = "gruvbox"
+name = "nord"
