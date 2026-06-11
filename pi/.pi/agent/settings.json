@@ -46,7 +46,6 @@
   ],
   "skills": [
     "~/.agents/skills",
-    "-skills/beads/SKILL.md",
     "-skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md"
   ],
   "prompts": [
