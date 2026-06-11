@@ -120,10 +120,10 @@ upi() {
 }
 
 
-_clow() {
-    crush run "$*" | glow
+_ask() {
+    pi -p --provider deepseek --model deepseek-v4-flash  "$*" | glow
 }
-alias clow='noglob _clow'
+alias ask='noglob _ask'
 
 if [ -f "$HOME/.zshrc.local" ]; then
     source "$HOME/.zshrc.local"
