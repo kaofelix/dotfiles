@@ -335,7 +335,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerProvider("zai", {
     baseUrl: ZAI_BASE_URL,
-    apiKey: "ZAI_API_KEY",
+    apiKey: "$ZAI_API_KEY",
     api: "openai-completions",
 
     models: ZAI_MODELS.map((model) => ({
