@@ -131,7 +131,9 @@ async function bootstrapPythonEnv(force = false): Promise<void> {
 
   await runChecked("uv", ["--version"], 30_000);
   await mkdir(ENV_DIR, { recursive: true });
-  await runChecked("uv", ["venv", ENV_DIR], 120_000);
+  if (!(await exists(PYTHON))) {
+    await runChecked("uv", ["venv", "--clear", ENV_DIR], 120_000);
+  }
   await ensurePython3Alias();
   await runChecked("uv", ["pip", "install", "--python", PYTHON, ...pythonDeps], 300_000);
   await ensurePython3Alias();

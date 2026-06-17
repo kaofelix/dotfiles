@@ -1,6 +1,7 @@
 [
   "openpyxl",
   "pandas",
+  "Pillow",
   "python-calamine",
   "PyYAML",
   "xlsxwriter"
