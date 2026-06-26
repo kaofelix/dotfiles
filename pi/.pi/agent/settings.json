@@ -43,7 +43,8 @@
     "npm:@aliou/pi-guardrails",
     "npm:pi-mcp-adapter",
     "npm:@aliou/pi-synthetic",
-    "npm:pi-autoresearch"
+    "npm:pi-autoresearch",
+    "npm:@ogulcancelik/pi-herdr"
   ],
   "skills": [
     "~/.agents/skills",
