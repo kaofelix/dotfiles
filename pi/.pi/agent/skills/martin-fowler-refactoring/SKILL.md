@@ -1,6 +1,7 @@
 ---
 name: martin-fowler-refactoring
-description: Guide for systematic code refactoring using Martin Fowler's catalog of code smells and refactorings. Use when refactoring existing code, improving code structure, identifying code smells, or proposing and implementing specific refactorings.
+description: Apply Martin Fowler's catalog to identify code smells and select systematic refactorings.
+disable-model-invocation: true
 ---
 
 # Martin Fowler Refactoring Guide
