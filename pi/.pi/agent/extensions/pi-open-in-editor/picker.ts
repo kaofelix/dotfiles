@@ -11,6 +11,7 @@ import {
 } from "@earendil-works/pi-tui";
 
 import type { FileReference } from "./paths.ts";
+import { groupFileReferences } from "./sections.ts";
 
 export class FilePicker extends Container implements Focusable {
 	private readonly input = new Input();
@@ -40,8 +41,8 @@ export class FilePicker extends Container implements Focusable {
 		this.filtered = references;
 
 		this.addChild(new DynamicBorder((text: string) => theme.fg("accent", text)));
-		this.addChild(new Text(theme.fg("accent", theme.bold("Open in Emacs")), 1, 0));
-		this.addChild(new Text(theme.fg("muted", "Type to filter files from the last agent message"), 1, 0));
+		this.addChild(new Text(theme.fg("accent", theme.bold("Open Recent File in Emacs")), 1, 0));
+		this.addChild(new Text(theme.fg("muted", "Type to filter mentioned and recently accessed files"), 1, 0));
 		this.addChild(new Spacer(1));
 		this.addChild(this.input);
 		this.addChild(new Spacer(1));
@@ -82,9 +83,10 @@ export class FilePicker extends Container implements Focusable {
 	}
 
 	private filter(query: string): void {
-		this.filtered = query
+		const matches = query
 			? fuzzyFilter(this.references, query, (reference) => `${reference.displayPath} ${reference.path}`)
 			: this.references;
+		this.filtered = groupFileReferences(matches).flatMap((section) => section.references);
 		this.selectedIndex = Math.min(this.selectedIndex, Math.max(0, this.filtered.length - 1));
 		this.updateList();
 	}
@@ -108,17 +110,24 @@ export class FilePicker extends Container implements Focusable {
 		);
 		const end = Math.min(start + maxVisible, this.filtered.length);
 
-		for (let index = start; index < end; index++) {
-			const reference = this.filtered[index]!;
-			const selected = index === this.selectedIndex;
-			const location = reference.line
-				? this.theme.fg("muted", `:${reference.line}${reference.column ? `:${reference.column}` : ""}`)
-				: "";
-			const prefix = selected ? this.theme.fg("accent", "→ ") : "  ";
-			const path = selected
-				? this.theme.fg("accent", reference.displayPath)
-				: this.theme.fg("text", reference.displayPath);
-			this.list.addChild(new TruncatedText(`${prefix}${path}${location}`, 1, 0));
+		const visibleReferences = this.filtered.slice(start, end);
+		let firstSection = true;
+		for (const section of groupFileReferences(visibleReferences)) {
+			if (!firstSection) this.list.addChild(new Spacer(1));
+			firstSection = false;
+			this.list.addChild(new Text(this.theme.fg("muted", this.theme.bold(section.title)), 1, 0));
+			for (const reference of section.references) {
+				const index = this.filtered.indexOf(reference);
+				const selected = index === this.selectedIndex;
+				const location = reference.line
+					? this.theme.fg("muted", `:${reference.line}${reference.column ? `:${reference.column}` : ""}`)
+					: "";
+				const prefix = selected ? this.theme.fg("accent", "→ ") : "  ";
+				const path = selected
+					? this.theme.fg("accent", reference.displayPath)
+					: this.theme.fg("text", reference.displayPath);
+				this.list.addChild(new TruncatedText(`${prefix}${path}${location}`, 1, 0));
+			}
 		}
 
 		if (start > 0 || end < this.filtered.length) {

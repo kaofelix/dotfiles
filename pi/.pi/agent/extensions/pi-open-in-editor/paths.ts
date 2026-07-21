@@ -1,6 +1,9 @@
+export type FileReferenceSource = "mentioned" | "edited" | "read";
+
 export interface FileReference {
 	path: string;
 	displayPath: string;
+	source: FileReferenceSource;
 	line?: number;
 	column?: number;
 }
@@ -24,6 +27,17 @@ function isFile(path: string): boolean {
 	}
 }
 
+export function fileReferenceFromPath(
+	displayPath: string,
+	cwd: string,
+	source: FileReferenceSource,
+): FileReference | undefined {
+	const normalized = displayPath.replace(/^@/, "");
+	const path = resolveCandidate(normalized, cwd);
+	if (!isFile(path)) return undefined;
+	return { path, displayPath: normalized, source };
+}
+
 interface Candidate {
 	value: string;
 	index: number;
@@ -44,6 +58,20 @@ function collectCandidates(text: string): Candidate[] {
 	}
 
 	return candidates.sort((a, b) => a.index - b.index);
+}
+
+export function combineFileReferences(mentioned: FileReference[], recent: FileReference[]): FileReference[] {
+	const ordered = [
+		...mentioned,
+		...recent.filter((reference) => reference.source === "edited"),
+		...recent.filter((reference) => reference.source === "read"),
+	];
+	const seen = new Set<string>();
+	return ordered.filter((reference) => {
+		if (seen.has(reference.path)) return false;
+		seen.add(reference.path);
+		return true;
+	});
 }
 
 export function extractFileReferences(text: string, cwd: string): FileReference[] {
@@ -69,6 +97,7 @@ export function extractFileReferences(text: string, cwd: string): FileReference[
 		references.push({
 			path,
 			displayPath,
+			source: "mentioned",
 			...(location ? { line: Number(location[1]), ...(location[2] ? { column: Number(location[2]) } : {}) } : {}),
 		});
 	}

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { extractFileReferences } from "./paths.ts";
+import { combineFileReferences, extractFileReferences } from "./paths.ts";
 
 async function createProject(): Promise<string> {
 	const cwd = await mkdtemp(join(tmpdir(), "pi-open-in-editor-"));
@@ -22,7 +22,13 @@ test("extracts line and column locations from file references", async () => {
 	const references = extractFileReferences("See src/one.ts:42:7.", cwd);
 
 	assert.deepEqual(references, [
-		{ path: join(cwd, "src", "one.ts"), displayPath: "src/one.ts", line: 42, column: 7 },
+		{
+			path: join(cwd, "src", "one.ts"),
+			displayPath: "src/one.ts",
+			source: "mentioned",
+			line: 42,
+			column: 7,
+		},
 	]);
 });
 
@@ -53,7 +59,25 @@ test("supports absolute #L locations while excluding directories and missing fil
 	);
 
 	assert.deepEqual(references, [
-		{ path: absolutePath, displayPath: absolutePath, line: 9 },
+		{ path: absolutePath, displayPath: absolutePath, source: "mentioned", line: 9 },
+	]);
+});
+
+test("combines mentioned, edited, and read files with source-priority deduplication", () => {
+	const mentioned = [
+		{ path: "/project/shared.ts", displayPath: "shared.ts", source: "mentioned" as const },
+	];
+	const recent = [
+		{ path: "/project/shared.ts", displayPath: "shared.ts", source: "edited" as const },
+		{ path: "/project/edit.ts", displayPath: "edit.ts", source: "edited" as const },
+		{ path: "/project/edit.ts", displayPath: "edit.ts", source: "read" as const },
+		{ path: "/project/read.ts", displayPath: "read.ts", source: "read" as const },
+	];
+
+	assert.deepEqual(combineFileReferences(mentioned, recent), [
+		mentioned[0],
+		recent[1],
+		recent[3],
 	]);
 });
 

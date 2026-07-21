@@ -8,6 +8,7 @@ test("builds a non-blocking emacsclient invocation at the referenced location", 
 		buildEmacsclientArgs({
 			path: "/tmp/My Guide.md",
 			displayPath: "My Guide.md",
+			source: "mentioned",
 			line: 42,
 			column: 7,
 		}),
