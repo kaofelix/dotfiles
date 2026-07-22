@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+  echo "usage: $0 [--include-skills] /absolute/path/to/session.jsonl" >&2
+}
+
+include_skills=false
+if [[ ${1:-} == "--include-skills" ]]; then
+  include_skills=true
+  shift
+fi
+
 if [[ $# -ne 1 ]]; then
-  echo "usage: $0 /absolute/path/to/session.jsonl" >&2
+  usage
   exit 2
 fi
 
@@ -13,11 +23,21 @@ if [[ ! -f "$session_file" ]]; then
   exit 1
 fi
 
+text_expression="string_agg(item.text, chr(10) ORDER BY ordinality)"
+if [[ $include_skills == false ]]; then
+  text_expression="regexp_replace(
+    $text_expression,
+    '<skill name=\"([^\"]+)\"[^>]*>.*?</skill>',
+    '[skill \\1 omitted]',
+    'gs'
+  )"
+fi
+
 PI_SESSION_FILE=$session_file duckdb -csv -c "
 SELECT
   e.timestamp,
   e.message.role AS role,
-  string_agg(item.text, chr(10) ORDER BY ordinality) AS text
+  $text_expression AS text
 FROM read_json_auto(
   getenv('PI_SESSION_FILE'),
   format='newline_delimited',

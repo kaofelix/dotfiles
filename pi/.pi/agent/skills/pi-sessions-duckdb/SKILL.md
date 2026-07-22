@@ -25,15 +25,16 @@ Use the profiling query in [`references/queries.md`](references/queries.md).
 
 Completion criterion: the session's message and content composition is known.
 
-### 3. Extract the text-only transcript
+### 3. Extract the compact transcript
 
 The default conversation projection is:
 
 - roles: `user`, `assistant`
 - content type: `text`
+- invoked skill definitions replaced by `[skill <name> omitted]`
 - order: event timestamp, then content position
 
-This projection selects conversational text while leaving tool calls, tool results, and thinking outside the transcript.
+This projection preserves the conversational narrative and invoked skill names while keeping thinking, tool traffic, and embedded skill bodies outside the transcript.
 
 From the skill directory:
 
@@ -42,13 +43,20 @@ bash ./scripts/conversation-text.sh /absolute/path/to/session.jsonl \
   > /tmp/pi-conversation.csv
 ```
 
+If an omitted skill definition is itself evidence needed for the question, opt into the full text:
+
+```bash
+bash ./scripts/conversation-text.sh --include-skills /absolute/path/to/session.jsonl \
+  > /tmp/pi-conversation-full.csv
+```
+
 Read the complete output, in chunks when necessary. Preserve the transcript as evidence; summarize only after all extracted rows have been inspected.
 
-Completion criterion: every text row in the selected conversation has been inspected, and the answer is grounded in those rows.
+Completion criterion: every text row in the selected projection has been inspected, and any full skill body was loaded because the question required it.
 
 ### 4. Broaden only for the question
 
-If the transcript points to missing implementation or debugging evidence, query the relevant content explicitly—such as tool names, a specific tool result, or thinking blocks. Keep the text-only transcript as the primary narrative.
+If the transcript points to missing implementation or debugging evidence, query the relevant content explicitly—such as joined tool executions, a specific full result, or thinking blocks. Keep the compact transcript as the primary narrative.
 
 See [`references/queries.md`](references/queries.md) for transcript variants, fragment search, and tool queries. See [`references/schema.md`](references/schema.md) when a content shape is unclear.
 
@@ -56,22 +64,36 @@ See [`references/queries.md`](references/queries.md) for transcript variants, fr
 
 Use this branch for counts, trends, project activity, time ranges, or comparisons across sessions.
 
-Create the bundled views in a DuckDB database:
+Run queries through the in-memory wrapper, which loads the bundled views automatically:
 
 ```bash
-duckdb pi_sessions.duckdb < ./scripts/create_views.sql
+bash ./scripts/query.sh -box <<'SQL'
+SELECT role, COUNT(*)
+FROM pi_messages
+GROUP BY role;
+SQL
 ```
 
 The views are:
 
 - `pi_events` — raw events with derived `session_id` and `session_group`
 - `pi_messages` — message events
-- `pi_conversation` — user/assistant text grouped into chronological message rows
-- `pi_tool_calls` — assistant tool calls with typed and searchable-text argument projections
+- `pi_conversation` — compact user/assistant conversation
+- `pi_conversation_full` — conversation including invoked skill definitions
+- `pi_tool_calls` — assistant tool calls with typed and searchable-text arguments
+- `pi_tool_results` — tool result text and error state
+- `pi_tool_executions` — calls joined to their results
 
-Run the relevant query from [`references/queries.md`](references/queries.md), narrowing by session, project, or time range as early as possible.
+### Funnel cross-session investigations
 
-Completion criterion: the query covers the requested scope and the result has been checked for unexpected roles or content types.
+Keep discovery output bounded:
+
+1. Aggregate matches by filename to identify candidate sessions.
+2. Select the sessions relevant to the request.
+3. Preview bounded fragments or execution counts.
+4. Load complete conversation or tool-result text only for those sessions.
+
+Completion criterion: the query covers the requested scope, candidate sessions were narrowed before loading payloads, and the result has been checked for unexpected roles or content types.
 
 ## DuckDB conventions
 

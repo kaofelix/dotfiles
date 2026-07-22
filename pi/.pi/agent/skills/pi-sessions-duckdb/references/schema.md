@@ -62,7 +62,7 @@ Tool results usually appear as separate message events with `message.role='toolR
 - `content` (array of content items)
 - `isError` (boolean)
 
-## Tool argument projection
+## Tool execution projection
 
 DuckDB infers `item.arguments` as a nested type, often `MAP(VARCHAR, JSON)`. Nested values support field and map operations, while text operators such as `ILIKE` require `VARCHAR`.
 
@@ -70,6 +70,13 @@ The `pi_tool_calls` view therefore exposes both:
 
 - `tool_arguments` — inferred nested value for structured queries
 - `tool_arguments_text` — `VARCHAR` projection for substring and regular-expression searches
+
+Tool results are separate messages linked by `message.toolCallId`. The helper views expose:
+
+- `pi_tool_results` — result timestamp, tool-call ID, tool name, `is_error`, and aggregated text
+- `pi_tool_executions` — each call left-joined to its result by filename and tool-call ID
+
+Use `pi_tool_executions` to inspect failures or correlate arguments and output without reconstructing the event relationship outside DuckDB.
 
 ## Conversation projection
 
@@ -79,7 +86,11 @@ A compact human conversation is not a distinct event type. Derive it by selectin
 - content items with `type='text'`
 - content position from `UNNEST(... WITH ORDINALITY)`
 
-Group text items by message event and order messages by event timestamp. Other projections can deliberately select `thinking`, `toolCall`, or `toolResult` when the question requires them.
+Group text items by message event and order messages by event timestamp.
+
+`pi_conversation` is the compact default. It replaces an embedded invocation such as `<skill name="example">…</skill>` with `[skill example omitted]`, retaining the skill identity and subsequent user request. `pi_conversation_full` preserves the complete text when the skill definition itself is required evidence.
+
+Other projections can deliberately select `thinking`, `toolCall`, or `toolResult` when the question requires them.
 
 ## DuckDB tips
 

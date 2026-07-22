@@ -34,7 +34,7 @@ FROM pi_events
 WHERE type = 'message';
 
 -- User and assistant conversational text, excluding other content shapes by projection.
-CREATE OR REPLACE VIEW pi_conversation AS
+CREATE OR REPLACE VIEW pi_conversation_full AS
 SELECT
   session_id,
   session_group,
@@ -56,6 +56,18 @@ GROUP BY
   event_timestamp,
   role;
 
+-- Compact conversation by default: retain invoked skill names without embedding their definitions.
+CREATE OR REPLACE VIEW pi_conversation AS
+SELECT
+  * EXCLUDE (text),
+  regexp_replace(
+    text,
+    '<skill name="([^"]+)"[^>]*>.*?</skill>',
+    '[skill \1 omitted]',
+    'gs'
+  ) AS text
+FROM pi_conversation_full;
+
 -- Tool calls are embedded in assistant message content[] entries.
 CREATE OR REPLACE VIEW pi_tool_calls AS
 SELECT
@@ -73,3 +85,48 @@ WHERE
   type = 'message'
   AND message.role = 'assistant'
   AND item.type = 'toolCall';
+
+-- Tool results are separate message events linked to calls by toolCallId.
+CREATE OR REPLACE VIEW pi_tool_results AS
+SELECT
+  session_id,
+  session_group,
+  filename,
+  timestamp AS result_timestamp,
+  message.toolCallId AS tool_call_id,
+  message.toolName AS tool_name,
+  message.isError AS is_error,
+  string_agg(item.text, chr(10) ORDER BY ordinality) AS result_text
+FROM pi_events,
+  UNNEST(message.content) WITH ORDINALITY AS u(item, ordinality)
+WHERE
+  type = 'message'
+  AND message.role = 'toolResult'
+  AND item.type = 'text'
+GROUP BY
+  session_id,
+  session_group,
+  filename,
+  timestamp,
+  message.toolCallId,
+  message.toolName,
+  message.isError;
+
+-- Calls joined to their results for execution and failure analysis.
+CREATE OR REPLACE VIEW pi_tool_executions AS
+SELECT
+  calls.session_id,
+  calls.session_group,
+  calls.filename,
+  calls.event_timestamp AS call_timestamp,
+  results.result_timestamp,
+  calls.tool_call_id,
+  calls.tool_name,
+  calls.tool_arguments,
+  calls.tool_arguments_text,
+  results.is_error,
+  results.result_text
+FROM pi_tool_calls AS calls
+LEFT JOIN pi_tool_results AS results
+  ON calls.filename = results.filename
+  AND calls.tool_call_id = results.tool_call_id;

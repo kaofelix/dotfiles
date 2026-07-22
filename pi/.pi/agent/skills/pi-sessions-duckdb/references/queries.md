@@ -1,5 +1,13 @@
 # DuckDB queries for Pi sessions
 
+Queries over helper views can run without managing a database file:
+
+```bash
+bash ./scripts/query.sh -box <<'SQL'
+SELECT COUNT(DISTINCT filename) AS sessions FROM pi_events;
+SQL
+```
+
 ## Inspect one session
 
 Set the session path for one-off queries:
@@ -33,15 +41,20 @@ GROUP BY ALL
 ORDER BY role, content_type;
 ```
 
-### Text-only conversation
+### Compact conversation
 
-This is the default inspection projection. It retains user and assistant text in chronological order:
+This is the default inspection projection. It retains user and assistant text in chronological order and replaces embedded skill definitions with their names:
 
 ```sql
 SELECT
   e.timestamp,
   e.message.role AS role,
-  string_agg(item.text, chr(10) ORDER BY ordinality) AS text
+  regexp_replace(
+    string_agg(item.text, chr(10) ORDER BY ordinality),
+    '<skill name="([^"]+)"[^>]*>.*?</skill>',
+    '[skill \1 omitted]',
+    'gs'
+  ) AS text
 FROM read_json_auto(
   getenv('PI_SESSION_FILE'),
   format='newline_delimited',
@@ -55,7 +68,19 @@ GROUP BY e.id, e.timestamp, e.message.role
 ORDER BY e.timestamp;
 ```
 
-The bundled `scripts/conversation-text.sh` runs this query and emits CSV.
+The bundled script emits this projection as CSV:
+
+```bash
+bash ./scripts/conversation-text.sh "$PI_SESSION_FILE"
+```
+
+Include complete skill definitions only when they are evidence needed for the question:
+
+```bash
+bash ./scripts/conversation-text.sh --include-skills "$PI_SESSION_FILE"
+```
+
+With helper views, `pi_conversation` is compact and `pi_conversation_full` includes skill definitions.
 
 ### Search conversation fragments
 
@@ -81,10 +106,10 @@ ORDER BY event_timestamp;
 
 ### Tool-use outline
 
-Use this when the conversation references implementation work that needs verification:
+Use a bounded outline when the conversation references implementation work that needs verification:
 
 ```sql
-SELECT event_timestamp, tool_name, tool_arguments
+SELECT event_timestamp, tool_name, left(tool_arguments_text, 500) AS arguments_preview
 FROM pi_tool_calls
 WHERE filename = '/absolute/path/to/session.jsonl'
 ORDER BY event_timestamp;
@@ -106,6 +131,64 @@ For a database created with an older version of `create_views.sql`, either recre
 ```sql
 WHERE CAST(tool_arguments AS VARCHAR) ILIKE '%emacsclient%SKILL.md%'
 ```
+
+### Tool executions and failures
+
+Calls and results are joined by tool-call ID:
+
+```sql
+SELECT
+  call_timestamp,
+  tool_name,
+  is_error,
+  left(tool_arguments_text, 500) AS arguments_preview,
+  left(replace(result_text, chr(10), ' '), 500) AS result_preview
+FROM pi_tool_executions
+WHERE filename = '/absolute/path/to/session.jsonl'
+ORDER BY call_timestamp;
+```
+
+Inspect failures without writing a separate correlator:
+
+```sql
+SELECT call_timestamp, tool_name, tool_arguments, result_text
+FROM pi_tool_executions
+WHERE filename = '/absolute/path/to/session.jsonl'
+  AND is_error
+ORDER BY call_timestamp;
+```
+
+## Funnel across sessions
+
+### Find sessions that loaded a skill
+
+```sql
+SELECT
+  filename,
+  COUNT(*) AS loads,
+  MIN(event_timestamp) AS first_load
+FROM pi_tool_calls
+WHERE tool_name = 'read'
+  AND tool_arguments_text ILIKE '%/skills/emacsclient/SKILL.md%'
+GROUP BY filename
+ORDER BY first_load;
+```
+
+### Aggregate before loading payloads
+
+```sql
+SELECT
+  filename,
+  COUNT(*) AS matching_calls,
+  MIN(event_timestamp) AS first_match,
+  MAX(event_timestamp) AS last_match
+FROM pi_tool_calls
+WHERE tool_arguments_text ILIKE '%emacsclient%'
+GROUP BY filename
+ORDER BY last_match DESC;
+```
+
+Use the resulting filenames to inspect bounded previews, then load full `text`, `tool_arguments`, or `result_text` only for selected sessions.
 
 ## Analyze sessions with helper views
 
