@@ -11,17 +11,9 @@ This is a **dotfiles repository** that uses GNU Stow to manage configuration fil
 - `make unstow` - Unstow all packages from the home directory (removes symlinks)
 
 ### Stow Package Structure
-Each package directory (zsh, git, claude, bin) contains files that will be symlinked to the home directory. The directory structure within packages mirrors the target location.
+Each package directory (zsh, git, bin) contains files that will be symlinked to the home directory. The directory structure within packages mirrors the target location.
 
 Example: `zsh/.zshrc` → `~/.zshrc`
-
-#### Available Packages
-- `zsh/`
-- `git/`
-- `claude/`
-- `bin/`
-- `pi/`
-
 The `bin` package installs scripts to `~/.local/bin/` (user-local binary directory)
 
 ### Zsh Configuration (`zsh/.zshrc`)
