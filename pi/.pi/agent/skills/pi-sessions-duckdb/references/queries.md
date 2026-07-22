@@ -90,6 +90,23 @@ WHERE filename = '/absolute/path/to/session.jsonl'
 ORDER BY event_timestamp;
 ```
 
+### Search tool arguments
+
+`tool_arguments` retains DuckDB's inferred nested type, commonly `MAP(VARCHAR, JSON)`. Search the stable `VARCHAR` projection instead:
+
+```sql
+SELECT filename, event_timestamp, tool_name, tool_arguments
+FROM pi_tool_calls
+WHERE tool_arguments_text ILIKE '%emacsclient%SKILL.md%'
+ORDER BY event_timestamp;
+```
+
+For a database created with an older version of `create_views.sql`, either recreate the views or cast at the query site:
+
+```sql
+WHERE CAST(tool_arguments AS VARCHAR) ILIKE '%emacsclient%SKILL.md%'
+```
+
 ## Analyze sessions with helper views
 
 The remaining examples assume the views from `scripts/create_views.sql` exist.

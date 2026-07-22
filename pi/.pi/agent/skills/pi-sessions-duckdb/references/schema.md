@@ -62,6 +62,15 @@ Tool results usually appear as separate message events with `message.role='toolR
 - `content` (array of content items)
 - `isError` (boolean)
 
+## Tool argument projection
+
+DuckDB infers `item.arguments` as a nested type, often `MAP(VARCHAR, JSON)`. Nested values support field and map operations, while text operators such as `ILIKE` require `VARCHAR`.
+
+The `pi_tool_calls` view therefore exposes both:
+
+- `tool_arguments` — inferred nested value for structured queries
+- `tool_arguments_text` — `VARCHAR` projection for substring and regular-expression searches
+
 ## Conversation projection
 
 A compact human conversation is not a distinct event type. Derive it by selecting:

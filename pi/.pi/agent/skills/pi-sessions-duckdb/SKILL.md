@@ -67,7 +67,7 @@ The views are:
 - `pi_events` — raw events with derived `session_id` and `session_group`
 - `pi_messages` — message events
 - `pi_conversation` — user/assistant text grouped into chronological message rows
-- `pi_tool_calls` — assistant tool calls
+- `pi_tool_calls` — assistant tool calls with typed and searchable-text argument projections
 
 Run the relevant query from [`references/queries.md`](references/queries.md), narrowing by session, project, or time range as early as possible.
 

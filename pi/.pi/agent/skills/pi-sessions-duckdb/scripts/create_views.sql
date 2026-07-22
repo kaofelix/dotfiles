@@ -65,7 +65,8 @@ SELECT
   timestamp AS event_timestamp,
   item.id AS tool_call_id,
   item.name AS tool_name,
-  item.arguments AS tool_arguments
+  item.arguments AS tool_arguments,
+  CAST(item.arguments AS VARCHAR) AS tool_arguments_text
 FROM pi_events,
   UNNEST(message.content) AS u(item)
 WHERE
