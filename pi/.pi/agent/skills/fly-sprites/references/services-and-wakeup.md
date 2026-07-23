@@ -1,68 +1,132 @@
-# Services and Wake-Up Behavior
+# Services, Tasks, and Wake-Up
 
-Use this file when the user wants a web server, API, worker, or other process to keep coming back after the Sprite sleeps.
+Read this reference for servers, bots, workers, webhooks, scheduled work, wake-up failures, or anything that must keep running.
 
-## Mental Model
+## Lifecycle model
 
-Sprites preserve disk, not RAM.
+A Sprite has two idle stages:
 
-That means:
-- Files and installed packages persist.
-- Normal processes started with `sprite exec` or `sprite console` stop when the Sprite goes idle.
-- HTTP requests wake the Sprite again.
+- **Warm**: the VM is suspended, billing stops, and process memory is preserved. An inbound HTTP request resumes it.
+- **Cold**: memory is dropped. Files and service definitions persist; Services restart on wake.
 
-If the user needs a server to be available after wake-up, prefer a service instead of a plain foreground process.
+Choose the primitive by intent:
 
-## Documented Service Pattern
+- **TTY session**: detachable interactive work; it does not provide cold-wake recovery.
+- **Service**: process definition that survives lifecycle transitions—preserved through warm suspension and restarted after cold wake.
+- **Task**: temporary hold that prevents the current Sprite run from pausing. It does not replace a Service.
 
-The docs describe `sprite-env services create`:
+For an HTTP app that may pause, register a Service with its HTTP port. For an agent actively doing work that must not stall, combine a Service with a Task heartbeat.
 
-```bash
-sprite-env services create my-server --cmd node --args server.js
-```
+## Manage Services inside the Sprite
 
-Use this for apps that should restart when the Sprite wakes.
-
-## Verification Step
-
-Because `sprite-env` was documented in the web docs but not surfaced by the local `sprite --help`, verify availability before building a workflow around it.
-
-Suggested checks:
+First inspect the installed command surface:
 
 ```bash
-sprite exec command -v sprite-env
-sprite exec sprite-env --help
+sprite exec -o <org> -s <sprite> -- sprite-env services --help
+sprite exec -o <org> -s <sprite> -- sprite-env services create --help
 ```
 
-If `sprite-env` is unavailable, explain that the docs reference a service mechanism that may be version-specific or preinstalled only in certain environments.
-
-## Recommended Workflow for Wake-Safe HTTP Apps
-
-1. Confirm the app listens on a known port, usually `8080`.
-2. Verify whether `sprite-env` exists.
-3. Create the service if available.
-4. Check the Sprite URL with `sprite url`.
-5. Keep the URL private unless the user asks for public access.
-
-## Important Caveat
-
-A process launched with plain `sprite exec python -m http.server 8080` is good for a quick demo, not for reliable wake/restart behavior.
-
-Use a service for:
-- webhooks
-- demo apps
-- long-lived preview servers
-- APIs expected to survive Sprite sleep/wake cycles
-
-## Version-Sensitive Session Note
-
-The docs mention detachable TTY sessions, but the local CLI help used for this skill did not list dedicated `sprite sessions` commands.
-
-If the user wants a long-running interactive process, verify the installed CLI first:
+Typical service:
 
 ```bash
-sprite console --help
-sprite exec --help
+sprite exec -o <org> -s <sprite> -- \
+  sprite-env services create web \
+  --cmd python \
+  --args=-m,http.server,8080 \
+  --dir /home/sprite/app \
+  --http-port 8080 \
+  --duration 10s
 ```
 
-Do not promise session management subcommands unless they are confirmed live.
+Manage and verify it:
+
+```bash
+sprite exec -o <org> -s <sprite> -- sprite-env services list
+sprite exec -o <org> -s <sprite> -- sprite-env services get web
+sprite exec -o <org> -s <sprite> -- sprite-env services restart web
+sprite exec -o <org> -s <sprite> -- tail -100 /.sprite/logs/services/web.log
+```
+
+A service name is unique. If `create` reports a conflict, inspect the existing definition before replacing it. Use stop/delete/create when the installed helper cannot update a definition.
+
+Only one service should own the public `http_port`. For a reverse proxy with backend services, declare dependencies so they start first:
+
+```bash
+sprite-env services create proxy \
+  --cmd caddy \
+  --args=run,--config,/home/sprite/Caddyfile \
+  --needs=api,frontend \
+  --http-port 8080
+```
+
+Completion criterion: `services get` reports `running`, the expected port is listening, and an internal and external HTTP probe reaches the app.
+
+## Keep active work from pausing
+
+Tasks are holds on the current run. The maximum expiry is one hour, so long work needs an expiring heartbeat. Prefer `PUT` because it creates or refreshes without a `409` name collision:
+
+```bash
+sprite-env curl -s -X PUT /v1/tasks/agent-work \
+  -d '{"expire":"5m"}'
+
+sprite-env curl -s /v1/tasks
+
+sprite-env curl -s -X DELETE /v1/tasks/agent-work
+```
+
+A robust wrapper refreshes every minute, expires after five minutes, and releases on exit:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+task=agent-work
+cleanup() {
+  kill "${heartbeat:-}" 2>/dev/null || true
+  wait "${heartbeat:-}" 2>/dev/null || true
+  sprite-env curl -s -X DELETE "/v1/tasks/$task" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+(
+  while true; do
+    sprite-env curl -s -X PUT "/v1/tasks/$task" \
+      -d '{"expire":"5m"}' >/dev/null
+    sleep 60
+  done
+) &
+heartbeat=$!
+
+/home/sprite/app/run-worker &
+worker=$!
+trap 'kill "$worker" 2>/dev/null || true' INT TERM
+wait "$worker"
+```
+
+A live Task means compute remains active and may remain billable. Use it only while work must make progress.
+
+## Wake-safe architecture
+
+Inbound HTTP can wake a Sprite; an outbound-only connection cannot wake itself after the Sprite is cold. Therefore:
+
+- HTTP webhooks and request-driven servers fit Sprite wake-up.
+- Outbound WebSocket clients, polling bots, and cron inside the Sprite cannot initiate their own wake.
+- Use an inbound HTTP adapter, an external scheduler/pinger, or another always-on platform for outbound-only workloads.
+- Cron inside a paused Sprite runs only while the Sprite is already awake. Use an external scheduler or perform age-gated maintenance on service startup.
+
+When a public reverse proxy fronts a private service, add the backend to `--needs`. Otherwise the request can wake the proxy before the backend is ready.
+
+## Diagnose wake failures
+
+Trace one request through every boundary:
+
+1. `sprite info` or `sprite url`: correct URL and auth mode.
+2. `sprite-env services list`: public service owns the expected `http_port`.
+3. `sprite-env services get <name>`: service and dependencies are running.
+4. `ss -ltnp`: expected process is listening.
+5. Internal `curl localhost:<port>` succeeds.
+6. External request reaches the Sprite URL.
+7. Service and application logs show the same request.
+8. `sprite-env curl -s /v1/tasks`: a Task exists only if pausing must be prevented.
+
+Completion criterion: evidence identifies the exact boundary where the request or wake sequence stops.

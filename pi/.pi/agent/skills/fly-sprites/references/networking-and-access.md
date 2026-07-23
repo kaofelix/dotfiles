@@ -1,49 +1,94 @@
-# Advanced Access
+# Advanced Networking and Access
 
-Use this file only for less-common access patterns: SSHFS mounting, local editor integration, and environment/config overrides.
+Read this reference for local filesystem mounts, CI authentication, port conflicts, or target/context debugging.
 
-## Optional SSHFS Mounting
+## SSHFS mount
 
-Use this only when the user explicitly wants local-editor access to the Sprite filesystem. It is more invasive than `sprite exec`, `sprite console`, or `sprite proxy`.
+Use SSHFS only when local-editor access is worth installing an SSH server. Prefer `sprite exec`, `console`, `--file`, or direct Git operations otherwise.
 
-High-level workflow:
-
-1. Install an SSH server inside the Sprite.
-2. Start it via the documented service mechanism.
-3. Forward a local port to Sprite port 22.
-4. Mount the Sprite with `sshfs`.
-
-Documented commands:
+Inside the Sprite:
 
 ```bash
-sprite exec sudo apt install -y openssh-server
-sprite proxy 2000:22
+sprite exec -o <org> -s <sprite> -- sudo apt-get install -y openssh-server
+sprite exec -o <org> -s <sprite> -- mkdir -p /home/sprite/.ssh
+cat ~/.ssh/id_ed25519.pub | \
+  sprite exec -o <org> -s <sprite> -- tee -a /home/sprite/.ssh/authorized_keys
+```
+
+Register `sshd` as a Service so it returns after cold wake:
+
+```bash
+sprite exec -o <org> -s <sprite> -- \
+  sprite-env services create sshd --cmd /usr/sbin/sshd
+```
+
+Mount through the Sprite proxy without reserving a fixed local port:
+
+```bash
+mkdir -p /tmp/sprite-mount
 sshfs -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 \
-  "sprite@localhost:" -p 2000 /tmp/sprite-mount
+  -o 'ProxyCommand=sprite proxy -o <org> -s %h -W :22' \
+  sprite@<sprite>: /tmp/sprite-mount
 ```
 
-Unmount when done and stop the proxy.
-
-## Port Conflict Handling
-
-If a local port is already in use:
+Unmount when done:
 
 ```bash
-lsof -i :3000
+umount /tmp/sprite-mount
+# macOS fallback: diskutil unmount /tmp/sprite-mount
 ```
 
-Then either choose a different local port or stop the conflicting process.
+## Port conflicts
 
-## Environment and Context Files
+`exec` may automatically forward ports opened by its process. Before starting a separate proxy:
 
-Useful environment variables from the CLI reference:
+```bash
+lsof -nP -iTCP:<local-port> -sTCP:LISTEN
+sprite sessions list -o <org> -s <sprite>
+```
 
-- `SPRITE_TOKEN`
-- `SPRITE_URL`
-- `SPRITES_API_URL`
+Then stop the conflicting exec/proxy, use `--no-port-forward` when the installed CLI supports it, or map a different local port:
 
-Useful local context file:
+```bash
+sprite proxy -o <org> -s <sprite> 3001:3000
+```
 
-- `.sprite` for selected org and Sprite in the current project
+## Authentication and CI
 
-Reach for these only when debugging selection/auth issues or integrating Sprite commands into scripts.
+Interactive authentication:
+
+```bash
+sprite org auth
+sprite org list
+```
+
+Non-interactive CI authentication:
+
+```bash
+sprite auth setup --token "$SPRITES_TOKEN"
+```
+
+Store tokens in the CI secret manager. Keep keyring storage enabled for interactive use. Do not print, commit, or transfer token-bearing CLI configuration.
+
+## Local context and wrong-target debugging
+
+`sprite use` creates a project-local `.sprite` file containing the organization and Sprite selection. Add it to `.gitignore`; it is user-specific.
+
+When behavior suggests the wrong target, bypass context:
+
+```bash
+sprite org list
+sprite list -o <org>
+sprite info -o <org> -s <sprite>
+sprite exec -o <org> -s <sprite> -- hostname
+```
+
+Useful configuration locations and overrides:
+
+- `~/.sprites/sprites.json` — CLI-managed global configuration; format may change.
+- `.sprite` — local organization/Sprite selection.
+- `SPRITE_TOKEN` — legacy token override.
+- `SPRITE_URL` — direct Sprite URL override for development.
+- `SPRITES_API_URL` — API endpoint override.
+
+Inspect values only when diagnosing authentication or endpoint selection, and redact credentials from output.
