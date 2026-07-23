@@ -5,6 +5,13 @@ prompt_new_tab_name = false
 show_agent_labels_on_pane_borders = true
 
 agent_panel_sort = "priority"
+
+[ui.sidebar.agents]
+rows = [
+  ["state_icon", "workspace", { token = "tab", fg = "#D8DEE9", dim = false }],
+  [{ token = "agent", dim = false }],
+]
+
 [ui.sound]
 enabled = true
 
@@ -28,3 +35,4 @@ focus_pane_right = "shift+right"
 
 [theme]
 name = "nord"
+auto_switch = false
