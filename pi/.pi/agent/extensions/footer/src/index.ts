@@ -1,9 +1,9 @@
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { formatBranchSuffix, renderDimmedFooterPath } from "./branch-status.ts";
 import { renderContextUsageLine } from "./context-usage.ts";
 import { buildFooterRightSide, composeFooterLine, renderFooterRightSide } from "./footer-line.ts";
-import { getSubbarFormatter, getSubbarSettings, type SubbarFormatter, type SubbarSettings } from "./subbar-adapter.ts";
+import { getSubscriptionUsageFormatter, getSubscriptionUsageSettings, type SubscriptionUsageFormatter, type SubscriptionUsageSettings } from "./subscription-usage-adapter.ts";
 
 function sanitizeStatusText(text: string): string {
 	return text
@@ -14,10 +14,10 @@ function sanitizeStatusText(text: string): string {
 
 export default function (pi: ExtensionAPI) {
 	let isDirty: boolean | null = null;
-	let subBarUsage: any | undefined;
-	let subBarSettings: SubbarSettings | undefined;
+	let subscriptionUsageUsage: any | undefined;
+	let subscriptionUsageSettings: SubscriptionUsageSettings | undefined;
 	let lastContext: ExtensionContext | undefined;
-	let formatUsageStatusWithWidth: SubbarFormatter | undefined;
+	let formatUsageStatusWithWidth: SubscriptionUsageFormatter | undefined;
 	let isShutdown = false;
 	const eventUnsubscribers: Array<() => void> = [];
 
@@ -33,15 +33,15 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	function refreshSubBarIntegration(): void {
-		formatUsageStatusWithWidth = getSubbarFormatter();
-		subBarSettings = getSubbarSettings();
+		formatUsageStatusWithWidth = getSubscriptionUsageFormatter();
+		subscriptionUsageSettings = getSubscriptionUsageSettings();
 	}
 
 	function requestSubCoreCurrentUsage(): void {
 		const request = {
 			type: "current" as const,
 			reply: (payload: { state?: { usage?: any } }) => {
-				subBarUsage = payload.state?.usage;
+				subscriptionUsageUsage = payload.state?.usage;
 			},
 		};
 		pi.events.emit("sub-core:request", request);
@@ -97,13 +97,13 @@ export default function (pi: ExtensionAPI) {
 					const pwdLine = renderDimmedFooterPath(theme, pwd);
 
 					let usageRight = "";
-					if (formatUsageStatusWithWidth && subBarUsage && subBarSettings) {
+					if (formatUsageStatusWithWidth && subscriptionUsageUsage && subscriptionUsageSettings) {
 						const cu = ctx.getContextUsage();
 						const contextInfo =
 							cu && cu.tokens !== null ? { tokens: cu.tokens, contextWindow: cu.contextWindow, percent: cu.percent ?? 0 } : undefined;
 						const usageLine = formatUsageStatusWithWidth(
 							theme,
-							subBarUsage,
+							subscriptionUsageUsage,
 							Math.max(20, Math.floor(width * 0.55)),
 							ctx.model
 								? {
@@ -112,7 +112,7 @@ export default function (pi: ExtensionAPI) {
 										scopedModelPatterns: [],
 								  }
 								: undefined,
-							subBarSettings,
+							subscriptionUsageSettings,
 							{ labelGapFill: false },
 							contextInfo,
 						);
@@ -253,7 +253,7 @@ export default function (pi: ExtensionAPI) {
 	eventUnsubscribers.push(
 		pi.events.on("sub-core:update-current", (payload) => {
 			const data = payload as { state?: { usage?: any } };
-			subBarUsage = data.state?.usage;
+			subscriptionUsageUsage = data.state?.usage;
 			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
 				lastContext.ui.setWidget("usage", undefined);
 				installFooter(lastContext);
@@ -264,7 +264,7 @@ export default function (pi: ExtensionAPI) {
 	eventUnsubscribers.push(
 		pi.events.on("sub-core:ready", (payload) => {
 			const data = payload as { state?: { usage?: any } };
-			subBarUsage = data.state?.usage;
+			subscriptionUsageUsage = data.state?.usage;
 			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
 				lastContext.ui.setWidget("usage", undefined);
 				installFooter(lastContext);
@@ -282,7 +282,7 @@ export default function (pi: ExtensionAPI) {
 			}
 			const currentProvider = data.state?.currentProvider;
 			if (currentProvider && byProvider.has(currentProvider)) {
-				subBarUsage = byProvider.get(currentProvider);
+				subscriptionUsageUsage = byProvider.get(currentProvider);
 			}
 			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
 				lastContext.ui.setWidget("usage", undefined);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyFooterDisplayDefaults, FOOTER_DISPLAY_DEFAULTS } from '../src/subbar-defaults.ts';
+import { applyFooterDisplayDefaults, FOOTER_DISPLAY_DEFAULTS } from '../src/subscription-usage-defaults.ts';
 
 test('footer defaults use the baked-in current theme baseline', () => {
   assert.equal(FOOTER_DISPLAY_DEFAULTS.alignment, 'right');

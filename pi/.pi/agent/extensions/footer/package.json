@@ -2,18 +2,24 @@
   "name": "pi-footer-extension",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs && tsx test/subscription-usage/core/all.test.ts && tsx test/subscription-usage/bar/all.test.ts"
+  },
   "dependencies": {
-    "@marckrenn/pi-sub-bar": "^1.5.0"
+    "typebox": "^1.1.24"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.1"
   },
   "peerDependencies": {
-    "@mariozechner/pi-ai": "*",
-    "@mariozechner/pi-coding-agent": "*",
-    "@mariozechner/pi-tui": "*"
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
   },
   "pi": {
     "extensions": [
       "./src/index.ts",
-      "./src/sub-core-if-ui.ts"
+      "./src/subscription-usage-core-if-ui.ts"
     ]
   }
 }
