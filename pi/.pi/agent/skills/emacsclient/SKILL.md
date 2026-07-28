@@ -1,6 +1,6 @@
 ---
 name: emacsclient
-description: Use emacsclient to open files in Emacs, inspect the selected buffer or region, evaluate Elisp, manage Emacs windows, or inspect project.el state.
+description: Use emacsclient to open files, inspect or debug a running Emacs, evaluate or reload Elisp, or manage windows.
 ---
 
 # Emacsclient Integration
@@ -12,7 +12,10 @@ Assume the Emacs server is available and run the requested operation directly. I
 - Shell-quote every path and place `--` before file arguments.
 - Treat user-provided paths and search text as data, not executable Elisp. Prefer `emacsclient` file arguments over interpolating them into Elisp strings.
 - For contextual inspection, operate on `(window-buffer (selected-window))`. This means Emacs' selected window; if multiple frames make the intended target ambiguous, inspect the frames or ask the user rather than guessing.
-- Guard optional state such as active regions and current projects.
+- Guard optional state such as active regions and current projects. Resolve transient buffers with `get-buffer` immediately before using them because their names and existence can change.
+- Prefer small, labeled results such as plists over unbounded dumps of hooks, faces, properties, or buffer text.
+- Check unfamiliar, internal, package-provided, or version-sensitive functions with `fboundp` before using them in live diagnostics. Prefer public functions.
+- Use inline `--eval` for small expressions. Put complex instrumentation or reusable diagnostics in a temporary `.el` file and load it.
 - Split, delete, or otherwise mutate windows only when the user explicitly requests it.
 
 An operation is complete when it succeeds against the intended buffer or frame. Otherwise, report the server, state, or frame ambiguity that prevented it.
@@ -45,6 +48,24 @@ Use this pattern for the selected buffer:
 (with-current-buffer (window-buffer (selected-window))
   <expression>)
 ```
+
+Guard access to a transient named buffer:
+
+```elisp
+(let ((buffer (get-buffer "<buffer-name>")))
+  (when buffer
+    (with-current-buffer buffer
+      <expression>)))
+```
+
+### Reloading Elisp
+
+```bash
+# Reload a changed file
+emacsclient --eval '(load-file "/absolute/path/to/file.el")'
+```
+
+For complex diagnostics, create a temporary directory with `mktemp -d`, write the diagnostic `.el` file there, load it with `load-file`, and remove the directory after restoring any temporary advice or hooks.
 
 ## Inspecting the Selected Buffer
 
@@ -97,24 +118,24 @@ emacsclient --eval '(with-current-buffer (window-buffer (selected-window))
     (min (point-max) (+ (point) 100))))'
 ```
 
-## Project.el
+## Debugging Live Emacs
 
-These expressions return `nil` outside a project instead of raising an error.
+Advance on observed evidence and test one hypothesis at a time.
+
+1. Inspect a compact, labeled baseline before changing state. This step is complete when the intended buffer and relevant live values are confirmed.
+2. Reproduce the behavior and capture comparable before/after state. This step is complete when every relevant difference is known, including the finding that no Lisp-visible state changed.
+3. Instrument the narrowest boundary containing the transition, such as a hook, timer, process filter, command boundary, or redisplay function. This step is complete when the transition is localized to one interval or function.
+4. Change one suspected factor and reproduce again. This step is complete when the behavior follows that factor or the hypothesis is rejected.
+5. Remove temporary advice, hooks, files, and live configuration changes. This step is complete when Emacs is restored and the conclusion names only verified evidence.
+
+## Current Project Root
+
+Returns `nil` when the selected buffer is outside a project.
 
 ```bash
-# Current project root
 emacsclient --eval '(with-current-buffer (window-buffer (selected-window))
   (let ((project (project-current nil)))
     (when project (project-root project))))'
-
-# Current project object
-emacsclient --eval '(with-current-buffer (window-buffer (selected-window))
-  (project-current nil))'
-
-# Number of project files
-emacsclient --eval '(with-current-buffer (window-buffer (selected-window))
-  (let ((project (project-current nil)))
-    (when project (length (project-files project)))))'
 ```
 
 ## Frames and Windows
@@ -134,8 +155,15 @@ emacsclient --eval '(split-window-below)'
 emacsclient --eval '(delete-other-windows)'
 ```
 
-## Function Availability
+## Function and Variable Availability
 
 ```bash
+# Function
 emacsclient --eval '(fboundp (quote <function-name>))'
+
+# Variable
+emacsclient --eval '(boundp (quote <variable-name>))'
+
+# Loaded feature
+emacsclient --eval '(featurep (quote <feature-name>))'
 ```
