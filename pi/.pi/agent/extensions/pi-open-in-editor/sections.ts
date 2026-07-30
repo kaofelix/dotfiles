@@ -7,7 +7,7 @@ export interface FileReferenceSection {
 }
 
 const sectionDefinitions: Array<{ source: FileReferenceSource; title: string }> = [
-	{ source: "mentioned", title: "Mentioned in last response" },
+	{ source: "mentioned", title: "Recently mentioned" },
 	{ source: "edited", title: "Recent edits" },
 	{ source: "read", title: "Recent reads" },
 ];

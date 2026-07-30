@@ -1,9 +1,9 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 import { openInEmacs } from "./emacsclient.ts";
-import { combineFileReferences, extractFileReferences, type FileReference } from "./paths.ts";
+import { combineFileReferences, type FileReference } from "./paths.ts";
 import { FilePicker } from "./picker.ts";
-import { getLastAssistantText, getRecentFileReferences } from "./session.ts";
+import { getRecentFileReferences, getRecentlyMentionedFileReferences } from "./session.ts";
 
 async function pickFile(ctx: ExtensionContext, references: FileReference[]): Promise<FileReference | null> {
 	return ctx.ui.custom<FileReference | null>((tui, theme, keybindings, done) =>
@@ -18,8 +18,7 @@ async function openRecentFile(ctx: ExtensionContext): Promise<void> {
 	}
 
 	const branch = ctx.sessionManager.getBranch();
-	const text = getLastAssistantText(branch);
-	const mentioned = text ? extractFileReferences(text, ctx.cwd) : [];
+	const mentioned = getRecentlyMentionedFileReferences(branch, ctx.cwd);
 	const recent = getRecentFileReferences(branch, ctx.cwd);
 	const references = combineFileReferences(mentioned, recent);
 	if (references.length === 0) {

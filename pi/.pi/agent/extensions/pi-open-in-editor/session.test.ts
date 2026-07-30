@@ -4,27 +4,31 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { getLastAssistantText, getRecentFileReferences } from "./session.ts";
+import { getRecentFileReferences, getRecentlyMentionedFileReferences } from "./session.ts";
 
-test("returns text blocks from the latest assistant message on the active branch", () => {
+test("returns unique mentioned files from recent assistant messages, newest message first", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-open-in-editor-session-"));
+	for (const name of ["old.ts", "shared.ts", "latest.ts"]) {
+		await writeFile(join(cwd, name), name);
+	}
 	const entries = [
-		{ type: "message", message: { role: "assistant", content: [{ type: "text", text: "old.ts" }] } },
+		{
+			type: "message",
+			message: { role: "assistant", content: [{ type: "text", text: "old.ts then shared.ts" }] },
+		},
 		{ type: "message", message: { role: "user", content: "continue" } },
 		{
 			type: "message",
-			message: {
-				role: "assistant",
-				content: [
-					{ type: "thinking", thinking: "secret.ts" },
-					{ type: "text", text: "src/new.ts" },
-					{ type: "toolCall", name: "read", arguments: { path: "tool.ts" } },
-					{ type: "text", text: "README.md" },
-				],
-			},
+			message: { role: "assistant", content: [{ type: "text", text: "latest.ts then shared.ts" }] },
 		},
 	];
 
-	assert.equal(getLastAssistantText(entries), "src/new.ts\nREADME.md");
+	assert.deepEqual(getRecentlyMentionedFileReferences(entries, cwd), [
+		{ path: join(cwd, "latest.ts"), displayPath: "latest.ts", source: "mentioned" },
+		{ path: join(cwd, "shared.ts"), displayPath: "shared.ts", source: "mentioned" },
+		{ path: join(cwd, "old.ts"), displayPath: "old.ts", source: "mentioned" },
+	]);
+	assert.equal(getRecentlyMentionedFileReferences(entries, cwd, 2).length, 2);
 });
 
 test("excludes failed file tool calls from recent files", async () => {

@@ -1,24 +1,46 @@
-import { fileReferenceFromPath, type FileReference, type FileReferenceSource } from "./paths.ts";
+import {
+	extractFileReferences,
+	fileReferenceFromPath,
+	type FileReference,
+	type FileReferenceSource,
+} from "./paths.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
 }
 
-export function getLastAssistantText(entries: readonly unknown[]): string | undefined {
-	for (let index = entries.length - 1; index >= 0; index--) {
-		const entry = entries[index];
-		if (!isRecord(entry) || entry.type !== "message" || !isRecord(entry.message)) continue;
-		if (entry.message.role !== "assistant" || !Array.isArray(entry.message.content)) continue;
+function getAssistantText(entry: unknown): string | undefined {
+	if (!isRecord(entry) || entry.type !== "message" || !isRecord(entry.message)) return undefined;
+	if (entry.message.role !== "assistant" || !Array.isArray(entry.message.content)) return undefined;
 
-		const text = entry.message.content
-			.filter((block): block is Record<string, unknown> => isRecord(block) && block.type === "text")
-			.map((block) => block.text)
-			.filter((value): value is string => typeof value === "string")
-			.join("\n");
-		return text || undefined;
+	const text = entry.message.content
+		.filter((block): block is Record<string, unknown> => isRecord(block) && block.type === "text")
+		.map((block) => block.text)
+		.filter((value): value is string => typeof value === "string")
+		.join("\n");
+	return text || undefined;
+}
+
+export function getRecentlyMentionedFileReferences(
+	entries: readonly unknown[],
+	cwd: string,
+	limit = 10,
+): FileReference[] {
+	const references: FileReference[] = [];
+	const seen = new Set<string>();
+
+	for (let index = entries.length - 1; index >= 0 && references.length < limit; index--) {
+		const text = getAssistantText(entries[index]);
+		if (!text) continue;
+		for (const reference of extractFileReferences(text, cwd)) {
+			if (seen.has(reference.path)) continue;
+			seen.add(reference.path);
+			references.push(reference);
+			if (references.length === limit) break;
+		}
 	}
 
-	return undefined;
+	return references;
 }
 
 export function getRecentFileReferences(

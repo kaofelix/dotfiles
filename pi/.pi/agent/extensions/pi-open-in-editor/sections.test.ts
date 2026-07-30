@@ -12,7 +12,7 @@ const references: FileReference[] = [
 
 test("groups filtered files under ordered non-selectable section metadata", () => {
 	assert.deepEqual(groupFileReferences([references[0]!, references[2]!]), [
-		{ source: "mentioned", title: "Mentioned in last response", references: [references[0]] },
+		{ source: "mentioned", title: "Recently mentioned", references: [references[0]] },
 		{ source: "read", title: "Recent reads", references: [references[2]] },
 	]);
 });
