@@ -4,6 +4,8 @@ import { formatBranchSuffix, renderDimmedFooterPath } from "./branch-status.ts";
 import { renderContextUsageLine } from "./context-usage.ts";
 import { buildFooterRightSide, composeFooterLine, renderFooterRightSide } from "./footer-line.ts";
 import { getSubscriptionUsageFormatter, getSubscriptionUsageSettings, type SubscriptionUsageFormatter, type SubscriptionUsageSettings } from "./subscription-usage-adapter.ts";
+import createSubscriptionUsageService from "./subscription-usage/core/index.ts";
+import type { UsageSnapshot } from "./subscription-usage/shared.ts";
 
 function sanitizeStatusText(text: string): string {
 	return text
@@ -14,12 +16,11 @@ function sanitizeStatusText(text: string): string {
 
 export default function (pi: ExtensionAPI) {
 	let isDirty: boolean | null = null;
-	let subscriptionUsageUsage: any | undefined;
+	let subscriptionUsageUsage: UsageSnapshot | undefined;
 	let subscriptionUsageSettings: SubscriptionUsageSettings | undefined;
 	let lastContext: ExtensionContext | undefined;
 	let formatUsageStatusWithWidth: SubscriptionUsageFormatter | undefined;
 	let isShutdown = false;
-	const eventUnsubscribers: Array<() => void> = [];
 
 	async function refreshDirtyState(ctx: ExtensionContext): Promise<void> {
 		const repoCheck = await pi.exec("git", ["-C", ctx.cwd, "rev-parse", "--is-inside-work-tree"]);
@@ -37,14 +38,8 @@ export default function (pi: ExtensionAPI) {
 		subscriptionUsageSettings = getSubscriptionUsageSettings();
 	}
 
-	function requestSubCoreCurrentUsage(): void {
-		const request = {
-			type: "current" as const,
-			reply: (payload: { state?: { usage?: any } }) => {
-				subscriptionUsageUsage = payload.state?.usage;
-			},
-		};
-		pi.events.emit("sub-core:request", request);
+	function readCurrentSubscriptionUsage(): void {
+		subscriptionUsageUsage = usageService.getCurrentUsage();
 	}
 
 	function hasFooterUi(ctx: ExtensionContext): boolean {
@@ -208,9 +203,21 @@ export default function (pi: ExtensionAPI) {
 			return;
 		}
 		refreshSubBarIntegration();
-		requestSubCoreCurrentUsage();
+		readCurrentSubscriptionUsage();
 		installFooter(ctx);
 	}
+
+	function applySubscriptionUsageUpdate(usage: UsageSnapshot | undefined): void {
+		subscriptionUsageUsage = usage;
+		if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
+			lastContext.ui.setWidget("usage", undefined);
+			installFooter(lastContext);
+		}
+	}
+
+	const usageService = createSubscriptionUsageService(pi, {
+		onCurrentUsage: applySubscriptionUsageUpdate,
+	});
 
 	pi.on("session_start", async (_event, ctx) => {
 		if (!hasFooterUi(ctx)) {
@@ -228,9 +235,6 @@ export default function (pi: ExtensionAPI) {
 		if (hasFooterUi(ctx)) {
 			ctx.ui.setFooter(undefined);
 			ctx.ui.setWidget("usage", undefined);
-		}
-		for (const unsubscribe of eventUnsubscribers.splice(0)) {
-			unsubscribe();
 		}
 	});
 
@@ -250,44 +254,4 @@ export default function (pi: ExtensionAPI) {
 		installFooter(ctx);
 	});
 
-	eventUnsubscribers.push(
-		pi.events.on("sub-core:update-current", (payload) => {
-			const data = payload as { state?: { usage?: any } };
-			subscriptionUsageUsage = data.state?.usage;
-			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
-				lastContext.ui.setWidget("usage", undefined);
-				installFooter(lastContext);
-			}
-		}),
-	);
-
-	eventUnsubscribers.push(
-		pi.events.on("sub-core:ready", (payload) => {
-			const data = payload as { state?: { usage?: any } };
-			subscriptionUsageUsage = data.state?.usage;
-			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
-				lastContext.ui.setWidget("usage", undefined);
-				installFooter(lastContext);
-			}
-		}),
-	);
-
-	eventUnsubscribers.push(
-		pi.events.on("sub-core:update-all", (payload) => {
-			const data = payload as { state?: { entries?: Array<{ usage?: any }>; currentProvider?: string } };
-			const entries = data.state?.entries ?? [];
-			const byProvider = new Map<string, any>();
-			for (const entry of entries) {
-				if (entry?.usage?.provider) byProvider.set(entry.usage.provider, entry.usage);
-			}
-			const currentProvider = data.state?.currentProvider;
-			if (currentProvider && byProvider.has(currentProvider)) {
-				subscriptionUsageUsage = byProvider.get(currentProvider);
-			}
-			if (!isShutdown && lastContext && hasFooterUi(lastContext)) {
-				lastContext.ui.setWidget("usage", undefined);
-				installFooter(lastContext);
-			}
-		}),
-	);
 }

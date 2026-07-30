@@ -13,8 +13,6 @@ export type {
 	UsageError,
 	UsageErrorCode,
 	ProviderUsageEntry,
-	SubCoreState,
-	SubCoreEvents,
 } from "../../shared.js";
 
 export { PROVIDERS } from "../../shared.js";

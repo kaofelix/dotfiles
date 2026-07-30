@@ -18,8 +18,7 @@
   },
   "pi": {
     "extensions": [
-      "./src/index.ts",
-      "./src/subscription-usage-core-if-ui.ts"
+      "./src/index.ts"
     ]
   }
 }

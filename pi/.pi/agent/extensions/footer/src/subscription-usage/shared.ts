@@ -119,21 +119,6 @@ export interface CoreSettings {
 	defaultProvider: ProviderName | null;
 }
 
-export type SubCoreState = {
-	provider?: ProviderName;
-	usage?: UsageSnapshot;
-};
-
-export type SubCoreAllState = {
-	provider?: ProviderName;
-	entries: ProviderUsageEntry[];
-};
-
-export type SubCoreEvents =
-	| { type: "sub-core:ready"; state: SubCoreState }
-	| { type: "sub-core:update-current"; state: SubCoreState }
-	| { type: "sub-core:update-all"; state: SubCoreAllState };
-
 export interface StatusPageComponentMatch {
 	id?: string;
 	name?: string;

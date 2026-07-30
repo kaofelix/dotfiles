@@ -5,35 +5,17 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import * as fs from "node:fs";
-import type { Dependencies, ProviderName, SubCoreState, UsageSnapshot } from "./src/types.js";
+import type { Dependencies, ProviderName, UsageSnapshot } from "./src/types.js";
 import { getDefaultSettings, type Settings } from "./src/settings-types.js";
 import type { ProviderUsageEntry } from "./src/usage/types.js";
 import { createDefaultDependencies } from "./src/dependencies.js";
 import { createUsageController, type UsageUpdate } from "./src/usage/controller.js";
 import { fetchUsageEntries, getCachedUsageEntries } from "./src/usage/fetch.js";
-import { onCacheSnapshot, onCacheUpdate, watchCacheUpdates, type Cache } from "./src/cache.js";
-import { isExpectedMissingData } from "./src/errors.js";
+import { onCacheUpdate, watchCacheUpdates } from "./src/cache.js";
 import { prioritizeWindowsForModel } from "./src/utils.js";
 import { getStorage } from "./src/storage.js";
 import { clearSettingsCache, loadSettings, saveSettings, SETTINGS_PATH } from "./src/settings.js";
 import { showSettingsUI } from "./src/settings-ui.js";
-
-type SubCoreRequest =
-	| {
-			type?: "current";
-			includeSettings?: boolean;
-			reply: (payload: { state: SubCoreState; settings?: Settings }) => void;
-	  }
-	| {
-			type: "entries";
-			force?: boolean;
-			reply: (payload: { entries: ProviderUsageEntry[] }) => void;
-	  };
-
-type SubCoreAction = {
-	type: "refresh" | "cycleProvider";
-	force?: boolean;
-};
 
 const TOOL_NAMES = {
 	usage: ["sub_get_usage", "get_current_usage"],
@@ -42,7 +24,15 @@ const TOOL_NAMES = {
 
 type ToolName = (typeof TOOL_NAMES)[keyof typeof TOOL_NAMES][number];
 
-type SubCoreGlobalState = { active: boolean };
+export type SubscriptionUsageService = {
+	getCurrentUsage(): UsageSnapshot | undefined;
+};
+
+export type SubscriptionUsageCallbacks = {
+	onCurrentUsage?(usage: UsageSnapshot | undefined): void;
+};
+
+type SubCoreGlobalState = { service: SubscriptionUsageService };
 const subCoreGlobal = globalThis as typeof globalThis & { __piSubCore?: SubCoreGlobalState };
 
 function deepMerge<T extends object>(target: T, source: Partial<T>): T {
@@ -76,12 +66,17 @@ function stripUsageProvider(usage?: UsageSnapshot): Omit<UsageSnapshot, "provide
 /**
  * Create the extension
  */
-export default function createExtension(pi: ExtensionAPI, deps: Dependencies = createDefaultDependencies()): void {
-	if (subCoreGlobal.__piSubCore?.active) {
-		return;
+export default function createSubscriptionUsageService(
+	pi: ExtensionAPI,
+	callbacks: SubscriptionUsageCallbacks = {},
+	deps: Dependencies = createDefaultDependencies(),
+): SubscriptionUsageService {
+	const existingService = subCoreGlobal.__piSubCore?.service;
+	if (existingService) {
+		return existingService;
 	}
-	subCoreGlobal.__piSubCore = { active: true };
 
+	let active = false;
 	let usageRefreshInterval: ReturnType<typeof setInterval> | undefined;
 	let statusRefreshInterval: ReturnType<typeof setInterval> | undefined;
 	let lastContext: ExtensionContext | undefined;
@@ -90,7 +85,11 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 	let settings: Settings = getDefaultSettings();
 	let settingsLoaded = false;
 	let toolsRegistered = false;
-	let lastState: SubCoreState = {};
+	let lastState: { provider?: ProviderName; usage?: UsageSnapshot } = {};
+	const service: SubscriptionUsageService = {
+		getCurrentUsage: () => lastState.usage,
+	};
+	subCoreGlobal.__piSubCore = { service };
 	let settingsSnapshot = "";
 	let settingsMtimeMs = 0;
 	let settingsDebounce: NodeJS.Timeout | undefined;
@@ -105,7 +104,6 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 		providerCycleIndex: 0,
 	};
 
-	let lastAllSnapshot = "";
 	let lastCurrentSnapshot = "";
 
 	const emitCurrentUpdate = (provider?: ProviderName, usage?: UsageSnapshot): void => {
@@ -117,28 +115,8 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 		const payload = JSON.stringify(lastState);
 		if (payload === lastCurrentSnapshot) return;
 		lastCurrentSnapshot = payload;
-		pi.events.emit("sub-core:update-current", { state: lastState });
+		callbacks.onCurrentUsage?.(lastState.usage);
 	};
-
-	const unsubscribeCacheSnapshot = onCacheSnapshot((cache: Cache) => {
-		const ttlMs = settings.behavior.refreshInterval * 1000;
-		const now = Date.now();
-		const entries: ProviderUsageEntry[] = [];
-		for (const provider of settings.providerOrder) {
-			const entry = cache[provider];
-			if (!entry || !entry.usage) continue;
-			if (now - entry.fetchedAt >= ttlMs) continue;
-			const usage = { ...entry.usage, status: entry.status };
-			if (usage.error && isExpectedMissingData(usage.error)) continue;
-			entries.push({ provider, usage });
-		}
-		const payload = JSON.stringify({ provider: controllerState.currentProvider, entries });
-		if (payload === lastAllSnapshot) return;
-		lastAllSnapshot = payload;
-		pi.events.emit("sub-core:update-all", {
-			state: { provider: controllerState.currentProvider, entries },
-		});
-	});
 
 	const unsubscribeCache = onCacheUpdate((provider, entry) => {
 		if (!controllerState.currentProvider || provider !== controllerState.currentProvider) return;
@@ -190,11 +168,6 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 		}
 	}
 
-	async function cycleProvider(ctx: ExtensionContext): Promise<void> {
-		ensureSettingsLoaded();
-		await controller.cycleProvider(ctx, settings, controllerState, emitUpdate);
-	}
-
 	function setupRefreshInterval(): void {
 		if (usageRefreshInterval) {
 			clearInterval(usageRefreshInterval);
@@ -237,7 +210,6 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 		settings = deepMerge(settings, patch);
 		saveSettings(settings);
 		setupRefreshInterval();
-		pi.events.emit("sub-core:settings:updated", { settings });
 	}
 
 	function readSettingsFile(): string | undefined {
@@ -253,7 +225,6 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 		settings = loadSettings();
 		registerToolsFromSettings(settings);
 		setupRefreshInterval();
-		pi.events.emit("sub-core:settings:updated", { settings });
 		if (lastContext) {
 			void refresh(lastContext, { allowStaleCache: true, skipFetch: true });
 			void refreshStatus(lastContext, { allowStaleCache: true, skipFetch: true });
@@ -417,54 +388,18 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 		},
 	});
 
-	pi.events.on("sub-core:request", async (payload) => {
-		ensureSettingsLoaded();
-		const request = payload as SubCoreRequest;
-		if (request.type === "entries") {
-			const entries = await getEntries(request.force);
-			if (lastContext && settings.statusRefresh.refreshInterval > 0) {
-				await refreshStatus(lastContext, { force: request.force });
-			}
-			request.reply({ entries });
-			return;
-		}
-		request.reply({
-			state: lastState,
-			settings: request.includeSettings ? settings : undefined,
-		});
-	});
-
-	pi.events.on("sub-core:settings:patch", (payload) => {
-		const patch = (payload as { patch?: Partial<Settings> }).patch;
-		if (!patch) return;
-		applySettingsPatch(patch);
-		if (lastContext) {
-			void refresh(lastContext);
-		}
-	});
-
-	pi.events.on("sub-core:action", (payload) => {
-		const action = payload as SubCoreAction;
-		if (!lastContext) return;
-		switch (action.type) {
-			case "refresh":
-				void refresh(lastContext, { force: action.force });
-				break;
-			case "cycleProvider":
-				void cycleProvider(lastContext);
-				break;
-		}
-	});
-
 	pi.on("session_start", async (_event, ctx) => {
+		if (!ctx.hasUI) return;
+		active = true;
 		lastContext = ctx;
 		ensureSettingsLoaded();
 		void refresh(ctx, { allowStaleCache: true, skipFetch: true });
 		void refreshStatus(ctx, { allowStaleCache: true, skipFetch: true });
-		pi.events.emit("sub-core:ready", { state: lastState, settings });
+		callbacks.onCurrentUsage?.(lastState.usage);
 	});
 
 	pi.on("turn_start", async (_event, ctx) => {
+		if (!active) return;
 		if (settings.behavior.refreshOnTurnStart) {
 			await refresh(ctx);
 		}
@@ -474,6 +409,7 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 	});
 
 	pi.on("tool_result", async (_event, ctx) => {
+		if (!active) return;
 		if (settings.behavior.refreshOnToolResult) {
 			await refresh(ctx, { force: true });
 		}
@@ -483,24 +419,12 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 	});
 
 	pi.on("turn_end", async (_event, ctx) => {
+		if (!active) return;
 		await refresh(ctx, { force: true });
 	});
 
-	pi.on("session_switch", async (_event, ctx) => {
-		controllerState.currentProvider = undefined;
-		controllerState.cachedUsage = undefined;
-		await refresh(ctx);
-		await refreshStatus(ctx);
-	});
-
-	pi.on("session_branch" as unknown as "session_start", async (_event: unknown, ctx: ExtensionContext) => {
-		controllerState.currentProvider = undefined;
-		controllerState.cachedUsage = undefined;
-		await refresh(ctx);
-		await refreshStatus(ctx);
-	});
-
-	pi.on("model_select" as unknown as "session_start", async (_event: unknown, ctx: ExtensionContext) => {
+	pi.on("model_select", async (_event, ctx) => {
+		if (!active) return;
 		controllerState.currentProvider = undefined;
 		controllerState.cachedUsage = undefined;
 		void refresh(ctx, { force: true, allowStaleCache: true });
@@ -508,6 +432,7 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 	});
 
 	pi.on("session_shutdown", async () => {
+		active = false;
 		if (usageRefreshInterval) {
 			clearInterval(usageRefreshInterval);
 			usageRefreshInterval = undefined;
@@ -530,11 +455,12 @@ export default function createExtension(pi: ExtensionAPI, deps: Dependencies = c
 		settingsSnapshot = "";
 		settingsMtimeMs = 0;
 		unsubscribeCache();
-		unsubscribeCacheSnapshot();
 		stopCacheWatch?.();
 		stopCacheWatch = undefined;
 		cacheWatchStarted = false;
 		lastContext = undefined;
 		subCoreGlobal.__piSubCore = undefined;
 	});
+
+	return service;
 }
