@@ -10,14 +10,15 @@ yet.
 
 I'll also need to install [oh-my-zsh](https://ohmyz.sh/#install).
 
-There's a `Brewfile` with a handy list of tools that I use. I can run
+The `Brewfile` contains machine-level tools and macOS applications,
+while `mise` manages language runtimes and standalone development
+tools. Set up everything with:
 
 ``` shell
-brew bundle install
+make setup
 ```
 
-to add everything in one go (including Emacs). After that, it would be
-a good idea to clone my [Emacs
+It would also be a good idea to clone my [Emacs
 config](https://github.com/kaofelix/kao-emacs-config) to `.emacs.d` to
 have all the goodness.
 
@@ -25,11 +26,10 @@ have all the goodness.
 git clone git@github.com:kaofelix/kao-emacs-config.git
 ```
 
-Then I can `stow`my stuff to it's proper place
+To update everything later:
 
 ``` shell
-stow zsh -t ~/
-stow bin -t ~/
+make update
 ```
 
 Now I'm home again.

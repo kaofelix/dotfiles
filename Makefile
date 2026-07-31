@@ -1,4 +1,4 @@
-STOW_PACKAGES = bin zsh git pi tmux ghostty herdr
+STOW_PACKAGES = bin zsh git pi tmux ghostty herdr mise
 STOW_DIR = .
 TARGET_DIR = ${HOME}
 
@@ -8,10 +8,21 @@ TARGET_DIR = ${HOME}
 stow: $(STOW_PACKAGES)
 	@echo "🚚 All packages stowed!"
 
-bin zsh git pi tmux ghostty herdr:
+bin zsh git pi tmux ghostty herdr mise:
 	@echo "📦 $@"
 	stow -v -R $@ --target=$(TARGET_DIR) --adopt
 	@echo ""
+
+.PHONY: setup update
+setup:
+	brew bundle install
+	$(MAKE) stow
+	mise install
+
+update:
+	brew update
+	brew upgrade
+	mise upgrade
 
 .PHONY: unstow
 unstow:

@@ -128,3 +128,5 @@ alias ask='noglob _ask'
 if [ -f "$HOME/.zshrc.local" ]; then
     source "$HOME/.zshrc.local"
 fi
+
+eval "$(mise activate zsh)"
