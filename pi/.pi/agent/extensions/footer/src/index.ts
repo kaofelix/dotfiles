@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import { formatBranchSuffix, renderDimmedFooterPath } from "./branch-status.ts";
+import { formatBranchSuffix, renderDimmedFooterPath, truncateFooterPath } from "./branch-status.ts";
 import { renderContextUsageLine } from "./context-usage.ts";
 import { buildFooterRightSide, composeFooterLine, renderFooterRightSide } from "./footer-line.ts";
 import { getSubscriptionUsageFormatter, getSubscriptionUsageSettings, type SubscriptionUsageFormatter, type SubscriptionUsageSettings } from "./subscription-usage-adapter.ts";
@@ -78,16 +78,7 @@ export default function (pi: ExtensionAPI) {
 						pwd = `${pwd} • ${sessionName}`;
 					}
 
-					if (pwd.length > width) {
-						const half = Math.floor(width / 2) - 2;
-						if (half > 1) {
-							const start = pwd.slice(0, half);
-							const end = pwd.slice(-(half - 1));
-							pwd = `${start}...${end}`;
-						} else {
-							pwd = pwd.slice(0, Math.max(1, width));
-						}
-					}
+					pwd = truncateFooterPath(pwd, width);
 
 					const pwdLine = renderDimmedFooterPath(theme, pwd);
 
