@@ -2,6 +2,7 @@
 [user]
 	name = Kao Félix
 	email = me@kaofelix.dev
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFiCEJ2BlmwpxuYs27Nx1Y91o6TrvL3p19Wne+waS4HE
 
 [init]
 	defaultBranch = main
@@ -56,3 +57,10 @@
 	smudge = git-lfs smudge -- %f
 	required = true
 	process = git-lfs filter-process
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+	allowedSignersFile = ~/.config/git/allowed_signers
+[commit]
+	gpgsign = true
