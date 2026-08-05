@@ -1,4 +1,16 @@
 !.local/
 !.local/*
+
+.DS_Store
 .aider*
 node_modules
+
+# Local environments and plaintext credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+**/auth.json
+**/credentials.json

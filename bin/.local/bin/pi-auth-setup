@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: pi-auth-setup [--check]
+
+Merge 1Password-backed API-key entries from ~/.pi/agent/auth.op.json into
+~/.pi/agent/auth.json without resolving or writing plaintext secrets.
+Existing Pi-managed OAuth credentials are preserved.
+
+Options:
+  --check  Resolve every configured command to verify 1Password access,
+           without printing secret values.
+  -h, --help
+           Show this help.
+EOF
+}
+
+check=false
+case "${1:-}" in
+    "") ;;
+    --check) check=true ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+esac
+
+agent_dir="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+source_file="$agent_dir/auth.op.json"
+auth_file="$agent_dir/auth.json"
+
+if [[ ! -f "$source_file" ]]; then
+    echo "❌ Missing $source_file" >&2
+    exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+    echo "❌ jq is required" >&2
+    exit 1
+fi
+
+jq_filter=$(cat <<'JQ'
+type == "object" and all(.[];
+    .type == "api_key" and
+    (.key | test("^!op read 'op://[^']+'$"))
+)
+JQ
+)
+if ! jq -e "$jq_filter" "$source_file" >/dev/null; then
+    echo "❌ $source_file must contain only command-backed API-key entries" >&2
+    exit 1
+fi
+
+mkdir -p "$agent_dir"
+umask 077
+tmp_file=$(mktemp "${TMPDIR:-/tmp}/pi-auth.XXXXXX")
+trap 'rm -f "$tmp_file"' EXIT
+
+if [[ -f "$auth_file" ]]; then
+    jq -s '.[0] * .[1]' "$auth_file" "$source_file" > "$tmp_file"
+else
+    jq '.' "$source_file" > "$tmp_file"
+fi
+
+chmod 600 "$tmp_file"
+mv "$tmp_file" "$auth_file"
+trap - EXIT
+
+echo "✅ Merged 1Password-backed provider credentials into $auth_file"
+
+if [[ "$check" == true ]]; then
+    if ! command -v op >/dev/null 2>&1; then
+        echo "❌ op is required for --check" >&2
+        exit 1
+    fi
+
+    while IFS= read -r command; do
+        reference="${command#"!op read '"}"
+        reference="${reference%"'"}"
+        op read "$reference" >/dev/null
+    done < <(jq -r '.[].key' "$source_file")
+    echo "✅ Verified all configured 1Password references"
+fi
