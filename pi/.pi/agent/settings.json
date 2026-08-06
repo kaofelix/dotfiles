@@ -8,6 +8,7 @@
   "doubleEscapeAction": "tree",
   "editorPaddingX": 0,
   "showHardwareCursor": true,
+  "tuiMode": "fullscreen",
   "packages": [
     {
       "source": "git:github.com/juanibiapina/browse-cli",
