@@ -18,6 +18,23 @@ tools. Set up everything with:
 make setup
 ```
 
+`make setup` also merges the 1Password-backed inference provider entries
+from `~/.pi/agent/auth.op.json` into Pi's local `auth.json`, preserving
+Pi-managed OAuth credentials. To verify the secret references without
+printing their values, run:
+
+``` shell
+pi-auth-setup --check
+```
+
+When more than one 1Password account is configured, set `OP_ACCOUNT` once
+in the ignored `~/.zshrc.local` file. The tracked auth references then stay
+account-independent:
+
+``` shell
+export OP_ACCOUNT="<account ID or shorthand>"
+```
+
 It would also be a good idea to clone my [Emacs
 config](https://github.com/kaofelix/kao-emacs-config) to `.emacs.d` to
 have all the goodness.

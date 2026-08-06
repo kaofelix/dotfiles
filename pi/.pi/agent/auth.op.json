@@ -1,0 +1,30 @@
+{
+  "deepseek": {
+    "type": "api_key",
+    "key": "!op read 'op://Secrets/Inference/deepseek'"
+  },
+  "kimi-coding": {
+    "type": "api_key",
+    "key": "!op read 'op://Secrets/Inference/kimi'"
+  },
+  "synthetic": {
+    "type": "api_key",
+    "key": "!op read 'op://Secrets/Inference/synthetic'"
+  },
+  "mistral": {
+    "type": "api_key",
+    "key": "!op read 'op://Secrets/Inference/mistral'"
+  },
+  "huggingface": {
+    "type": "api_key",
+    "key": "!op read 'op://Secrets/Inference/huggingface'"
+  },
+  "fireworks": {
+    "type": "api_key",
+    "key": "!op read 'op://Secrets/Inference/fireworks'"
+  },
+  "hyper": {
+    "type": "api_key",
+    "key": "!op read 'op://Secrets/Inference/hyper'"
+  }
+}
