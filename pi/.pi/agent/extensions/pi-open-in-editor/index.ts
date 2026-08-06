@@ -1,5 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
+import { BranchCursor } from "./branch-cursor.ts";
 import { openInEmacs } from "./emacsclient.ts";
 import { combineFileReferences, type FileReference } from "./paths.ts";
 import { FilePicker } from "./picker.ts";
@@ -11,13 +12,13 @@ async function pickFile(ctx: ExtensionContext, references: FileReference[]): Pro
 	);
 }
 
-async function openRecentFile(ctx: ExtensionContext): Promise<void> {
+async function openRecentFile(ctx: ExtensionContext, branchCursor: BranchCursor): Promise<void> {
 	if (ctx.mode !== "tui") {
 		ctx.ui.notify("open-in-editor requires interactive mode", "error");
 		return;
 	}
 
-	const branch = ctx.sessionManager.getBranch();
+	const branch = branchCursor.getBranch(ctx.sessionManager);
 	const mentioned = getRecentlyMentionedFileReferences(branch, ctx.cwd);
 	const recent = getRecentFileReferences(branch, ctx.cwd);
 	const references = combineFileReferences(mentioned, recent);
@@ -39,13 +40,28 @@ async function openRecentFile(ctx: ExtensionContext): Promise<void> {
 }
 
 export default function (pi: ExtensionAPI) {
+	const branchCursor = new BranchCursor();
+
+	pi.on("session_tree", (event) => {
+		branchCursor.setLeaf(event.newLeafId);
+	});
+	pi.on("message_end", () => {
+		branchCursor.setLeaf(undefined);
+	});
+	pi.on("session_compact", () => {
+		branchCursor.setLeaf(undefined);
+	});
+	pi.on("session_start", () => {
+		branchCursor.setLeaf(undefined);
+	});
+
 	pi.registerCommand("open-in-editor", {
 		description: "Fuzzy-pick a mentioned or recently accessed file and open it in Emacs",
-		handler: async (_args, ctx) => openRecentFile(ctx),
+		handler: async (_args, ctx) => openRecentFile(ctx, branchCursor),
 	});
 
 	pi.registerShortcut("ctrl+shift+o", {
 		description: "Open a mentioned or recently accessed file in Emacs",
-		handler: openRecentFile,
+		handler: (ctx) => openRecentFile(ctx, branchCursor),
 	});
 }

@@ -9,8 +9,8 @@
  *   /tree:forward - Go forward to the position before the last back
  */
 
-import type { ExtensionAPI, ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
-import { Text, type TUI, type Theme } from "@mariozechner/pi-tui";
+import type { ExtensionAPI, ExtensionCommandContext, Theme } from "@earendil-works/pi-coding-agent";
+import { Text, type TUI } from "@earendil-works/pi-tui";
 
 /** Label used to mark crease points */
 const CREASE_LABEL = "crease";
@@ -191,8 +191,8 @@ export default function (_pi: ExtensionAPI) {
 				return;
 			}
 
-			// Find the last user message before the current position
-			// Skip the very last entry if it's a user message (we want the one before)
+			// Targeting a user message intentionally makes Pi move to its parent
+			// and restore that prompt in the editor.
 			let targetId: string | undefined;
 			for (let i = branch.length - 2; i >= 0; i--) {
 				const entry = ctx.sessionManager.getEntry(branch[i]!.id);
