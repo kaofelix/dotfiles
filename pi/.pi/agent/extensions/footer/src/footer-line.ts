@@ -13,6 +13,64 @@ type ThemeLike = {
 
 type ThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 
+type CacheUsage = {
+	input: number;
+	cacheRead: number;
+	cacheWrite: number;
+};
+
+function formatTokens(count: number): string {
+	if (count < 1000) return count.toString();
+	if (count < 10000) return `${(count / 1000).toFixed(1)}k`;
+	if (count < 1000000) return `${Math.round(count / 1000)}k`;
+	if (count < 10000000) return `${(count / 1000000).toFixed(1)}M`;
+	return `${Math.round(count / 1000000)}M`;
+}
+
+function readCacheUsage(value: unknown): CacheUsage | undefined {
+	if (!value || typeof value !== 'object') return undefined;
+	const usage = value as Partial<CacheUsage>;
+	if (
+		typeof usage.input !== 'number' ||
+		typeof usage.cacheRead !== 'number' ||
+		typeof usage.cacheWrite !== 'number'
+	) {
+		return undefined;
+	}
+	return usage as CacheUsage;
+}
+
+export function buildCacheStats(entries: readonly unknown[]): string {
+	let cacheRead = 0;
+	let cacheWrite = 0;
+	let latestCacheHitRate: number | undefined;
+
+	for (const value of entries) {
+		if (!value || typeof value !== 'object') continue;
+		const entry = value as { type?: string; message?: { role?: string; usage?: unknown }; usage?: unknown };
+		const isAssistant = entry.type === 'message' && entry.message?.role === 'assistant';
+		const isToolResult = entry.type === 'message' && entry.message?.role === 'toolResult';
+		const isSummary = entry.type === 'branch_summary' || entry.type === 'compaction';
+		const usage = readCacheUsage(isAssistant || isToolResult ? entry.message?.usage : isSummary ? entry.usage : undefined);
+		if (!usage) continue;
+
+		cacheRead += usage.cacheRead;
+		cacheWrite += usage.cacheWrite;
+		if (isAssistant) {
+			const promptTokens = usage.input + usage.cacheRead + usage.cacheWrite;
+			latestCacheHitRate = promptTokens > 0 ? (usage.cacheRead / promptTokens) * 100 : undefined;
+		}
+	}
+
+	if ((cacheRead === 0 && cacheWrite === 0) || latestCacheHitRate === undefined) return '';
+
+	const parts: string[] = [];
+	if (cacheRead > 0) parts.push(`R${formatTokens(cacheRead)}`);
+	if (cacheWrite > 0) parts.push(`W${formatTokens(cacheWrite)}`);
+	parts.push(`CH${latestCacheHitRate.toFixed(1)}%`);
+	return parts.join(' ');
+}
+
 function isThinkingLevel(value: string): value is ThinkingLevel {
 	return ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'].includes(value);
 }

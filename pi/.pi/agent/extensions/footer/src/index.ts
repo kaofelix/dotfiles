@@ -2,7 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { formatBranchSuffix, renderDimmedFooterPath, truncateFooterPath } from "./branch-status.ts";
 import { renderContextUsageLine } from "./context-usage.ts";
-import { buildFooterRightSide, composeFooterLine, renderFooterRightSide } from "./footer-line.ts";
+import { buildCacheStats, buildFooterRightSide, composeFooterLine, renderFooterRightSide } from "./footer-line.ts";
 import { getSubscriptionUsageFormatter, getSubscriptionUsageSettings, type SubscriptionUsageFormatter, type SubscriptionUsageSettings } from "./subscription-usage-adapter.ts";
 import createSubscriptionUsageService from "./subscription-usage/core/index.ts";
 import type { UsageSnapshot } from "./subscription-usage/shared.ts";
@@ -132,9 +132,13 @@ export default function (pi: ExtensionAPI) {
 						percent: contextUsage?.percent ?? null,
 					});
 
+					const entries = ctx.sessionManager.getEntries();
+					const cacheStats = buildCacheStats(entries);
+					const cacheSuffix = cacheStats ? theme.fg("dim", ` \u2022 ${cacheStats}`) : "";
+
 					// Calculate total session cost (mirrors default footer behavior)
 					let totalCost = 0;
-					for (const entry of ctx.sessionManager.getEntries()) {
+					for (const entry of entries) {
 						if (entry.type === "message" && entry.message.role === "assistant") {
 							const usage = (entry.message as any).usage;
 							if (usage?.cost?.total) {
@@ -149,18 +153,18 @@ export default function (pi: ExtensionAPI) {
 						totalCost > 0 || usingSubscription
 							? theme.fg("dim", ` \u2022 $${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`)
 							: "";
-					const contextWithCost = contextLeft + costSuffix;
+					const contextWithStats = contextLeft + cacheSuffix + costSuffix;
 
-					let secondLine = contextWithCost;
+					let secondLine = contextWithStats;
 					if (usageRight) {
-						const leftWidth = visibleWidth(contextWithCost);
+						const leftWidth = visibleWidth(contextWithStats);
 						const rightWidth = visibleWidth(usageRight);
 						if (leftWidth + 1 + rightWidth <= width) {
 							const padding = " ".repeat(width - leftWidth - rightWidth);
-							secondLine = contextWithCost + padding + usageRight;
+							secondLine = contextWithStats + padding + usageRight;
 						} else {
 							const availableLeft = Math.max(1, width - rightWidth - 1);
-							const leftTruncated = truncateToWidth(contextWithCost, availableLeft, theme.fg("dim", "..."));
+							const leftTruncated = truncateToWidth(contextWithStats, availableLeft, theme.fg("dim", "..."));
 							secondLine = leftTruncated + " " + usageRight;
 						}
 					}
