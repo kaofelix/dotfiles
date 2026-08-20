@@ -2,6 +2,7 @@ onboarding = false
 
 [ui]
 prompt_new_tab_name = false
+pane_scrollbars = false
 show_agent_labels_on_pane_borders = true
 
 agent_panel_sort = "priority"
@@ -36,3 +37,9 @@ focus_pane_right = "shift+right"
 [theme]
 name = "nord"
 auto_switch = false
+
+[theme.custom]
+overlay0 = "#646E82"
+
+[experimental]
+kitty_graphics = true
