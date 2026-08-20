@@ -19,12 +19,16 @@ adopt:
 	@case " $(STOW_PACKAGES) " in *" $(PACKAGE) "*) ;; *) echo "Unknown package: $(PACKAGE)" >&2; exit 2;; esac
 	stow -v -R $(PACKAGE) --target=$(TARGET_DIR) --adopt
 
-.PHONY: setup update pi-auth
+.PHONY: setup update gh-config pi-auth
 setup:
 	brew bundle install
 	$(MAKE) stow
 	mise install
+	$(MAKE) gh-config
 	$(MAKE) pi-auth
+
+gh-config:
+	gh config set git_protocol ssh --host github.com
 
 pi-auth:
 	./bin/.local/bin/pi-auth-setup
