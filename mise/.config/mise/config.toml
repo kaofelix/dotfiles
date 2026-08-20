@@ -1,5 +1,6 @@
 [settings]
 idiomatic_version_file_enable_tools = ["node", "ruby"]
+experimental = true
 minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
 
 [tools]
@@ -16,10 +17,10 @@ jq = "latest"
 maestro = "latest"
 node = "lts"
 "npm:@earendil-works/pi-coding-agent" = "latest"
+"npm:@juanibiapina/browse-cli" = "latest"
 "npm:@metabase/cli" = "latest"
 "npm:@posthog/cli" = "latest"
 "npm:hunkdiff" = "latest"
-"npm:sideshow" = "latest"
 prek = "latest"
 ripgrep = "latest"
 shellcheck = "latest"
