@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: Test-drive meaningful application-owned behavior when adding or changing domain rules, interactions, state transitions, authorization, calculations, persistence, API contracts, or fixing bugs—even when the user does not request TDD. Route behavior-preserving structural work to safe-refactoring. Styling, declarative metadata or configuration, generated code, dependency upgrades, mechanical wiring, and test-only maintenance use targeted verification instead.
+description: Test-drive meaningful application-owned behavior when adding or changing domain rules, interactions, state transitions, authorization, calculations, persistence, API contracts, or fixing bugs—even when the user does not request TDD. Route behavior-preserving structural work to safe-refactoring. Styling, declarative metadata or configuration, generated code, dependency upgrades, mechanical wiring, and test-only maintenance fall outside this TDD process.
 ---
 
 # Test-Driven Development
@@ -20,15 +20,37 @@ Use TDD when all are true:
 3. A stable test can express the contract without restating implementation or configuration.
 4. The test protects against a plausible regression instead of retesting a framework.
 
-Route other work to its appropriate verification:
+Route other work out of this TDD cycle:
 
 - Pure structural change → `safe-refactoring`
-- Styling or visual change → visual verification
+- Styling or visual change → implementation outside this TDD process
 - Declarative metadata or configuration → schema, framework, type, or lint validation
 - Generated code or dependency change → generator, build, and integration checks
 - Mechanical wiring or test-only maintenance → targeted existing checks
 
-A GraphQL deprecation declaration, for example, usually needs schema inspection rather than a test that repeats the declaration. A spacing or utility-class change usually needs visual evidence rather than a style assertion.
+A GraphQL deprecation declaration, for example, usually needs schema inspection rather than a test that repeats the declaration.
+
+### Semantic Behavior or Visual Presentation
+
+Classify each requested outcome before choosing a process.
+
+A semantic behavior changes what a user or system can do, receive, access, navigate to, persist, or observe through a stable semantic interface. A visual presentation change alters how the same content and capabilities are drawn.
+
+Visual presentation includes typography, color, spacing, dimensions, alignment, grouping, density, borders, shadows, icon geometry, animation timing, and responsive arrangement. Treat design files, established components, and codebase conventions as implementation inputs. Visual parity and deeper visual review are separate follow-up work rather than TDD completion criteria.
+
+A stable semantic test expresses the contract without asserting class names, style values, utility tokens, element dimensions, incidental DOM nesting, or screenshot pixels. Accessibility roles, names, states, and hidden content are semantic behavior even when their implementation affects presentation.
+
+For mixed UI work, separate the behavioral seam from the visual shell:
+
+- Test-drive interactions, state changes, accessibility, navigation, and information access.
+- Implement the visual shell directly as a best-effort application of the design and existing conventions.
+- Run nearby existing tests to detect regressions without adding a styling contract.
+
+Ordinary copy is presentation. Update an existing interaction test when it identifies a real control by its accessible name. Give exact wording dedicated coverage when the wording is itself a product contract, such as legal or safety text, a required API error, or a domain distinction that drives a user decision.
+
+Once an outcome is classified as visual presentation, exclude it from the RED → GREEN cycle and from TDD completion criteria.
+
+**Complete when:** every requested outcome is classified, and each semantic behavior either qualifies for TDD with a stable test or is routed to another process.
 
 When the user is exploring requirements, inspect the relevant code and clarify the behavior before editing. When the user directly requests implementation or a bug fix, treat the requested behavior as agreed and proceed without asking for redundant confirmation.
 
@@ -44,7 +66,7 @@ An absence deserves lasting coverage when the absence is itself a meaningful pro
 
 A negative test may temporarily drive removal. Once the removed behavior and its production code are gone, delete that test unless the resulting absence remains an independently meaningful contract.
 
-**Complete when:** TDD qualifies, one observable present-tense behavior is understood, and its expected failure is clear. Otherwise, use the routed verification and briefly explain the choice when the absence of a behavioral test would be surprising.
+**Complete when:** TDD qualifies, one observable present-tense behavior is understood, and its expected failure is clear. Otherwise, follow the routed process and briefly explain the choice when the absence of a behavioral test would be surprising.
 
 ## 2. Observe RED
 
@@ -101,7 +123,7 @@ Check every retained behavior introduced in the change against the completed RED
 
 **Complete when:** focused and broader relevant checks pass, every retained behavior introduced by the change is protected, and every changed or removed test is accounted for by a changed or removed contract rather than used to conceal a regression.
 
-## Finish
+## Finish TDD-Qualified Work
 
 At completion, mention:
 - the behavior added or corrected,
@@ -110,4 +132,4 @@ At completion, mention:
 - the relevant verification performed,
 - any remaining test or confidence gap.
 
-Adapt the detail to the size and risk of the change. When tests cannot run, make that gap clear; confidence follows the evidence produced.
+Adapt the detail to the size and risk of the change. When tests cannot run, make that gap clear; confidence follows the evidence produced. Routed work follows its own completion and reporting process outside this skill.
