@@ -36,7 +36,15 @@ Identify one observable behavior in product or domain vocabulary and the failure
 
 The behavior and expected failure must be clear before the test is written, but they do not require a fixed announcement format.
 
-**Complete when:** TDD qualifies, one observable behavior is understood, and its expected failure is clear. Otherwise, use the routed verification and briefly explain the choice when the absence of a behavioral test would be surprising.
+### Present-Tense Contracts
+
+Tests describe the system's current contract, not the history of how the change was developed.
+
+An absence deserves lasting coverage when the absence is itself a meaningful product or domain rule and protects against a plausible regression. Authorization rejection, an overdraft prohibition, and suppression of a dangerous side effect are contracts. A removed field, abandoned UI element, deferred feature, or deleted integration usually is not.
+
+A negative test may temporarily drive removal. Once the removed behavior and its production code are gone, delete that test unless the resulting absence remains an independently meaningful contract.
+
+**Complete when:** TDD qualifies, one observable present-tense behavior is understood, and its expected failure is clear. Otherwise, use the routed verification and briefly explain the choice when the absence of a behavioral test would be surprising.
 
 ## 2. Observe RED
 
@@ -71,13 +79,27 @@ When another required behavior appears, begin a new RED cycle for it. Several te
 
 **Complete when:** relevant tests remain green and the cycle introduced no untested behavior.
 
-## 5. Verify the Change
+## 5. Reconcile Scope Changes
+
+When a requirement is withdrawn or deferred during a cycle:
+
+1. Restate the retained present-tense behavior.
+2. Remove the withdrawn item from the test list.
+3. Delete tests whose only subject is the withdrawn behavior rather than translating them into `does not` expectations.
+4. Remove the corresponding production code.
+5. Run the smallest relevant suite and inspect each failure:
+   - Delete a failing test when its contract disappeared with the removed behavior.
+   - Update the test or production code when it still protects retained behavior.
+
+**Complete when:** every remaining test describes retained system behavior, and no test mentions the withdrawn feature merely to record its absence.
+
+## 6. Verify the Change
 
 Run nearby tests when the change can affect them. Use a broader test only when the behavior crosses components or the risk lives at a boundary. A bug fix is complete only when its first focused test reproduced the reported behavior before the fix.
 
-Check every behavior introduced in the change against the completed RED → GREEN evidence.
+Check every retained behavior introduced in the change against the completed RED → GREEN evidence.
 
-**Complete when:** focused and broader relevant checks pass, every new behavior is protected, and no test was weakened or removed to force success.
+**Complete when:** focused and broader relevant checks pass, every retained behavior introduced by the change is protected, and every changed or removed test is accounted for by a changed or removed contract rather than used to conceal a regression.
 
 ## Finish
 
