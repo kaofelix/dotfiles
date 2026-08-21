@@ -4,7 +4,7 @@
  * Commands:
  *   /branch:fold - Fold current branch into a summary (to crease or top)
  *   /branch:drop - Drop current branch without summary (to crease or top)
- *   /tree:crease - Mark current position as the fold/drop target
+ *   /tree:crease - Toggle current position as the fold/drop target
  *   /tree:back - Go back to the last user message
  *   /tree:forward - Go forward to the position before the last back
  */
@@ -157,7 +157,7 @@ export default function (_pi: ExtensionAPI) {
 	});
 
 	_pi.registerCommand("tree:crease", {
-		description: "Mark current position as the fold/drop target",
+		description: "Toggle current position as the fold/drop target",
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) {
 				ctx.ui.notify("tree:crease requires interactive mode", "error");
@@ -168,6 +168,12 @@ export default function (_pi: ExtensionAPI) {
 
 			if (!leafId) {
 				ctx.ui.notify("No position to mark", "error");
+				return;
+			}
+
+			if (ctx.sessionManager.getLabel(leafId) === CREASE_LABEL) {
+				_pi.setLabel(leafId, undefined);
+				ctx.ui.notify("Crease removed", "info");
 				return;
 			}
 
