@@ -5,13 +5,14 @@ usage() {
     cat <<'EOF'
 Usage: pi-auth-setup [--check]
 
-Merge 1Password-backed API-key entries from ~/.pi/agent/auth.op.json into
-~/.pi/agent/auth.json without resolving or writing plaintext secrets.
-Existing Pi-managed OAuth credentials are preserved.
+Resolve 1Password-backed API-key entries from ~/.pi/agent/auth.op.json and
+merge them into ~/.pi/agent/auth.json. Existing Pi-managed OAuth credentials
+are preserved. The generated auth.json contains plaintext secrets and is
+written with mode 0600.
 
 Options:
-  --check  Resolve every configured command to verify 1Password access,
-           without printing secret values.
+  --check  Verify every configured 1Password reference without changing
+           auth.json or printing secret values.
   -h, --help
            Show this help.
 EOF
@@ -39,6 +40,11 @@ if ! command -v jq >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! command -v op >/dev/null 2>&1; then
+    echo "❌ op is required" >&2
+    exit 1
+fi
+
 jq_filter=$(cat <<'JQ'
 type == "object" and all(.[];
     .type == "api_key" and
@@ -53,31 +59,46 @@ fi
 
 mkdir -p "$agent_dir"
 umask 077
-tmp_file=$(mktemp "${TMPDIR:-/tmp}/pi-auth.XXXXXX")
-trap 'rm -f "$tmp_file"' EXIT
+tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/pi-auth.XXXXXX")
+trap 'rm -rf "$tmp_dir"' EXIT
+resolved_file="$tmp_dir/resolved.json"
+next_file="$tmp_dir/next.json"
+secret_file="$tmp_dir/secret"
 
-if [[ -f "$auth_file" ]]; then
-    jq -s '.[0] * .[1]' "$auth_file" "$source_file" > "$tmp_file"
-else
-    jq '.' "$source_file" > "$tmp_file"
-fi
+jq '.' "$source_file" > "$resolved_file"
 
-chmod 600 "$tmp_file"
-mv "$tmp_file" "$auth_file"
-trap - EXIT
+while IFS=$'\t' read -r provider command; do
+    reference="${command#"!op read '"}"
+    reference="${reference%"'"}"
+    op read "$reference" > "$secret_file"
 
-echo "✅ Merged 1Password-backed provider credentials into $auth_file"
-
-if [[ "$check" == true ]]; then
-    if ! command -v op >/dev/null 2>&1; then
-        echo "❌ op is required for --check" >&2
+    if ! jq -e -n --rawfile secret "$secret_file" \
+        '$secret | sub("[\\r\\n]+$"; "") | length > 0' >/dev/null; then
+        echo "❌ 1Password returned an empty credential for $provider" >&2
         exit 1
     fi
 
-    while IFS= read -r command; do
-        reference="${command#"!op read '"}"
-        reference="${reference%"'"}"
-        op read "$reference" >/dev/null
-    done < <(jq -r '.[].key' "$source_file")
+    jq --arg provider "$provider" --rawfile secret "$secret_file" \
+        '.[ $provider ].key = ($secret | sub("[\\r\\n]+$"; ""))' \
+        "$resolved_file" > "$next_file"
+    mv "$next_file" "$resolved_file"
+done < <(jq -r 'to_entries[] | [.key, .value.key] | @tsv' "$source_file")
+
+if [[ "$check" == true ]]; then
     echo "✅ Verified all configured 1Password references"
+    exit 0
 fi
+
+output_file="$tmp_dir/auth.json"
+if [[ -f "$auth_file" ]]; then
+    jq -s '.[0] * .[1]' "$auth_file" "$resolved_file" > "$output_file"
+else
+    jq '.' "$resolved_file" > "$output_file"
+fi
+
+chmod 600 "$output_file"
+mv "$output_file" "$auth_file"
+trap - EXIT
+rm -rf "$tmp_dir"
+
+echo "✅ Generated $auth_file with resolved 1Password credentials"

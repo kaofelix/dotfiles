@@ -18,10 +18,15 @@ tools. Set up everything with:
 make setup
 ```
 
-`make setup` also merges the 1Password-backed inference provider entries
-from `~/.pi/agent/auth.op.json` into Pi's local `auth.json`, preserving
-Pi-managed OAuth credentials. To verify the secret references without
-printing their values, run:
+`make setup` also resolves the 1Password-backed inference provider entries
+from `~/.pi/agent/auth.op.json` and merges their keys into Pi's ignored local
+`auth.json`, preserving Pi-managed OAuth credentials. Pi then reads the local
+keys directly at startup instead of invoking 1Password for each provider.
+The generated file contains plaintext secrets, is written with mode `0600`,
+and should not be committed.
+
+Regenerate it after rotating a key with `make pi-auth`. To verify the secret
+references without changing `auth.json` or printing their values, run:
 
 ``` shell
 pi-auth-setup --check
