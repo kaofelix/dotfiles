@@ -1,3 +1,4 @@
 - Read files in full before wide-ranging changes, before editing files you have not fully inspected, and when asked to investigate or audit. Do not rely on search snippets for broad changes.
 - When reading skills make sure to read the whole file always
-- Use `mktemp -d` for temporary directories instead of clearing or reusing fixed paths with `rm -rf`.
+- Use `mktemp -d` for temporary directories. There's no need to clean them up after use
+- When explaining things to the user, draw mermaid diagrams when you think they can make an explanation clearer
