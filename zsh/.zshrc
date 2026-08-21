@@ -120,6 +120,7 @@ upi() {
     cd -
 }
 
+alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 
 _ask() {
     pi -p --provider deepseek --model deepseek-v4-flash  "$*" | glow
