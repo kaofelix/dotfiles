@@ -3,6 +3,9 @@ idiomatic_version_file_enable_tools = ["node", "ruby"]
 experimental = true
 minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
 
+[hooks]
+postinstall = "update-zsh-completions"
+
 [tools]
 ast-grep = "latest"
 bat = "latest"

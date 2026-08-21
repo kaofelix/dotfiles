@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+completion_dir="${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions"
+temp_dir=$(mktemp -d)
+trap 'rm -rf "$temp_dir"' EXIT
+trap 'exit 1' HUP INT TERM
+
+mkdir -p "$completion_dir"
+
+generate_completion() {
+	name=$1
+	command_name=$2
+	shift 2
+
+	if ! command -v "$command_name" >/dev/null 2>&1; then
+		printf 'Skipping %s completion: command not found\n' "$command_name"
+		return
+	fi
+
+	"$@" > "$temp_dir/$name"
+	install -m 0644 "$temp_dir/$name" "$completion_dir/$name"
+	printf 'Generated %s\n' "$completion_dir/$name"
+}
+
+generate_completion _ast-grep ast-grep ast-grep completions zsh
+generate_completion _bat bat bat --completion zsh
+generate_completion _crush crush crush completion zsh
+generate_completion _fd fd fd --gen-completions zsh
+generate_completion _glow glow glow completion zsh
+generate_completion _gum gum gum completion zsh
+generate_completion _herdr herdr herdr completion zsh
+generate_completion _mise mise mise completion zsh
+generate_completion _op op op completion zsh
+generate_completion _sem sem sem completion zsh
+
+if command -v sentry >/dev/null 2>&1; then
+	sentry cli setup --no-modify-path --no-agent-skills --quiet
+	printf 'Installed Sentry shell completions\n'
+else
+	printf 'Skipping sentry completion: command not found\n'
+fi
