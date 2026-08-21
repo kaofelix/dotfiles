@@ -10,3 +10,4 @@
 .idea/
 *.local*
 .testrun-root
+.scratch/*
