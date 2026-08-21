@@ -19,17 +19,21 @@ adopt:
 	@case " $(STOW_PACKAGES) " in *" $(PACKAGE) "*) ;; *) echo "Unknown package: $(PACKAGE)" >&2; exit 2;; esac
 	stow -v -R $(PACKAGE) --target=$(TARGET_DIR) --adopt
 
-.PHONY: setup update gh-config pi-auth shell-completions
+.PHONY: setup update gh-config pi-auth pifind-deps shell-completions
 setup:
 	brew bundle install
 	$(MAKE) stow
 	mise install
+	$(MAKE) pifind-deps
 	$(MAKE) shell-completions
 	$(MAKE) gh-config
 	$(MAKE) pi-auth
 
 shell-completions:
 	./bin/.local/bin/update-zsh-completions
+
+pifind-deps:
+	npm ci --prefix bin/.local/lib/pifind
 
 gh-config:
 	gh config set git_protocol ssh --host github.com
