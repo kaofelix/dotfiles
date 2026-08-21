@@ -1,8 +1,10 @@
 {
   "defaultProvider": "synthetic",
   "defaultModel": "hf:moonshotai/Kimi-K2.5",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "medium",
-  "lastChangelogVersion": "0.51.5",
+  "lastChangelogVersion": "0.84.2",
   "hideThinkingBlock": false,
   "collapseChangelog": true,
   "doubleEscapeAction": "tree",
