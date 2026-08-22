@@ -20,7 +20,7 @@ pifind "where did I debug the OAuth callback?"
 - Node.js 22.19 or newer
 - DuckDB
 - `fzf`
-- The `pi-sessions-duckdb` skill at `~/.pi/agent/skills/pi-sessions-duckdb`
+- The `pi-sessions-duckdb` skill at `~/.agents/skills/pi-sessions-duckdb`
 
 Install JavaScript dependencies from the dotfiles repository:
 

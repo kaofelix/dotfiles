@@ -48,6 +48,9 @@ have all the goodness.
 git clone git@github.com:kaofelix/kao-emacs-config.git
 ```
 
+Agent skills live in `agents/.agents/skills/` and are stowed to the
+cross-agent standard location at `~/.agents/skills/`.
+
 To update everything later:
 
 ``` shell

@@ -4,7 +4,7 @@ import { join } from "node:path";
 export class DuckDbSessionStore {
   constructor({
     skillDir = process.env.PI_SESSIONS_DUCKDB_SKILL_DIR
-      ?? join(process.env.HOME, ".pi/agent/skills/pi-sessions-duckdb"),
+      ?? join(process.env.HOME, ".agents/skills/pi-sessions-duckdb"),
     spawnProcess = spawn,
   } = {}) {
     this.queryScript = join(skillDir, "scripts/query.sh");
