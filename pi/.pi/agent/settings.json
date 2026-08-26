@@ -46,7 +46,11 @@
     "npm:pi-mcp-adapter",
     "npm:@aliou/pi-synthetic",
     "npm:pi-autoresearch",
-    "npm:@ogulcancelik/pi-herdr"
+    "npm:@ogulcancelik/pi-herdr",
+    "npm:glimpseui"
+  ],
+  "extensions": [
+    "~/.pi/agent/npm/node_modules/glimpseui/examples/companion/index.ts"
   ],
   "skills": [
     "~/.agents/skills",
