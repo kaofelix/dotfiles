@@ -46,6 +46,11 @@ function resolveModelInfo(model?: ModelInput): ModelInfo | undefined {
 	return typeof model === "string" ? { id: model } : model;
 }
 
+function isCodexReserveWindow(window: RateWindow): boolean {
+	const tokens = normalizeTokens(window.label ?? "");
+	return tokens.includes("gpt") && tokens.includes("reserve");
+}
+
 function isCodexSparkModel(model?: ModelInput): boolean {
 	const tokens = normalizeTokens(typeof model === "string" ? model : model?.id ?? "");
 	return tokens.includes("codex") && tokens.includes("spark");
@@ -57,6 +62,7 @@ function isCodexSparkWindow(window: RateWindow): boolean {
 }
 
 function getDisplayWindowLabel(window: RateWindow, model?: ModelInput): string {
+	if (isCodexReserveWindow(window)) return "Luna";
 	if (!isCodexSparkWindow(window)) return window.label;
 	if (!isCodexSparkModel(model)) return window.label;
 	const parts = window.label.trim().split(/\s+/);

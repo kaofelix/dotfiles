@@ -86,6 +86,11 @@ const antigravityWindowVisible: ProviderMetadata["isWindowVisible"] = (_usage, w
 const codexWindowVisible: ProviderMetadata["isWindowVisible"] = (_usage, window, settings, model) => {
 	if (!settings) return true;
 	const ps = settings.providers.codex;
+	const isReserveWindow = isCodexReserveWindow(window);
+	if (isReserveWindow) {
+		if (!isCodexLunaModel(model)) return false;
+		return shouldShowCodexWindowBySetting(ps, window);
+	}
 	const isSparkModel = isCodexSparkModel(model);
 	const isSparkWindow = isCodexSparkWindow(window);
 	if (isSparkWindow) {
@@ -96,6 +101,16 @@ const codexWindowVisible: ProviderMetadata["isWindowVisible"] = (_usage, window,
 		return false;
 	}
 	return shouldShowCodexWindowBySetting(ps, window);
+};
+
+const isCodexLunaModel = (model?: ModelInfo): boolean => {
+	const tokens = normalizeTokens(model?.id ?? "");
+	return tokens.includes("luna");
+};
+
+const isCodexReserveWindow = (window: RateWindow): boolean => {
+	const tokens = normalizeTokens(window.label ?? "");
+	return tokens.includes("gpt") && tokens.includes("reserve");
 };
 
 const isCodexSparkModel = (model?: ModelInfo): boolean => {

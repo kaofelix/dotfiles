@@ -350,6 +350,37 @@ test("codex shows model-specific usage for GPT-5.3-Codex-Spark", () => {
 	assert.equal(shouldShowWindow(usage, usage.windows[2], settings, { id: "gpt-4o" }), false);
 });
 
+test("codex reserve usage is only visible for Luna models", () => {
+	const settings = getDefaultSettings();
+	const usage: UsageSnapshot = {
+		provider: "codex",
+		displayName: "Codex Plan",
+		windows: [
+			{ label: "Week", usedPercent: 12 },
+			{ label: "gpt-reserve Week", usedPercent: 3 },
+		],
+	};
+
+	assert.equal(shouldShowWindow(usage, usage.windows[1], settings, { id: "gpt-5.6-luna" }), true);
+	assert.equal(shouldShowWindow(usage, usage.windows[0], settings, { id: "gpt-5.6-luna" }), true);
+	assert.equal(shouldShowWindow(usage, usage.windows[1], settings, { id: "gpt-5.6-sol" }), false);
+	assert.equal(shouldShowWindow(usage, usage.windows[1], settings, { id: "gpt-5.3-codex-spark" }), false);
+});
+
+test("codex reserve usage window uses the Luna label", () => {
+	const settings = getDefaultSettings();
+	const usage: UsageSnapshot = {
+		provider: "codex",
+		displayName: "Codex Plan",
+		windows: [{ label: "gpt-reserve Week", usedPercent: 3 }],
+	};
+
+	const output = formatUsageStatus(theme, usage, "gpt-5.6-luna", settings);
+	assert.equal(output?.includes("Luna"), true);
+	assert.equal(output?.includes("gpt-reserve"), false);
+	assert.equal(output?.includes("Week"), false);
+});
+
 test("codex spark usage window labels hide model prefix", () => {
 	const settings = getDefaultSettings();
 	const usage: UsageSnapshot = {
