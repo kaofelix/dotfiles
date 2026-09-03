@@ -1,152 +1,128 @@
 ---
 name: gob
-description: Process manager for long-running background processes. Use when starting development servers, watching files, or running commands that need to continue in the background while agent continues working.
+description: Manage long-running or background processes with gob. Use for development servers, watchers, lengthy builds or tests, and commands that must keep running while the agent continues working.
 ---
 
-# gob
+# Background Processes with `gob`
 
-CLI process manager for long-running background processes. Provides a shared view of background jobs between you and the AI agent, with real-time log streaming.
+Use `gob` when a process must outlive one ordinary shell call. Gob gives the user and agent a shared view of jobs, logs, ports, and lifecycle state.
 
-## Core Commands
+## Select gob deliberately
 
-### Running Commands
+Use gob for:
 
-- `gob run <cmd>` - Run command, wait for completion, stream output
-  - Equivalent to `gob add` + `gob await`
-  - Best for: builds, tests, any command where you need the result
+- development servers and file watchers;
+- lengthy builds, test suites, installs, or native tooling;
+- independent long-running commands started in parallel;
+- processes the user may inspect or keep using after the current turn.
 
-- `gob add <cmd>` - Start background job, returns job ID immediately
-  - Job continues running in background
-  - Supports flags directly: `gob add npm run --flag`
-  - Supports quoted strings: `gob add "make test"`
+Run quick commands directly, including `git status`, focused tests, file operations, and short CLI queries. Use `gob add` instead of `&`, `nohup`, or an unmanaged background process.
 
-- `gob await <job_id>` - Wait for job to finish, stream output, return exit code
-  - Use this to collect results from jobs started with `gob add`
+## Pass an executable and arguments
 
-### Sequential Execution
+Gob receives an executable plus its arguments. It does not implicitly evaluate shell syntax such as environment assignments, pipes, redirects, `&&`, globs, or `$VAR` expansion.
 
-For commands that must complete before proceeding:
+Use `--` to make the command boundary explicit:
 
 ```bash
-gob run make build
+gob add -- npm run dev
+gob run -- make build
 ```
 
-Or use add + await for more control:
+Pass environment variables through `env`:
 
 ```bash
-gob add make build
-gob await <job_id>
+gob add -- env APP_VARIANT=development npx expo start --dev-client
 ```
 
-Use for: builds, installs, any command where you need the result.
-
-### Parallel Execution
-
-For independent commands, start all jobs first:
+Invoke a shell only when shell behavior is required:
 
 ```bash
-gob add npm run lint
-gob add npm run typecheck
-gob add npm test
+gob run -- bash -lc 'npm test && npm run typecheck'
+gob add -- bash -lc 'command-a | command-b'
 ```
 
-Then collect results using either:
+A quoted command string can work, but it does not turn environment-assignment syntax into an executable. Prefer explicit argv, `env`, or `bash -lc` as appropriate.
 
-- `gob await <job_id>` - Wait for a specific job by ID
-- `gob await-any` - Wait for whichever job finishes first (`--timeout` option)
-- `gob await-all` - Wait for all jobs to complete (`--timeout` option)
+## Choose the lifecycle
 
-Example with await-any:
+### Bounded long-running work
+
+Use `gob run` when the result is required before proceeding:
 
 ```bash
-gob await-any # Returns when first job finishes
-gob await-any # Returns when second job finishes
-gob await-any # Returns when third job finishes
+gob run --description "Production build" -- npm run build
 ```
 
-Use for: linting + typechecking, running tests across packages, independent build steps.
+`gob run` waits, suppresses successful output, and dumps output on failure. When live output is useful, start the job and await its opaque ID:
 
-### Job Monitoring
-
-**Status:**
-- `gob list` - List jobs with IDs and status
-
-**Output:**
-- `gob await <job_id>` - Wait for completion, stream output (preferred)
-- `gob stdout <job_id>` - View stdout (`-f` for real-time following)
-- `gob stderr <job_id>` - View stderr (`-f` for real-time following)
-
-**Control:**
-- `gob stop <job_id>` - Graceful stop (SIGTERM)
-- `gob stop -f <job_id>` - Force kill (SIGKILL)
-- `gob restart <job_id>` - Stop + start
-- `gob remove <job_id>` - Remove stopped job
-
-### When to Use gob
-
-Use `gob` for:
-- Development servers (e.g., `npm run dev`, `python manage.py runserver`)
-- File watchers (e.g., `npm run watch`, `webpack --watch`)
-- Build processes that run in the background
-- Any long-running task that shouldn't block the agent
-- Commands that need to output logs while you continue working
-
-Do NOT use `&` to background processes - always use `gob add` instead.
-
-### Examples
-
-Good:
 ```bash
-gob run make test              # Run and wait for completion
-gob add npm run dev            # Start background server
-gob await abc                  # Wait for specific job by ID
-gob add timeout 30 make build  # Run with timeout
+gob add --description "iOS test suite" -- npm run test:ios
+gob await <job-id>
 ```
 
-Bad:
+`gob await` streams output and returns the job's exit code.
+
+### Persistent processes
+
+Use `gob add` when the process should continue while other work proceeds:
+
 ```bash
-make test                      # Missing gob prefix
-npm run dev &                  # Never use & - use gob add instead
+gob add --description "Astro dev server on port 4321" -- npm run dev
 ```
 
-## Common Patterns
+Retain the returned job ID. For a server, use one bounded, command-specific readiness check such as an HTTP health request or expected port. Inspect logs if readiness fails rather than repeatedly sleeping and dumping them.
 
-### Start a dev server and continue working
 ```bash
-gob add npm run dev
-# Job ID returned, agent continues...
+gob ports <job-id>
+gob logs <job-id>
 ```
 
-### Start multiple background services
+### Parallel work
+
+Start independent jobs first, retain each returned ID, then await each explicitly:
+
 ```bash
-gob add npm run dev
-gob add npm run api
-gob add npm run worker
+gob add --description "Lint" -- npm run lint
+gob add --description "Typecheck" -- npm run typecheck
+gob await <lint-job-id>
+gob await <typecheck-job-id>
 ```
 
-### Run tests in parallel across packages
+## Inspect and control jobs
+
 ```bash
-gob add npm test -- --workspace=packages/a
-gob add npm test -- --workspace=packages/b
-gob add npm test -- --workspace=packages/c
-gob await-all                  # Wait for all to complete
+gob list                 # jobs in the current directory
+gob list --all           # jobs across directories
+gob logs <job-id>        # stdout and stderr
+gob logs -f <job-id>     # follow both streams
+gob stdout <job-id>      # raw stdout for piping
+gob stderr <job-id>      # raw stderr for piping
+gob ports <job-id>       # listening ports in the process tree
+gob restart <job-id>
+gob stop <job-id>        # graceful SIGTERM
+gob stop --force <job-id>
+gob remove <job-id>      # stopped jobs only
 ```
 
-### Build and check results
-```bash
-gob run make build             # Waits for completion
-```
+Jobs are scoped to the working directory by default. Treat job IDs as opaque values; obtain them from command output or `gob list` rather than assuming their length or format.
 
-### Inspect logs from running job
-```bash
-gob list                       # Get job ID
-gob stdout abc                 # View output
-gob stdout abc -f              # Follow in real-time
-gob stderr abc -f              # Follow stderr in real-time
-```
+## Recover from a suspected stall
 
-## Job IDs
+`gob run` or `gob await` may return early when Gob detects a potentially stuck job; the underlying job keeps running. Treat this as an observation boundary:
 
-Jobs are identified by short 3-character IDs (e.g., `abc`, `x7f`, `V3x`). Use `gob list` to see all jobs and their IDs.
+1. Inspect `gob logs <job-id>` and any command-specific health signal.
+2. If useful work continues, call `gob await <job-id>` again when its result is needed.
+3. If the process is truly stuck, stop it deliberately.
 
-Jobs are scoped to directories - you only see jobs in the current working directory.
+Confirm the job's status and exit code before treating it as complete.
+
+## Handoff and cleanup
+
+Before finishing:
+
+- stop and remove temporary jobs owned by the task when they are no longer useful;
+- leave user-requested servers or watchers running;
+- report every intentionally retained job with its ID, purpose, working directory, and relevant URL or port.
+
+Use `gob help <command>` for details instead of relying on cached command syntax.
