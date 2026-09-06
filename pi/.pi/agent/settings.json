@@ -46,8 +46,9 @@
     "npm:pi-mcp-adapter",
     "npm:@aliou/pi-synthetic",
     "npm:pi-autoresearch",
-    "npm:@ogulcancelik/pi-herdr",
-    "npm:glimpseui"
+    "npm:pi-codex-goal",
+    "npm:glimpseui",
+    "npm:@crazygit/pi-codex-image-gen@0.2.2"
   ],
   "extensions": [
     "~/.pi/agent/npm/node_modules/glimpseui/examples/companion/index.ts"
