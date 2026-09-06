@@ -30,6 +30,14 @@ Route other work out of this TDD cycle:
 
 A GraphQL deprecation declaration, for example, usually needs schema inspection rather than a test that repeats the declaration.
 
+For work that mixes responsibility movement with new behavior:
+
+1. Establish GREEN for the behavior that already exists.
+2. Move or reorganize it through `safe-refactoring` steps.
+3. Begin RED only for the genuinely new or corrected contract.
+
+Do not force an existing responsibility move to fail merely because the overall task also contains new behavior.
+
 ### Semantic Behavior or Visual Presentation
 
 Classify each requested outcome before choosing a process.
@@ -46,7 +54,7 @@ For mixed UI work, separate the behavioral seam from the visual shell:
 - Implement the visual shell directly as a best-effort application of the design and existing conventions.
 - Run nearby existing tests to detect regressions without adding a styling contract.
 
-Ordinary copy is presentation. Update an existing interaction test when it identifies a real control by its accessible name. Give exact wording dedicated coverage when the wording is itself a product contract, such as legal or safety text, a required API error, or a domain distinction that drives a user decision.
+Ordinary copy is presentation. Update an existing interaction test when it identifies a real control by its accessible name. Give exact wording dedicated coverage when the wording is itself a product contract, such as legal or safety text, a required API error, or a domain distinction that drives a user decision. When a test fails solely because incidental copy or presentation was removed, delete that assertion rather than inverting it into an absence expectation; update it only when it still proves retained semantic behavior.
 
 Once an outcome is classified as visual presentation, exclude it from the RED → GREEN cycle and from TDD completion criteria.
 
@@ -57,6 +65,14 @@ When the user is exploring requirements, inspect the relevant code and clarify t
 Identify one observable behavior in product or domain vocabulary and the failure expected from its absence. For example: a withdrawn amount larger than the balance is rejected, and the expected failure before implementation is that the withdrawal succeeds instead of returning the overdraft error.
 
 The behavior and expected failure must be clear before the test is written, but they do not require a fixed announcement format.
+
+### Own the Production Path
+
+Before choosing the focused test, trace the production path that owns the requested behavior: its entrypoint, route or controller, responsible logic, persistence boundary when relevant, and observable result.
+
+The test must exercise that owning path or a stable production interface beneath it. RED is irrelevant when it targets a deferred endpoint, bypasses the composition being changed, or proves a parallel test-only path. When architecture changes, migrate tests to the new production seams instead of retaining old production branches or creating a duplicate application harness solely for test convenience.
+
+**Complete when:** the expected failure is attached to the production path named by the requirement, and the proposed test does not preserve or invent a competing path.
 
 ### Present-Tense Contracts
 
@@ -70,7 +86,7 @@ A negative test may temporarily drive removal. Once the removed behavior and its
 
 ## 2. Observe RED
 
-Add or update exactly one focused test through a public or stable interface. Prefer assertions over inputs, outputs, visible state, contract-level events, observable errors, or persisted effects.
+Add or update exactly one focused test through the owning production path or a stable production interface beneath it. Prefer assertions over inputs, outputs, visible state, contract-level events, observable errors, or persisted effects.
 
 Use real objects where practical. Reach for a fake, stub, mock, or spy only as the dependency becomes slower, nondeterministic, unavailable, destructive, or external to the process.
 
