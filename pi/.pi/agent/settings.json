@@ -2,7 +2,7 @@
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6-astra",
   "defaultThinkingLevel": "medium",
-  "lastChangelogVersion": "0.84.2",
+  "lastChangelogVersion": "0.85.1",
   "hideThinkingBlock": false,
   "collapseChangelog": true,
   "doubleEscapeAction": "tree",
@@ -55,5 +55,8 @@
     "~/.agents/skills",
     "-skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md"
   ],
-  "prompts": ["-prompts/code-compare.md"]
+  "prompts": [
+    "-prompts/code-compare.md"
+  ],
+  "theme": "dark"
 }
