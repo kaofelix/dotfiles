@@ -8,7 +8,10 @@ first.
 I'm using macOS, so I need [brew](https://brew.sh) if I don't have it
 yet.
 
-I'll also need to install [oh-my-zsh](https://ohmyz.sh/#install).
+`make setup` installs [zgenom](https://github.com/jandamm/zgenom) to
+`~/.zgenom` before stowing the shell config. Zgenom loads Oh My Zsh and the
+configured plugins on first shell startup; no separate Oh My Zsh install
+is needed. To install just the plugin manager, run `make zgenom`.
 
 The `Brewfile` contains machine-level tools and macOS applications,
 while `mise` manages language runtimes and standalone development

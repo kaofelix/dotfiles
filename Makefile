@@ -19,15 +19,21 @@ adopt:
 	@case " $(STOW_PACKAGES) " in *" $(PACKAGE) "*) ;; *) echo "Unknown package: $(PACKAGE)" >&2; exit 2;; esac
 	stow -v -R $(PACKAGE) --target=$(TARGET_DIR) --adopt
 
-.PHONY: setup update gh-config pi-auth pifind-deps shell-completions
+.PHONY: setup update gh-config pi-auth pifind-deps shell-completions zgenom
 setup:
 	brew bundle install
+	$(MAKE) zgenom
 	$(MAKE) stow
 	mise install
 	$(MAKE) pifind-deps
 	$(MAKE) shell-completions
 	$(MAKE) gh-config
 	$(MAKE) pi-auth
+
+zgenom: $(HOME)/.zgenom/zgenom.zsh
+
+$(HOME)/.zgenom/zgenom.zsh:
+	git clone https://github.com/jandamm/zgenom.git "$(HOME)/.zgenom"
 
 shell-completions:
 	mise exec -- ./bin/.local/bin/update-zsh-completions
