@@ -4,7 +4,7 @@ experimental = true
 minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
 
 [hooks]
-postinstall = "update-zsh-completions"
+postinstall = 'if [ -x "$HOME/.local/bin/update-zsh-completions" ]; then "$HOME/.local/bin/update-zsh-completions"; else echo "Skipping shell completions: helper not installed yet; run make shell-completions after stowing"; fi'
 
 [tools]
 ast-grep = "latest"
