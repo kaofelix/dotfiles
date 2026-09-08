@@ -11,12 +11,6 @@
   "tuiMode": "fullscreen",
   "packages": [
     {
-      "source": "git:github.com/juanibiapina/browse-cli",
-      "skills": [
-        "skills/browse"
-      ]
-    },
-    {
       "source": "git:github.com/steipete/agent-scripts",
       "skills": [
         "skills/swiftui-view-refactor",
