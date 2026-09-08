@@ -51,6 +51,24 @@ git clone git@github.com:kaofelix/kao-emacs-config.git
 Agent skills live in `agents/.agents/skills/` and are stowed to the
 cross-agent standard location at `~/.agents/skills/`.
 
+Native macOS text bindings live in
+`keybindings/Library/KeyBindings/DefaultKeyBinding.dict`. Run `make keybindings`
+(also included in `make setup`) and restart applications to load them. No
+administrator privileges, driver, or Accessibility permission is required.
+
+These extend the built-in Emacs bindings, using Option as Meta:
+
+| Shortcut | Action |
+| --- | --- |
+| Control-Option-H | Delete previous word |
+| Control-Option-D | Delete next word |
+| Option-B / Option-F | Move backward / forward one word |
+
+They apply in apps using the native macOS text-binding system, not universally;
+terminals and custom editors may need app-specific bindings. Caps Lock can be
+mapped to Control separately in System Settings → Keyboard → Keyboard Shortcuts
+→ Modifier Keys.
+
 To update everything later:
 
 ``` shell
