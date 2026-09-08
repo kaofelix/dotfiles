@@ -5,6 +5,7 @@
 import type { CoreSettings, ProviderName } from "../../shared.js";
 import { PROVIDERS } from "../../shared.js";
 import type { ThemeColor } from "@earendil-works/pi-coding-agent";
+import { applyFooterDisplayDefaults } from "../../../subscription-usage-defaults.js";
 
 /**
  * Bar display style
@@ -433,6 +434,7 @@ export const SETTINGS_VERSION = 2;
  * Default settings
  */
 export function getDefaultSettings(): Settings {
+	const display = applyFooterDisplayDefaults(undefined);
 	return {
 		version: SETTINGS_VERSION,
 		providers: {
@@ -496,56 +498,14 @@ export function getDefaultSettings(): Settings {
 			},
 		},
 		display: {
-			alignment: "split",
-			barStyle: "both",
-			barType: "horizontal-bar",
-			barWidth: "fill",
-			barCharacter: "heavy",
-			containBar: false,
-			brailleFillEmpty: false,
-			brailleFullBlocks: false,
-			colorScheme: "base-warning-error",
-			usageColorTargets: {
-				title: true,
-				timer: true,
-				bar: true,
-				usageLabel: true,
-				status: true,
-			},
-			resetTimePosition: "front",
-			resetTimeFormat: "relative",
-			resetTimeContainment: "blank",
-			statusIndicatorMode: "icon",
-			statusIconPack: "emoji",
-			statusIconCustom: "✓⚠×?",
-			statusProviderDivider: false,
-			statusDismissOk: true,
-			showProviderName: true,
-			providerLabel: "none",
-			providerLabelColon: false,
-			providerLabelBold: true,
-			baseTextColor: "muted",
-			backgroundColor: "none",
-			showWindowTitle: true,
-			boldWindowTitle: true,
-			showUsageLabels: true,
-			dividerCharacter: "│",
-			dividerColor: "dim",
-			dividerBlanks: 1,
-			showProviderDivider: true,
+			...display,
+			usageColorTargets: { ...display.usageColorTargets },
+			baseTextColor: normalizeBaseTextColor(display.baseTextColor),
+			backgroundColor: normalizeBackgroundColor(display.backgroundColor),
+			dividerColor: normalizeDividerColor(display.dividerColor),
 			statusLeadingDivider: false,
 			statusTrailingDivider: false,
-			dividerFooterJoin: true,
-			showTopDivider: false,
-			showBottomDivider: true,
-			paddingLeft: 1,
-			paddingRight: 1,
-			widgetPlacement: "belowEditor",
 			showContextBar: false,
-			errorThreshold: 25,
-			warningThreshold: 50,
-			overflow: "truncate",
-			successThreshold: 75,
 		},
 
 		displayThemes: [],

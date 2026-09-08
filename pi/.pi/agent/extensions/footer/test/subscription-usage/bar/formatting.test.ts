@@ -81,6 +81,7 @@ test("bar width 1 contained vertical bars stay compact", () => {
 
 test("status indicator layout includes icon text provider colon", () => {
 	const settings = getDefaultSettings();
+	settings.display.showProviderName = true;
 	settings.display.statusIndicatorMode = "icon+text";
 	settings.display.statusIconPack = "minimal";
 	settings.display.statusDismissOk = false;
@@ -98,6 +99,7 @@ test("status indicator layout includes icon text provider colon", () => {
 
 test("status/provider divider renders only when status is present", () => {
 	const settings = getDefaultSettings();
+	settings.display.showProviderName = true;
 	settings.display.statusIndicatorMode = "icon+text";
 	settings.display.statusIconPack = "minimal";
 	settings.display.statusDismissOk = false;
@@ -400,6 +402,7 @@ test("codex spark usage window labels hide model prefix", () => {
 
 test("codex spark provider label uses Codex (Spark)", () => {
 	const settings = getDefaultSettings();
+	settings.display.showProviderName = true;
 	const usage: UsageSnapshot = {
 		provider: "codex",
 		displayName: "Codex Plan",

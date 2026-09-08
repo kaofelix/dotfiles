@@ -28,6 +28,7 @@ function buildUsage(): UsageSnapshot {
 
 test("custom provider label is appended", () => {
 	const settings = getDefaultSettings();
+	settings.display.showProviderName = true;
 	settings.display.providerLabel = "Team";
 	settings.display.providerLabelColon = true;
 
