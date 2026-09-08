@@ -36,7 +36,7 @@ pifind-deps:
 	mise exec -- npm ci --prefix bin/.local/lib/pifind
 
 gh-config:
-	gh config set git_protocol ssh --host github.com
+	mise exec -- gh config set git_protocol ssh --host github.com
 
 pi-auth:
 	./bin/.local/bin/pi-auth-setup
