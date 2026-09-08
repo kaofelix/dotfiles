@@ -21,7 +21,7 @@ jq = "latest"
 maestro = "latest"
 node = "lts"
 "npm:@earendil-works/pi-coding-agent" = "latest"
-"npm:@juanibiapina/browse-cli" = "latest"
+"npm:@juanibiapina/browse-cli" = { version = "latest", allow_low_downloads = true }
 "npm:glimpseui" = { version = "latest", allow_builds = ["glimpseui"] }
 "npm:@metabase/cli" = "latest"
 "npm:@posthog/cli" = "latest"
