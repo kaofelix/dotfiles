@@ -18,6 +18,7 @@ brew "zsh-syntax-highlighting"
 
 cask "1password-cli"
 cask "font-source-code-pro"
+cask "ghostty"
 cask "vivaldi"
 
 tap "d12frosted/emacs-plus"
