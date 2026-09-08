@@ -14,3 +14,17 @@ node_modules
 *.pfx
 **/auth.json
 **/credentials.json
+
+# Runtime state written through stow symlinks (keep out of the repo)
+pi/.pi/agent/sessions/
+pi/.pi/agent/git/
+pi/.pi/agent/npm/
+pi/.pi/agent/models-store.json
+pi/.pi/agent/mcp-cache.json
+pi/.pi/agent/cache/
+
+herdr/.config/herdr/*.log
+herdr/.config/herdr/*.sock
+herdr/.config/herdr/.plugins.lock
+herdr/.config/herdr/release-notes.json
+herdr/.config/herdr/session.json
