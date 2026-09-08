@@ -18,6 +18,7 @@ brew "zsh-syntax-highlighting"
 
 cask "1password-cli"
 cask "font-source-code-pro"
+cask "font-symbols-only-nerd-font" # Emacs nerd-icons (Symbols Nerd Font Mono)
 cask "ghostty"
 cask "vivaldi"
 
