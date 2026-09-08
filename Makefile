@@ -30,10 +30,10 @@ setup:
 	$(MAKE) pi-auth
 
 shell-completions:
-	./bin/.local/bin/update-zsh-completions
+	mise exec -- ./bin/.local/bin/update-zsh-completions
 
 pifind-deps:
-	npm ci --prefix bin/.local/lib/pifind
+	mise exec -- npm ci --prefix bin/.local/lib/pifind
 
 gh-config:
 	gh config set git_protocol ssh --host github.com
