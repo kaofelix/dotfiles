@@ -1,4 +1,8 @@
-STOW_PACKAGES = bin zsh git pi agents tmux ghostty herdr mise keybindings
+PLATFORM := $(shell uname -s)
+STOW_PACKAGES = bin zsh git pi agents tmux ghostty herdr mise
+ifeq ($(PLATFORM),Darwin)
+STOW_PACKAGES += keybindings macos
+endif
 STOW_DIR = .
 TARGET_DIR = ${HOME}
 
@@ -8,7 +12,7 @@ TARGET_DIR = ${HOME}
 stow: $(STOW_PACKAGES)
 	@echo "🚚 All packages stowed!"
 
-bin zsh git pi agents tmux ghostty herdr mise keybindings:
+bin zsh git pi agents tmux ghostty herdr mise keybindings macos:
 	@echo "📦 $@"
 	stow -v -R $@ --target=$(TARGET_DIR)
 	@echo ""
@@ -20,15 +24,29 @@ adopt:
 	stow -v -R $(PACKAGE) --target=$(TARGET_DIR) --adopt
 
 .PHONY: setup update gh-config pi-auth pifind-deps shell-completions zgenom
-setup:
+setup: brew-bootstrap
+	. "$${XDG_CONFIG_HOME:-$$HOME/.config}/homebrew/shellenv.sh"; $(MAKE) setup-tools
+
+.PHONY: brew-bootstrap setup-tools
+brew-bootstrap:
+	sh scripts/bootstrap-brew.sh
+
+setup-tools:
 	brew bundle install
 	$(MAKE) zgenom
 	$(MAKE) stow
+	mise trust "$(CURDIR)/mise/.config/mise/config.toml"
 	mise install
 	$(MAKE) pifind-deps
 	$(MAKE) shell-completions
 	$(MAKE) gh-config
-	$(MAKE) pi-auth
+
+# Optional platform applications and 1Password authentication are never part of setup.
+.PHONY: setup-macos
+setup-macos:
+	@test "$(PLATFORM)" = Darwin || (echo "setup-macos requires macOS" >&2; exit 1)
+	brew bundle install --file=Brewfile.macos
+	$(MAKE) keybindings
 
 zgenom: $(HOME)/.zgenom/zgenom.zsh
 
@@ -46,6 +64,17 @@ gh-config:
 
 pi-auth:
 	./bin/.local/bin/pi-auth-setup
+
+.PHONY: check smoke
+check:
+	sh tests/bootstrap-brew.test.sh
+	mise exec -- bash tests/pi-auth-setup.test.sh
+	mise exec -- bash tests/pi-auth-setup-generation.test.sh
+	mise exec -- npm test --prefix bin/.local/lib/pifind
+	mise exec -- prek run --all-files
+
+smoke:
+	sh tests/setup-smoke.sh
 
 update:
 	brew update

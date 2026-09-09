@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "dash": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Kapeli/dash-mcp-server.git",
+        "dash-mcp-server"
+      ]
+    }
+  }
+}

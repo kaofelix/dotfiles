@@ -4,6 +4,8 @@ brew "cmake"
 brew "coreutils"
 brew "direnv"
 brew "duckdb"
+# macOS uses Emacs Plus from the optional desktop bundle.
+brew "emacs" if OS.linux?
 brew "fzf"
 brew "git"
 brew "less"
@@ -16,12 +18,3 @@ brew "tidy-html5"
 brew "tmux"
 brew "zsh"
 brew "zsh-syntax-highlighting"
-
-cask "1password-cli"
-cask "font-source-code-pro"
-cask "font-symbols-only-nerd-font" # Emacs nerd-icons (Symbols Nerd Font Mono)
-cask "ghostty"
-cask "vivaldi"
-
-tap "d12frosted/emacs-plus"
-cask "emacs-plus-app@master"

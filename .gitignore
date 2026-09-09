@@ -8,6 +8,8 @@ node_modules
 # Local environments and plaintext credentials
 .env
 .env.*
+.envrc
+.envrc.*
 *.pem
 *.key
 *.p12
@@ -22,6 +24,7 @@ pi/.pi/agent/npm/
 pi/.pi/agent/models-store.json
 pi/.pi/agent/mcp-cache.json
 pi/.pi/agent/cache/
+pi/.pi/agent/trust.json
 
 herdr/.config/herdr/*.log
 herdr/.config/herdr/*.sock

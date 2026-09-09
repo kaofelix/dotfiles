@@ -43,6 +43,10 @@ jq -e '
   .["openai-codex"] == {"type":"oauth", "access":"preserved-token"}
 ' "$agent_dir/auth.json" >/dev/null
 
-[[ $(stat -f '%Lp' "$agent_dir/auth.json" 2>/dev/null || stat -c '%a' "$agent_dir/auth.json") == 600 ]]
+case "$(uname -s)" in
+  Darwin) mode=$(stat -f '%Lp' "$agent_dir/auth.json") ;;
+  *) mode=$(stat -c '%a' "$agent_dir/auth.json") ;;
+esac
+[[ "$mode" == 600 ]]
 
 echo "pi-auth-setup generation test passed"
