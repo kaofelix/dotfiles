@@ -53,7 +53,11 @@ update:
 test:
 	./tests/pi-auth-setup.test.sh
 	./tests/pi-auth-setup-generation.test.sh
+	npm ci --prefix home/dot_local/lib/pifind
 	npm test --prefix home/dot_local/lib/pifind
+	npm ci --prefix home/dot_pi/agent/extensions/footer
+	npm test --prefix home/dot_pi/agent/extensions/footer
+	cd home/dot_pi/agent/extensions/pi-herdr && bun install --no-save && bun test
 
 # Full isolated Stow-vs-chezmoi parity, idempotence, and verify checks.
 test-migration:
