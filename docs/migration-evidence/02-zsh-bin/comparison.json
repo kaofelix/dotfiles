@@ -1,0 +1,21 @@
+{
+  "baseline_revision": "36a12067652b708f07ba22f0c4ad74193468aa6a",
+  "chezmoi_diff_after_apply": "empty",
+  "chezmoi_verify": "passed",
+  "idempotent_apply": true,
+  "managed_leaf_count": 24,
+  "mismatches": [],
+  "packages": [
+    "zsh",
+    "bin"
+  ],
+  "physical_difference_policy": {
+    "chezmoi": "ordinary directories and regular files",
+    "chezmoi_symlink_count": 0,
+    "reason": "intentional adoption of chezmoi's default portable file mode",
+    "stow": "symlinks into the frozen source tree",
+    "stow_symlink_count": 3
+  },
+  "result": "passed",
+  "semantic_mismatch_count": 0
+}

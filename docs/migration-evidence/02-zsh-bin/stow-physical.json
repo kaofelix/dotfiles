@@ -1,0 +1,20 @@
+[
+  {
+    "mode": "0755",
+    "path": ".config",
+    "target": "<BASELINE_SOURCE>/zsh/.config",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".local",
+    "target": "<BASELINE_SOURCE>/bin/.local",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".zshrc",
+    "target": "<BASELINE_SOURCE>/zsh/.zshrc",
+    "type": "symlink"
+  }
+]
