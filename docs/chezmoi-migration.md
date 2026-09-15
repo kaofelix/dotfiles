@@ -8,7 +8,7 @@ worktree at `/Users/kaofelix/dotfiles` was not modified. Before restructuring,
 its tracked modifications and non-ignored untracked files were copied into the
 migration worktree and committed. That complete Stow state is frozen at commit
 `36a12067652b708f07ba22f0c4ad74193468aa6a`, also recorded in
-`.chezmoi-migration-baseline`.
+`migration/stow-baseline-revision`.
 
 The source moved from ten package-shaped trees to one declarative target tree
 under `home/`:

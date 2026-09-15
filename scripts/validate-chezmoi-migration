@@ -22,7 +22,7 @@ import tempfile
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-BASELINE_FILE = ROOT / ".chezmoi-migration-baseline"
+BASELINE_FILE = ROOT / "migration" / "stow-baseline-revision"
 PACKAGE_FILE = ROOT / "migration" / "packages.txt"
 EXPECTED_DIFFERENCES_FILE = ROOT / "migration" / "expected-differences.json"
 
