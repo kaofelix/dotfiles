@@ -1,9 +1,9 @@
 {
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-6-astra",
+  "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "medium",
   "lastChangelogVersion": "0.85.1",
-  "hideThinkingBlock": false,
+  "hideThinkingBlock": true,
   "collapseChangelog": true,
   "doubleEscapeAction": "tree",
   "editorPaddingX": 0,
@@ -40,17 +40,21 @@
     "npm:pi-autoresearch",
     "npm:pi-codex-goal",
     "npm:glimpseui",
-    "npm:@crazygit/pi-codex-image-gen@0.2.2"
+    "npm:@crazygit/pi-codex-image-gen@0.2.2",
+    "npm:@earendil-works/pi-radius"
   ],
   "extensions": [
     "~/.pi/agent/npm/node_modules/glimpseui/examples/companion/index.ts"
   ],
   "skills": [
     "~/.agents/skills",
+    "-skills/beads/SKILL.md",
     "-skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md"
   ],
   "prompts": [
     "-prompts/code-compare.md"
   ],
-  "theme": "dark"
+  "theme": "dark",
+  "transport": "auto",
+  "quietStartup": false
 }

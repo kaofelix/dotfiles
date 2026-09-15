@@ -23,6 +23,7 @@ cask "1password-cli"
 cask "font-source-code-pro"
 cask "font-symbols-only-nerd-font" # Emacs nerd-icons (Symbols Nerd Font Mono)
 cask "ghostty"
+cask "obsidian"
 cask "vivaldi"
 
 tap "d12frosted/emacs-plus"
