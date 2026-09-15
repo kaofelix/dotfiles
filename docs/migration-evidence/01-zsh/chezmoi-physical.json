@@ -1,0 +1,21 @@
+[
+  {
+    "mode": "0755",
+    "path": ".config",
+    "type": "directory"
+  },
+  {
+    "mode": "0644",
+    "path": ".config/starship.toml",
+    "sha256": "2c8b47ed968753ba327793500e5abd223ea4a1d49cc12a915d4b7f60b33d81ef",
+    "size": 471,
+    "type": "file"
+  },
+  {
+    "mode": "0644",
+    "path": ".zshrc",
+    "sha256": "f52a40d6d02f5b7c0d89f3019703b09f35a115eadb06b1f88ad6d7424b2520c3",
+    "size": 3463,
+    "type": "file"
+  }
+]
