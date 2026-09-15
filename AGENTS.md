@@ -1,55 +1,43 @@
 # Agent Guide: Dotfiles Repository
 
-This repository contains Kao Felix's dotfiles managed with GNU Stow. This guide helps AI agents understand the structure, commands, and patterns used in this codebase.
+This macOS dotfiles repository uses chezmoi. Target state lives under `home/`,
+selected by `.chezmoiroot`; repository files outside `home/` are never applied
+to `$HOME`.
 
-## Repository Overview
+## Workflow
 
-This is a **dotfiles repository** that uses GNU Stow to manage configuration files across different tools (zsh, git, Claude Code, etc.). The repository follows a package-based structure where each subdirectory represents a "package" that can be stowed to the home directory.
+- Preview target changes with `make diff`.
+- Apply with `make apply`; verify with `make verify`.
+- Run application tests with `make test`.
+- Run isolated GNU Stow baseline parity, idempotence, and external smoke checks
+  with `make test-migration`.
+- Import an intentional target-side file with `make add TARGET="$HOME/path"` or
+  `chezmoi re-add "$HOME/path"`; inspect the source diff before committing.
 
-## Makefile Commands
-- `make stow` - Stow all packages to the home directory (creates symlinks)
-- `make unstow` - Unstow all packages from the home directory (removes symlinks)
+Chezmoi source names encode target attributes. Leading `dot_` creates a dotfile,
+`executable_` sets executable bits, `empty_` preserves an empty file, and
+`literal_` escapes a reserved source prefix. Use `chezmoi source-path` and
+`chezmoi target-path` instead of guessing a non-obvious mapping.
 
-### Stow Package Structure
-Each package directory (zsh, git, bin) contains files that will be symlinked to the home directory. The directory structure within packages mirrors the target location.
+Preserve mutable application state by keeping directories non-`exact_` unless a
+reviewed requirement says unmanaged children must be deleted. Keep plaintext
+credentials out of source state. `~/.pi/agent/auth.json` is generated and
+unmanaged; only its 1Password reference file is tracked.
 
-Example: `zsh/.zshrc` → `~/.zshrc`
-The `bin` package installs scripts to `~/.local/bin/` (user-local binary directory)
+## Locations
 
-### Zsh Configuration (`zsh/.zshrc`)
-- Uses **zgenom** for plugin management
-- Uses **Starship** for prompt
+- Shell config: `home/dot_zshrc`
+- Executable scripts: `home/dot_local/bin/executable_*`
+- Pi config/extensions: `home/dot_pi/agent/`
+- Cross-agent skills: `home/dot_agents/skills/`
+- Chezmoi special files: `home/.chezmoi*`
+- Migration rationale and evidence: `docs/chezmoi-migration.md`
 
-### Homebrew Packages
+When adding an executable script, include a shebang, useful `--help` output, and
+executable source attributes; then test the installed mode through
+`make test-migration`.
 
-Listed in Brewfile
-
-## Development Workflow
-
-### Adding New Configuration
-1. Create appropriate package directory or add to existing one
-2. Place files with proper directory structure (mirroring target location)
-3. Add package to `STOW_PACKAGES` in Makefile if new package
-4. Test with `make <package>` to stow individually
-5. Commit changes
-
-### Modifying Existing Configuration
-1. Edit files in the package directories
-2. Run `make stow` to update symlinks
-3. Test changes in shell/application
-4. Commit changes
-
-### Adding New Scripts
-1. Add script to `bin/.local/bin/` with proper shebang and permissions
-2. Ensure script follows color/output conventions
-3. Include comprehensive help/usage information
-4. Test script functionality
-5. Run `make bin` to stow scripts
-
-## PI Coding Agent
-
-This repo has stuff also for the pi coding agent.
-
-- Config and extensions are in the `pi/` stow package containing a
-  `.pi` folder that gets stowed in `~/.pi`. Always edit files in the package, never in the target folder
-- When asked to create a pi extension, add it to `./pi/.pi/agent/extensions/`
+`Brewfile` owns machine-level packages and macOS applications. Mise owns
+language runtimes and standalone development tools. `make setup` applies both
+plus generated completions and Pi credentials; `make update` upgrades and
+reapplies them.

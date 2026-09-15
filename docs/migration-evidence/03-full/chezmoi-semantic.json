@@ -1,0 +1,4748 @@
+[
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/SKILL.md",
+    "sha256": "a05244d3cfb23330daff956ec28a990241f5dbbe489cd7fd6489c8f76bb60877",
+    "size": 12195,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/browse-the-web.md",
+    "sha256": "e35b6627eee0bcd0f86e264ad0973aa5c364a5bd3ec14838ad36217faf47c841",
+    "size": 1634,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/callable.md",
+    "sha256": "4c116204cd68ff53908c49100a110d5fb773f9a3bc486a2be57afb09a4ead248",
+    "size": 2115,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/client-sdk.md",
+    "sha256": "cefd3d4947e8c081ac2a66ce6dedf95edb3e30f34bde0c6b8a2eaef182ee7210",
+    "size": 2287,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/codemode.md",
+    "sha256": "35d9639fe1db69400479c34670a71090031608276ebf9bc1c5e7fa32f77d487b",
+    "size": 2902,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/configuration.md",
+    "sha256": "91842e59fb17eff0d40df1cf16905aca8abd3ad9a939f8d15bfd6c5b84175354",
+    "size": 1837,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/durable-execution.md",
+    "sha256": "7cea752aa3423745be812cc97df38b6beeea97900b97b21f171fc3ad1a5e281b",
+    "size": 1705,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/email.md",
+    "sha256": "0a156971806f83f2f93450d731a57d6cb315cab387e3adeb33ad6ff50fe49ecc",
+    "size": 3539,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/human-in-the-loop.md",
+    "sha256": "729bb89c146b1e260e58b751bf47566ac7870afa33fff35d672ad485ed695766",
+    "size": 1804,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/mcp.md",
+    "sha256": "c991cb8ed89ca93f0c34433bceadf54d4ac42bd0c6d439130829d058fb7bccaf",
+    "size": 4663,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/observability.md",
+    "sha256": "4563c0b9856b0f2ce9728470473caab565442cb2eb40044434d771805b9aa7f1",
+    "size": 1339,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/queue-retries.md",
+    "sha256": "989733a31aa7ab7b6e9b778da975a3a5db6e21f200a02af073069150eb700ea3",
+    "size": 2228,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/routing.md",
+    "sha256": "55c9c94b02f827cbd90bc00ca798197b4cdee0e87e0b2fe15b8f77d7725d66a6",
+    "size": 1828,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/server-driven-messages.md",
+    "sha256": "8ac4eac5459693272c6e54fc1a656538f5e4a118029ee76988726ca84d20fd05",
+    "size": 1681,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/state-scheduling.md",
+    "sha256": "f0b0ab893b85135c4001b123a0cbee1cdc3ce85c5d8339acded546e16f582cea",
+    "size": 4047,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/streaming-chat.md",
+    "sha256": "dfc8d08564187ea5920ecc78779973a432c03ca29eea50c258c8984e521e0704",
+    "size": 5080,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/think.md",
+    "sha256": "1c507f9a22414290cf1c45821deb1d83ae3b008098ead751af380559789547e5",
+    "size": 2929,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/voice.md",
+    "sha256": "b6254f2afa76a9530c43741bc9ea4dfcc9bcef2c7819dfba026825811943b06a",
+    "size": 1901,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/webhooks-push.md",
+    "sha256": "1ee166ab7d14d2b26db04ce8c6071e7cf0b348bf5bf704b13f943229e1a52cb5",
+    "size": 2423,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/agents-sdk/references/workflows.md",
+    "sha256": "1778b2dee2788d0238c1d4b61e3ee42538a24166770cf33c38d78c22c1ac6dbe",
+    "size": 3878,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/analyze-codebase-coupling/SKILL.md",
+    "sha256": "cc2fb0f400807c03577fa516d54c5f7585929be914688fd83606edfeb5cb4745",
+    "size": 17504,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/ast-grep-skill/README.md",
+    "sha256": "a36b07f268ffd9ca0426a9c09c149ba7bd10c4a92bc91585f7184bf37be65869",
+    "size": 7382,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/ast-grep-skill/ast-grep/.claude-plugin/plugin.json",
+    "sha256": "72153a386f344202cb8a86e916cd591abc20efc81a6c77d5ff4eb1e2e6b63c21",
+    "size": 655,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/ast-grep-skill/ast-grep/skills/ast-grep/SKILL.md",
+    "sha256": "1d356580b6d3af4feb5722e820b1c34041f6e90162c063f1c63fce3f21c72543",
+    "size": 9434,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/ast-grep-skill/ast-grep/skills/ast-grep/references/rule_reference.md",
+    "sha256": "9f6d2ba2f2dbde059f61f426c262abe943f548984496962c43c7cc6e44813ad6",
+    "size": 10697,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/browse/LICENSE",
+    "sha256": "f3a539429d4d5afb676cbd4c2856d4340cc0daadbcb8a42255107c8234febf4a",
+    "size": 1101,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/browse/SKILL.md",
+    "sha256": "3a1c3b5ccbfcd4e2b3543d53767e607bf56f9c1d4070b60d6aa669cb75447575",
+    "size": 8720,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/browse/UPSTREAM.md",
+    "sha256": "0fd51a849247aea319cf230257b9f315ae19e4b5c37d8f0a8f47bc4570f63edb",
+    "size": 603,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-email-service/SKILL.md",
+    "sha256": "a62531900a08f9f6c352061d42e8b10a35009f5e1c6f91bbf18752feedad5a79",
+    "size": 7956,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-email-service/references/cli-and-mcp.md",
+    "sha256": "906aa333331e080a275a4ba3d4c342281b655afcef25a2081d197a396a3da913",
+    "size": 4039,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-email-service/references/deliverability.md",
+    "sha256": "174ff9cafe8e87c98faf2e25b30acb8889cd108caabe55b71c0db2bcb23077a7",
+    "size": 9145,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-email-service/references/rest-api.md",
+    "sha256": "edc9da52397ed70db9a0a520d5d7d075d6acd396fd8637e34c6dc1252a3303e7",
+    "size": 6014,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-email-service/references/routing.md",
+    "sha256": "db54ef436d72bfa1454a6da95be6a33b29b94266a1e8d1bffe86ffe0e007565c",
+    "size": 7462,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-email-service/references/sending.md",
+    "sha256": "e7164e0a96c11fcccb0c684695e3c475a81e4f210891b83503bdda392232f47f",
+    "size": 9530,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-one-migrations/SKILL.md",
+    "sha256": "50ed246b92a3f82c7afac864201093269fad8de24e4ce7ea18929103a26adad8",
+    "size": 12363,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare-one/SKILL.md",
+    "sha256": "605336f84979367b6235a57da8ea43e4f3b856a97efd2c95d9e7f90e41bf17ec",
+    "size": 22293,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/SKILL.md",
+    "sha256": "89bcccbb0b6dc77bec5e348f54a5ed8f1943d6ce56c33231a71fd2cd6bb05714",
+    "size": 8991,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/agents-sdk/README.md",
+    "sha256": "b8bbf95920b105cc587b93280209bca95104cd32d944b6e7344cffd0a751e6c2",
+    "size": 2778,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/agents-sdk/api.md",
+    "sha256": "3c5b0816e92ff702a851bf071ddf2f2e814c4f841d5313fc86d3f7bdfa64ab8f",
+    "size": 5885,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/agents-sdk/configuration.md",
+    "sha256": "4a24fc6be3cbc5578fa58d6ded8495fed77831909af599000c7f9849e9282afd",
+    "size": 3617,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/agents-sdk/gotchas.md",
+    "sha256": "01e857e317f073cf75909f4054bea3adebecb373799c5630fecd870c410a391b",
+    "size": 5108,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/agents-sdk/patterns.md",
+    "sha256": "7cb1997c0fa2f66b00aa5c2a128d00bf788ec485eb86bff38e83a2ae02762b46",
+    "size": 5618,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-gateway/README.md",
+    "sha256": "3d1edf888ad79bf599c6b21b66e0ba68c0473c5a2c60be1bf2e5a21b68623089",
+    "size": 6308,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-gateway/configuration.md",
+    "sha256": "1135a774a42e059942ccb12d8ba514e6479d7f8f5f47400b4053f6da5984b532",
+    "size": 2954,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-gateway/dynamic-routing.md",
+    "sha256": "56f3539a61bae2fda7d8a98c81ed14e820caf733f27e6cce2fffeeaf7a6c1db5",
+    "size": 1835,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-gateway/features.md",
+    "sha256": "efbc7d2d4464c1aab4881f059589439e2979b9967568878c32f7cb3e72cc6ccf",
+    "size": 2726,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-gateway/sdk-integration.md",
+    "sha256": "3633951a1ea8f419d85059dfb98f23e830805f728b516d7d87d1fa11ef9d9101",
+    "size": 2684,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-gateway/troubleshooting.md",
+    "sha256": "c79d02ce7b9e6cb361f1700eff6e12149fc74547aad3438501863d8cd02b2a79",
+    "size": 2420,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-search/README.md",
+    "sha256": "c8c484ab7723f38b649186e1c70f85a9b492c597cc513fe08876910b5406eff2",
+    "size": 4521,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-search/api.md",
+    "sha256": "cff4ce1bee49988265f176fe5a0bdd69714a1b6e215a65662ddbf305f981d05f",
+    "size": 2519,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-search/configuration.md",
+    "sha256": "59af92d0c3b196bea13ac72e18b42db528721f8971c7d335b27951b77aa4ddb0",
+    "size": 1760,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-search/gotchas.md",
+    "sha256": "e548c0f2cba170e81dd3e9e15b7cf430eabd7e73770ed29589b90dc20c3bf452",
+    "size": 2135,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ai-search/patterns.md",
+    "sha256": "1215875bf8a9e6317d31019a84a124aa7ba7e85bac10b92bc445d0ef7383d619",
+    "size": 2008,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/analytics-engine/README.md",
+    "sha256": "d60bb6b6bb29c836886637ee584485ba9145ca1b326ee8ea55d86a4f62bb2c6f",
+    "size": 3418,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/analytics-engine/api.md",
+    "sha256": "ae82c22e055e2edef7078286b7442763e19f70894b95fe310dd7c1709f9a572c",
+    "size": 3161,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/analytics-engine/configuration.md",
+    "sha256": "86112c2385fe4e44b4825f9962cfe3429e6681de9f051a50a1c70514f1b85131",
+    "size": 2361,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/analytics-engine/gotchas.md",
+    "sha256": "08d11a06bc1cc955bdf4ade8d1a523b0e78157434d559169c4bc2d36f886667b",
+    "size": 2018,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/analytics-engine/patterns.md",
+    "sha256": "d294a7ee3ce2d58fbb8413eb6e58faf7af8f699cecc7480b955ceb31e87204b2",
+    "size": 2312,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api-shield/README.md",
+    "sha256": "a032c7160b70c9a200e982bc457acd746760c2960e25b7554dfb315da98f71dc",
+    "size": 1796,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api-shield/api.md",
+    "sha256": "2ac3f5be499c1047575dddae5fe10fd9ab93e153eec3bd3fae3e2add82275aaa",
+    "size": 3900,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api-shield/configuration.md",
+    "sha256": "79acd0a84bdeca4f45ef92d3772e9f403d15266210205700a7fccc313a084418",
+    "size": 5020,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api-shield/gotchas.md",
+    "sha256": "6941ecb164f0cd23432029e319cdfd7c999365eca6aa1a1df76b52bb59d565dd",
+    "size": 4946,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api-shield/patterns.md",
+    "sha256": "66f0e9bc0d7440d76368f3863b8009cfe80de3a61e91c76727a249e2eb192574",
+    "size": 5844,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api/README.md",
+    "sha256": "f5c1e63c45d540fae02993c8c665d908bb5ae12a2953e3750839a352d2295f84",
+    "size": 2497,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api/api.md",
+    "sha256": "847c33ce18c1a4ff210ce5db75db0694113fe5367bdba983b0e6f0d7dd2742b1",
+    "size": 4308,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api/configuration.md",
+    "sha256": "6ea23fb895605fd2a2380580f7cd21ab39c51dde470067ed191fd387f6337cb4",
+    "size": 3748,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api/gotchas.md",
+    "sha256": "b721d8e28866f376ca8ac91d8f7f9fa35726f6378f83796baed13687f6eca6e2",
+    "size": 5390,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/api/patterns.md",
+    "sha256": "7ea6b294371bc04ffbf0a1fdc71a2e138f3303bfcdd85b91b1e29d0d53f80bc2",
+    "size": 4639,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/argo-smart-routing/README.md",
+    "sha256": "8171ec71734b91ebaa0b7161d9a8392ac08d53a230341b4dc9815937f4db398b",
+    "size": 4067,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/argo-smart-routing/api.md",
+    "sha256": "97e8d054716c738160bf1240d5670836aee318222c6b2f3df17a9e1087cd3597",
+    "size": 6600,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/argo-smart-routing/configuration.md",
+    "sha256": "9cc0c9f4ce01828e0153baded0393f0569e9aceff2601c16aad71e12e2fa8a39",
+    "size": 4457,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/argo-smart-routing/gotchas.md",
+    "sha256": "fc890c1e98c117ac8b6eb5ef39a62059732d9df2642700a8ad9fd2c877107fc7",
+    "size": 4327,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/argo-smart-routing/patterns.md",
+    "sha256": "8f0e0d9abdc17971afc802c23a04bf8780365031e5c4241cf084b0ad97c3707e",
+    "size": 3053,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/artifacts/README.md",
+    "sha256": "d48c787042e9352dfd459b49f660f979f169990fea899260fad8341efb84e583",
+    "size": 3772,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/artifacts/api.md",
+    "sha256": "5a6fd7bcacbbaf2c2ea83a5a899480a667f504a15cb973256260d1b476bef3e9",
+    "size": 5096,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/artifacts/configuration.md",
+    "sha256": "04648f76ad4d32a2265bbc6696c37229db2f67ed1ced99be6783ee61000c2d14",
+    "size": 3154,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bindings/README.md",
+    "sha256": "5ba09af5a3ce0b8ea090f60b87a0660f56d6252e256a36eff86ec1dfcd8c69a0",
+    "size": 4042,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bindings/api.md",
+    "sha256": "d0567127790ea92ebba3570785363d1752eab1c9570aeda5c7885e8c104677c5",
+    "size": 5199,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bindings/configuration.md",
+    "sha256": "d52fdcaee45d9f7fa7279247e09d382f69b5fab60ba8257fdcf92d8b37e14b34",
+    "size": 4496,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bindings/gotchas.md",
+    "sha256": "f14c1ef1d9104df78642cda287ca6ba21e3ef954a6e71e33c7d4e47f75164c28",
+    "size": 6169,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bindings/patterns.md",
+    "sha256": "0e76d57e398b3a27296e45b1032ff8d542b90310e8336a735f906004bd05e265",
+    "size": 5044,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bot-management/README.md",
+    "sha256": "4d50475aa586fb08cadbc7067d55b7ef1a6e5556bad3587b23e35ae37d541967",
+    "size": 3762,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bot-management/api.md",
+    "sha256": "a00ceaea1f51f7536829b2f93323d0df5c8f6b7742bfbcf9fcbd489eb910c4e9",
+    "size": 5803,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bot-management/configuration.md",
+    "sha256": "361f709d6561c916b6082afa689ad3e69aa05f2cb4f9ed7bcbdfa62605b95c47",
+    "size": 5744,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bot-management/gotchas.md",
+    "sha256": "d26a1b2dee0b92e6e2f4046067e0ba3f9e14f0b548b1d06537232d265e4cbb56",
+    "size": 5657,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/bot-management/patterns.md",
+    "sha256": "daeb6aa87d2c1fe00e7d3ba3ebcb5e782725a6a3e22edde56c03527d1eb1ba63",
+    "size": 4970,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/browser-rendering/README.md",
+    "sha256": "a0c6e51afc6c19f2a892e3f144b9210f4fe067318ad2550e34ded538a9db9463",
+    "size": 3092,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/browser-rendering/api.md",
+    "sha256": "0f346bfc469d1deb6077523b6ea20f071975c5223267415b2b9398cc6ab566ae",
+    "size": 2976,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/browser-rendering/configuration.md",
+    "sha256": "db9206a7f14bf13d5f8ade9875927662796016c52b0221b54c3e08238890b952",
+    "size": 1802,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/browser-rendering/gotchas.md",
+    "sha256": "31c3e69294545b1f7f9aecc80c3809521efe3b8d4c36bbc47ba8a693a81460ea",
+    "size": 2520,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/browser-rendering/patterns.md",
+    "sha256": "ed518864d14d821619b23d0a6e4fe0b39b64c8da98ad17d3da07b4b42d35c161",
+    "size": 2647,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/c3/README.md",
+    "sha256": "a29848e8c74b2a8055330461f2ffec6ccb14d5d61b97b8214195ee7787c70d20",
+    "size": 3352,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/c3/api.md",
+    "sha256": "1c5429d72d1f5d5dab6d21914f7eb8aded761a828b4190655a2d4a0be6b12592",
+    "size": 2286,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/c3/configuration.md",
+    "sha256": "01e7f90dfbfce4d20a86a41b3ca882dab74d0b540ea07952da2f4ff1c6b6626c",
+    "size": 1637,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/c3/gotchas.md",
+    "sha256": "4acfbc2572326cd0be2bdd76bc7c7fb629a68dabb7c98b3fc6bed234d13e72b0",
+    "size": 2307,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/c3/patterns.md",
+    "sha256": "592e533f9658678bfee0f5e7e65d9cfbf4a23ab4e47a3004543980643ce8826a",
+    "size": 2203,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cache-reserve/README.md",
+    "sha256": "90f848f9b142ddbfd911eea882b46bd45b5062efeda6b22e5be3d526c6155144",
+    "size": 5609,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cache-reserve/api.md",
+    "sha256": "21b1448498e35b32fea54786ffa8dec6fff4ff597a3acfa10904ff459082207f",
+    "size": 6018,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cache-reserve/configuration.md",
+    "sha256": "7a033bcbe69e1617d6df25d202c8ecf58fe40a1a06b91c7b71d9ac1964886869",
+    "size": 3660,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cache-reserve/gotchas.md",
+    "sha256": "3642800cd57f39fa3841021057a0ab6fb8bbcd8270b45b4acf33d6f1345e0f92",
+    "size": 5797,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cache-reserve/patterns.md",
+    "sha256": "94b4739cfaa9aa8d805b5d820c5cfe2259ee9a108a574bf5fff8837655647dcb",
+    "size": 6265,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/containers/README.md",
+    "sha256": "84ac21e42da260e8a2a5cbf677b455a7a06e0585dcd56be49895c014a26ae998",
+    "size": 3531,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/containers/api.md",
+    "sha256": "d79640924c80decc91ef17011f021fd21fdb8dc97fb2e8dd81f735a06ecb0a1d",
+    "size": 4310,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/containers/configuration.md",
+    "sha256": "00af782c2e2ab7c95cd4491d0269eddc12efcc541ec67a5692ab0b50bc7c6cdd",
+    "size": 5424,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/containers/gotchas.md",
+    "sha256": "5707e264b73f62b30624e3ae14646d5fb7dd889a463376f3123a5424f2dd66d2",
+    "size": 4485,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/containers/patterns.md",
+    "sha256": "129853373101f0a96b3e7ccfe6d840ac93cc089fcfeb8d551fca0af81c74a904",
+    "size": 4925,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cron-triggers/README.md",
+    "sha256": "e2283e3de4e8c32b9700dfa4c714e4639c3da2ef1fbc5a2703082bf7f5d4b839",
+    "size": 2994,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cron-triggers/api.md",
+    "sha256": "2768dedd364f5424f5a5b4e6ab579f5d8b9de8c5d7fb32924cee73404450c64c",
+    "size": 5866,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cron-triggers/configuration.md",
+    "sha256": "ef4548a7f8f80b1be2c41391a5aba2ce18ef0e02a96ec3b675bb84971dc383a0",
+    "size": 4250,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cron-triggers/gotchas.md",
+    "sha256": "d9204a25d6f22f970eb38dea053d2ba365c6cdb9e6b33591d83a6b62b835b016",
+    "size": 6356,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/cron-triggers/patterns.md",
+    "sha256": "99e9e973fee96b3a1c9ff3a896546cc8a498f9831cb168e1cf4e4b4ecff38102",
+    "size": 6980,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/d1/README.md",
+    "sha256": "a8374574ff4963e39014ca1228dbf651f36fe8c6355187687c2609ae1f7633d4",
+    "size": 4756,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/d1/api.md",
+    "sha256": "ea957b3260a43c46ab7845303ed34065655b4367683bf502c53b334e5fa4c776",
+    "size": 6806,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/d1/configuration.md",
+    "sha256": "94d31fee923ac3c9859f5741692ec843101463bc72dd8ead1fd3b086bb48a834",
+    "size": 5680,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/d1/gotchas.md",
+    "sha256": "1ffa594d0bdc7e02e64629c999f587119a5453a764bbf6ed69712ffc2c4c1f93",
+    "size": 4318,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/d1/patterns.md",
+    "sha256": "2e548a1267c7efae89fbe77a3627d096b3d77a64af61d8e3f53d36d15d01e48b",
+    "size": 7251,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ddos/README.md",
+    "sha256": "63018c3c2d25ce26a0f1b80dd60bd2d3c5193a26bf96979ef624030ab766c4a8",
+    "size": 2054,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ddos/api.md",
+    "sha256": "eba158f9cca3ce70a07e5050a5586e3c1acd60f69e22069d9d02c8c91ad60cf5",
+    "size": 4170,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ddos/configuration.md",
+    "sha256": "0d0fae2b22edba2d40fddbbcec3f0c63651a25a0115e708edfc8b4e4c584c925",
+    "size": 3005,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ddos/gotchas.md",
+    "sha256": "320f6d383fe22756ae19e3a79fb1c1a5d147d74a493b73eed6dd6644fb9fd1a0",
+    "size": 3912,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/ddos/patterns.md",
+    "sha256": "546d722c64d8b1c14bc0a924b38eec24bcd3e639c25bbf424bb8cf73933ac306",
+    "size": 5680,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/do-storage/README.md",
+    "sha256": "2dd7fa0efc7db9a4edb0935b77a48973fe79978b693d29385db0403f1792154a",
+    "size": 2765,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/do-storage/api.md",
+    "sha256": "d3a0957cca017ae837bcf891d34404a6faca40a9b4d9b4be26a3f6272c223622",
+    "size": 3571,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/do-storage/configuration.md",
+    "sha256": "b2c7ef2f41948280df468b8d1ed618486fb865ec8bd985706721f9debe472945",
+    "size": 2235,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/do-storage/gotchas.md",
+    "sha256": "82c019a3e36341d3d9113b9b30f0d2e6692a59fdd903ed00dce2f7774e6e4f5a",
+    "size": 5200,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/do-storage/patterns.md",
+    "sha256": "dc5118f06ac3fbf05323e17794bffa2e38e105e47d71f483b5545cae5f12a64c",
+    "size": 6127,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/do-storage/testing.md",
+    "sha256": "035b05fed943b2322941d7bd713d4d0e3025f2e514a3ef00642fc53509133472",
+    "size": 4912,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/durable-objects/README.md",
+    "sha256": "eeaafe38e5f85b70d5d548735a62181e055121932f98625f7b12d8f364751f4a",
+    "size": 6609,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/durable-objects/api.md",
+    "sha256": "ada50c598680f4d1e50d3e0588a1a6c0f4875346e583e34b87956ededff12e22",
+    "size": 6142,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/durable-objects/configuration.md",
+    "sha256": "30486904f250952df8f11b7899f3ebedc46b7f9bb1c28d4695a3bf8acfb87375",
+    "size": 4266,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/durable-objects/gotchas.md",
+    "sha256": "b7156d2d5415f3670698d2ccae91877852fbebf7868b66412497907901bf1661",
+    "size": 7318,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/durable-objects/patterns.md",
+    "sha256": "e3ad270b7beaad53f700b4b5f49202ec7d9ea5c95bd22f963f2dc7a9272142a9",
+    "size": 6691,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-routing/README.md",
+    "sha256": "4e28709e319f3912008a2887f9f3d62bdaa98ad9e52cc5ae139b8d220e825479",
+    "size": 3431,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-routing/api.md",
+    "sha256": "bb8355f4ef58ab1577982d1f6e399038538ec5f84e93071cd9f928b5a6832d36",
+    "size": 5311,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-routing/configuration.md",
+    "sha256": "a9a45e84286ffce8b67cd6a50e72a3a0f169f4414280fd94e5f33f9e9ac4ecd1",
+    "size": 3571,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-routing/gotchas.md",
+    "sha256": "7d16c6d42eef4ca6aa2b6d677d4c87d8f614c85c41e7eac032e2bde5a0e3e77f",
+    "size": 4127,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-routing/patterns.md",
+    "sha256": "507bfca00d2b363d6168ec918fc75829bbf0145402aa3239916ba1bf7e92b6a3",
+    "size": 5480,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-workers/README.md",
+    "sha256": "54bce4cafacbb335d111f5a6de5463b6f33f4f8db5bb52d22f85ae0487cd1311",
+    "size": 5389,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-workers/api.md",
+    "sha256": "5e4b0e68fcf88e3332b15a8f6ef22cf706953d51b38456cd0346348543f06754",
+    "size": 6078,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-workers/configuration.md",
+    "sha256": "984d84d6842f4adda147cb783537ffd51ac887c331a0de3c100374c63c06d33e",
+    "size": 2719,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-workers/gotchas.md",
+    "sha256": "d1eccc06d83dce5ac8b0fab47bad9694e5b067752ebad52b51bd8f32fcde45bb",
+    "size": 3058,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/email-workers/patterns.md",
+    "sha256": "e8704f7beac19235631b246420c5ce730b054ccf899f43548366d70fe430737d",
+    "size": 2785,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/flagship/README.md",
+    "sha256": "a4d1719c39d4a93ed884eef6e7cddc81e203d386332ba0d288d34436d3ed2995",
+    "size": 3663,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/flagship/api.md",
+    "sha256": "c7b8eb86ed852a3f37709f000988aeb89860c24aedee58527379e475f0996894",
+    "size": 11749,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/flagship/configuration.md",
+    "sha256": "a067854b48b4f6cbbb7fac4ca886ef6a14ddd1fc108650ec2f096ca730d55c02",
+    "size": 4863,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/flagship/gotchas.md",
+    "sha256": "5daaa2c1895e625b06f9dd413f7548603aa0159fb4781145b0cdbcb0a6f07c44",
+    "size": 6353,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/flagship/patterns.md",
+    "sha256": "e89e1f39fadfb9aad0c01fd6ac84b8c8f36716e88f26df1fd79c53aaf2eee8e7",
+    "size": 14059,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/graphql-api/README.md",
+    "sha256": "324df669a01caceff7f0dbdb25e3b35dcaa40a5c20700605628c4bcb66b0d093",
+    "size": 7769,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/graphql-api/api.md",
+    "sha256": "0c0250cdf31adfbf2c7f96bf3ec257c32d14709160a8552b3238a861b3540de5",
+    "size": 5782,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/graphql-api/configuration.md",
+    "sha256": "765e696dfd11bfa87d231c011b10fb2c10a2e33d704d7c6d04f1f125585c5b92",
+    "size": 4675,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/graphql-api/gotchas.md",
+    "sha256": "59dbb9a541db17cdac52665fd6883d2eb660ec6fea4b45cc87c291d2e2b4a50f",
+    "size": 4857,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/graphql-api/patterns.md",
+    "sha256": "902d188040a60c5d130790222442158ff12879232357ee34ab410e0d7b9b5e76",
+    "size": 6539,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/hyperdrive/README.md",
+    "sha256": "4d0e1a0e8366975d6ac0dcfd183e8b0a925f582c35917897aace568addff09f6",
+    "size": 2918,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/hyperdrive/api.md",
+    "sha256": "7e7bb032dc6151ca8e3c30b278efa19d617362e9225f7a5f77a176585f10f7e5",
+    "size": 3875,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/hyperdrive/configuration.md",
+    "sha256": "9c66135e7d5ed7a0e4f6b1395b71387b62aa22166d7eb26ab7d918b1fb5b5e57",
+    "size": 3913,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/hyperdrive/gotchas.md",
+    "sha256": "c0001867d043c37581bc1a0d0ea556b649d7522e965ab2eedd431b1f3b0ca56e",
+    "size": 3926,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/hyperdrive/patterns.md",
+    "sha256": "e3bcdfb9c42df3ca1a84f175d727e918b638f28759fb5bd38fd3bcfdd21594ff",
+    "size": 5980,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/images/README.md",
+    "sha256": "2df48cf4d8d5269c55a2c2e94ec331c576200db80cb33bdb3f08f104fee88676",
+    "size": 2900,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/images/api.md",
+    "sha256": "92c62bd77b133bf58287e93f12dced76725c0dc699b28ecad2acdae709ceea3c",
+    "size": 2574,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/images/configuration.md",
+    "sha256": "e4c66bfcbf49b9c0cef84d66c7f8b49ce4520c92190661d13c409eaa0825c8f2",
+    "size": 4126,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/images/gotchas.md",
+    "sha256": "447ec285923c9ab4b29e56ec7ec0318f30a559c05c257d37b02f60e62971b9d2",
+    "size": 2490,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/images/patterns.md",
+    "sha256": "b1cfebd7afdd7024e581e4a1002a304af0c00e630d4cd4623e97caae1c02fcd1",
+    "size": 3582,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/kv/README.md",
+    "sha256": "c141ec2f48645a0f0884511baceee0265776075f3073aefbd199f3037b420681",
+    "size": 2883,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/kv/api.md",
+    "sha256": "94a2fc711801bf91b2697d3690ca5b5f6c7732f22ec50965e1eb0eafed204ff4",
+    "size": 4327,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/kv/configuration.md",
+    "sha256": "59138344e7c23b43b360e0df44a23ee56253d013a4a1a9633c5b459b3d4ebac3",
+    "size": 3083,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/kv/gotchas.md",
+    "sha256": "f535fbf107435b03c72967a6505b279a1e3a34c1c0cfb76f6fddc081fd7db3d1",
+    "size": 4454,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/kv/patterns.md",
+    "sha256": "4fc5129467ba3e9820609512c3ce9ac0e2db5c125cae6c892c239ad273381754",
+    "size": 4740,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/miniflare/README.md",
+    "sha256": "484f0edc585d46559ee0be2bc443da8c7e96d6cde31e2c18ea52a2ae6c73bb95",
+    "size": 2976,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/miniflare/api.md",
+    "sha256": "468ea31044ec445b89fb54692335f26705ba10ee977f233afb075f340e8a77a2",
+    "size": 4606,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/miniflare/configuration.md",
+    "sha256": "54dce11b0189897aae54406b09bfe4f9da89293daafc33898b80ccdc728494f2",
+    "size": 3525,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/miniflare/gotchas.md",
+    "sha256": "eb42fd5887eccd3b8100a4be7c1ba4209d8e0f169ea080252c4b46d38c745f63",
+    "size": 3724,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/miniflare/patterns.md",
+    "sha256": "3cde456ae68df13ddc6987df3c45c2440409ab7e2574e5e58b2c1f037f902af0",
+    "size": 4260,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/network-interconnect/README.md",
+    "sha256": "00aa27f34cbe4277a1c79624a06bfe3ab8cf910e2c847eb5ba9c5206f1e12b3e",
+    "size": 3230,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/network-interconnect/api.md",
+    "sha256": "a4785017781a4b469b1c3e5c94f520a50b89412092b65963dee44bcb6e00b868",
+    "size": 5626,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/network-interconnect/configuration.md",
+    "sha256": "3edfa1d1642a0aed71121156acd7e4f76258b027b8f3758cbca68ab0ea5a1956",
+    "size": 4257,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/network-interconnect/gotchas.md",
+    "sha256": "8444d367d9389661e040061c009011263c429b52b72a27f2fb4ff82ad261b7be",
+    "size": 5554,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/network-interconnect/patterns.md",
+    "sha256": "e696a628f29643cb7955ed5d0607875188d462dcdff8a2758d287302d6b0fa1f",
+    "size": 4041,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/observability/README.md",
+    "sha256": "3c33e551008c5862bb09373b6d2b7fbaec300facf4fa70030f6e16598feb595e",
+    "size": 4016,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/observability/api.md",
+    "sha256": "0dd66198a6832b3de90b32fabfae0e89b9ad98921181bfa5d77cb31da2c309c5",
+    "size": 3480,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/observability/configuration.md",
+    "sha256": "8a1b85928d8f146b57d8ef4c9b60f3ccd052e32a32b58b698da28a2483027960",
+    "size": 3584,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/observability/gotchas.md",
+    "sha256": "569bd59b08317bd6aa85621e7974650e3602a0cc5cbcd0e98dd503d9e879fb9f",
+    "size": 3755,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/observability/patterns.md",
+    "sha256": "df66dce8d14a5887e183dbc1831c3914cdfc731a854f1a12f6833da4b6fc05c7",
+    "size": 2481,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages-functions/README.md",
+    "sha256": "19474e50d4c3c5fda0184f62df8302aef0ba8a09999fc3111d8cb979aa280fd7",
+    "size": 3322,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages-functions/api.md",
+    "sha256": "edf4ea412a1372e46a704a3c0b7b60d208722b0dbda106d04bab41ab48dda1da",
+    "size": 4677,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages-functions/configuration.md",
+    "sha256": "adaf79d53ca4d46ebc1be695314bb67aa42a11f412d9b61a48a765c828dd0d94",
+    "size": 3002,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages-functions/gotchas.md",
+    "sha256": "407b5630e9489ea6aaf55e93ac03c61068d193bf9b300b7f2eb2b67cc77070b6",
+    "size": 3871,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages-functions/patterns.md",
+    "sha256": "35f462e5f5681bd317d66a62f7e297cd8395c406e9e52cdb05f8c5b17df6877c",
+    "size": 4214,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages/README.md",
+    "sha256": "0b79f0e3bd7dd929d03de09ac7c35e006547c99763399f01b64436749085afe8",
+    "size": 2834,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages/api.md",
+    "sha256": "90989f928df3e394e9bc9587ac4eda172bf3735a338a0b1f6edba4d6af3a2652",
+    "size": 5980,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages/configuration.md",
+    "sha256": "65142ffa10de9517c126311d8d94a0c401447277df034123fca33ef48d03b3dd",
+    "size": 5879,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages/gotchas.md",
+    "sha256": "9a38076368f938dfc34bc1fa797f00a4d1b1bd2d0b0284595f2081cfd05ef182",
+    "size": 8040,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pages/patterns.md",
+    "sha256": "5a527102ede2c5b01543f356b0edf2574472251439c08b257ebefa4753eee957",
+    "size": 5992,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pipelines/README.md",
+    "sha256": "4f27dac23439852855e23dd270efe6791f360f11d80fb9eda6633c1b2b216e83",
+    "size": 4257,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pipelines/api.md",
+    "sha256": "6dfced39253c563560c990fe062e3de2de9254cbde159771f488842ca2882597",
+    "size": 5058,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pipelines/configuration.md",
+    "sha256": "c10e1eb1066da113b54c33e4b06034c7e359912a344ede6ed7752ab29768bd52",
+    "size": 6099,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pipelines/gotchas.md",
+    "sha256": "b0d85c6a6519bac88f9d08d5fd9449515c2ca6750cb220ffc1c2e1394e87e2f3",
+    "size": 3029,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pipelines/patterns.md",
+    "sha256": "2790aa7ad664b4ba467d39f8fe8952b663876b56ba4d229bb7d4b15251823f4c",
+    "size": 4674,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pulumi/README.md",
+    "sha256": "2803dd115110b5f4b8ac414fb78debbe06c3a653d57032aee2374f89eca4d2d5",
+    "size": 3231,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pulumi/api.md",
+    "sha256": "5e6459dbe3bcd802965fbc8467c54744671d5a9b3c600fececb2db314295797d",
+    "size": 5761,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pulumi/configuration.md",
+    "sha256": "5c102d4eb4d16a1647b451af42599d6123f6f4f31e4390edd698ba6ad8154eb6",
+    "size": 5657,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pulumi/gotchas.md",
+    "sha256": "f05c3e92c94f3fe24aab6072aa2a10a050a1df9d2ef56059d568150f6e6bb0a4",
+    "size": 6555,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/pulumi/patterns.md",
+    "sha256": "975cd37cd6735d790624d042982a683f05f96dd6509f9da8ada7e78f8e645f2e",
+    "size": 6974,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/queues/README.md",
+    "sha256": "faa1106897e0f1b89a0b87040e14955f7594a48ef966d3ee88ece436cbef9359",
+    "size": 3058,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/queues/api.md",
+    "sha256": "ffe55706d2bcbb14f799d3254631c8b5e77a21534ce8831ddba7cbb325061e8c",
+    "size": 5563,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/queues/configuration.md",
+    "sha256": "f8730e15875faf99ff444ca6dc198d96a0ebbb2adde14163c1455e754f24197b",
+    "size": 3828,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/queues/gotchas.md",
+    "sha256": "a6adba9ddac675d2c4faa9c42d9aaba06e09a7802184aff22905d3ea135a92b1",
+    "size": 7233,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/queues/patterns.md",
+    "sha256": "4ce6cecea3ac1beeae91f5f3dca2fad88b4b65159abee4d56c12be8ec731c541",
+    "size": 5498,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-data-catalog/README.md",
+    "sha256": "b07f4b83262229427e5af643a719cafe8bd991fe2ce95cbf251222e61572ebad",
+    "size": 3980,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-data-catalog/api.md",
+    "sha256": "10ed527665327f3ef405b8e8b1119c50df7406924d2965854c9ebc75b2dac094",
+    "size": 5615,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-data-catalog/configuration.md",
+    "sha256": "fffc79472ae6ed229cbcfadfd938d1ce0e60e07386ea6a17913cab602e4e1d34",
+    "size": 3969,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-data-catalog/gotchas.md",
+    "sha256": "ddfe37a9189eb4caa0ed54f8b07bb0309598c141b77ba719c53b53c121905775",
+    "size": 3244,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-data-catalog/patterns.md",
+    "sha256": "5d7bf03405cbb311701728508678a47328e2903cc9fd052d81c603618ae14fd3",
+    "size": 5345,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-sql/README.md",
+    "sha256": "ebfb497e2abfb46b4e0ac29ae3ac8088d8de69fb2d409435781d114e56c9ab12",
+    "size": 3260,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-sql/api.md",
+    "sha256": "4d5601b6c29df2a54eb68786e69aa2f1bc0d86409515394ea46edb762bb32d66",
+    "size": 4898,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-sql/configuration.md",
+    "sha256": "742a0b853a519bbc02085c4c71b22dc5a82516a0a6fefd2e0696b371e04cb052",
+    "size": 1679,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-sql/gotchas.md",
+    "sha256": "0776a81ba0ffeb1b0fba4067f23efc5cf9d1437f675ce0b113f57c301203b6ed",
+    "size": 1969,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2-sql/patterns.md",
+    "sha256": "55141805996052be7b8dbfeaae1472808c1085ca364cf92fcbccfb5015393a35",
+    "size": 4357,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2/README.md",
+    "sha256": "e7d0e772e34c8fd6fb1d2aadb6a2c07a6d30d8e04ea50ce9a2b8c638836a8bf0",
+    "size": 2825,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2/api.md",
+    "sha256": "d229e1d53595db452fb893ab5053d37781e782bd46f5ead3193599474abbba88",
+    "size": 5649,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2/configuration.md",
+    "sha256": "c2e3bb6047af5ca71e4e539a3dedaf9c62b7d41d4ef7f41c298495e9e9380fd3",
+    "size": 3654,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2/gotchas.md",
+    "sha256": "c9068fb874e3ce0244e11e04c99383f9ca4e314a176e782e3e2cbc3dcef9a0f8",
+    "size": 5048,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/r2/patterns.md",
+    "sha256": "fe0e4caa70e1f1a04d8559b56445b9db0cc51019d03a40a0ef996a1b5298698e",
+    "size": 5844,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtime-sfu/README.md",
+    "sha256": "2c1a23b8c44198e95eabb9f8db96453db61d935f96292932e9a5d1feea31e98c",
+    "size": 3078,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtime-sfu/api.md",
+    "sha256": "7c6c3d15d77976a87abcba5a8358c29c81e7dbeb15713cf5ccf71374e6017bfb",
+    "size": 3768,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtime-sfu/configuration.md",
+    "sha256": "6cee79842fdf8fc68b75951a8fa015cbd9276c7babe6e8753f654d3b112c3fb1",
+    "size": 3509,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtime-sfu/gotchas.md",
+    "sha256": "9717fbbf38ea4a8adc51631fd093eefacd6d6c7c30a961e54a5d404fa206b259",
+    "size": 4902,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtime-sfu/patterns.md",
+    "sha256": "51a2b40afd609346a367dcf8a626e905dfe895b3309fcb53432290c3da93cf0e",
+    "size": 5403,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtimekit/README.md",
+    "sha256": "190ecae4bb2ed00795cec6b59df4b0b3045cbc07d09b818abe398c239e97d531",
+    "size": 4047,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtimekit/api.md",
+    "sha256": "37020e6102c6f4f080f430f3de20c83532930e59cdcaaee52752d1fe62190152",
+    "size": 8352,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtimekit/configuration.md",
+    "sha256": "4d4ccf99fa72d8923df1eb3910eade99021cb77c5d9b4aa95310a01aeade0aaf",
+    "size": 5192,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtimekit/gotchas.md",
+    "sha256": "83cecda63bad4c55c4b375f0b83fd90bcdc9a15a257fc95809ab08fa4c102618",
+    "size": 6883,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/realtimekit/patterns.md",
+    "sha256": "2e02421351f5a7ad19887c38ccae65f14c8118956c6763c029072847036ebcd8",
+    "size": 7660,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/sandbox/README.md",
+    "sha256": "200282c2cfee1d30145949ce77eeab61c9cd7b0fbc0123cf3d8302e27ad865e6",
+    "size": 3118,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/sandbox/api.md",
+    "sha256": "252af5ad0f10d80f221a325b8cd12d7a277f9b15edc9ee7642e35663b385672d",
+    "size": 5030,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/sandbox/configuration.md",
+    "sha256": "685b16622abef8faca88401b0cab758f2b1e9498403a84ed3183aac8abe6c314",
+    "size": 3412,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/sandbox/gotchas.md",
+    "sha256": "56b1e74e0ad0ec803bb096dd1a9fcabf043a92078a0aa5b82a4b42d896c84d84",
+    "size": 5469,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/sandbox/patterns.md",
+    "sha256": "f99ef6dbf0a9833235c536b5bc4366930a76e57ecb4d9f90a45fdfe68ef641a7",
+    "size": 5257,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/secrets-store/README.md",
+    "sha256": "82c078e9d71d9bd28b2f23535f086e74bec7adad08e3cb6c289326a4a6e14550",
+    "size": 2215,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/secrets-store/api.md",
+    "sha256": "d6453c2646c9b2a7fa74b9a63a7a6aa0707ceb499a06705bdda367cfe3e8a1fd",
+    "size": 4358,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/secrets-store/configuration.md",
+    "sha256": "a7cb7ba5afedecbd005217d6155d85e2800b9f5029bc49f16f15498fc99f17ba",
+    "size": 3890,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/secrets-store/gotchas.md",
+    "sha256": "572d2d0464d24d66c4720b52c57f6a3234335cfb2fd18308bba876b72229a296",
+    "size": 3838,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/secrets-store/patterns.md",
+    "sha256": "60f60f7ef93d50208629a2e630d24f4758b1b995eab146395fc639844829058a",
+    "size": 5660,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/smart-placement/README.md",
+    "sha256": "2a41285bae05a8772a6b52b292c28aa87bd4f65c6b984ba85e2733fec104567d",
+    "size": 5024,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/smart-placement/api.md",
+    "sha256": "d3d8b440a7e362799d7b02dfc3ce348d7bbe51a760f4c6945f2d93bd82785774",
+    "size": 5559,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/smart-placement/configuration.md",
+    "sha256": "7d29937845c26f42ec568f4a98262bdbfe2e983c45e94c7c6376dda0ea67e856",
+    "size": 6119,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/smart-placement/gotchas.md",
+    "sha256": "8e56c052e6b513b9ab565f0eaf0e7f84bca236dfc30bb77ec6715b70821a5b92",
+    "size": 5637,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/smart-placement/patterns.md",
+    "sha256": "693558fe87218c6ee1adca94ca3362eb9cce923e369559f7ff87dca1b9bc5047",
+    "size": 5784,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/snippets/README.md",
+    "sha256": "4f66291949e5fb2a66e49a98b392c2d18057ff36ba74906feae3aeef94f9701f",
+    "size": 3132,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/snippets/api.md",
+    "sha256": "e76a59c5005ad537ea4ad83fab71365995717fb51938797a4dc29af324285755",
+    "size": 5133,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/snippets/configuration.md",
+    "sha256": "836c6765b1ca807f46f1a13ca0d8f383fc6f6c4f8fc857a366156cde96ff74ef",
+    "size": 6311,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/snippets/gotchas.md",
+    "sha256": "301c7167f03075505498f1f6b5fe1c72a393065a8228f42c435fde9f1b694150",
+    "size": 2220,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/snippets/patterns.md",
+    "sha256": "2b06454df89a837e16ae554769ad055e8de90d2c6bc19a81b4aeee0fc423029d",
+    "size": 3346,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/spectrum/README.md",
+    "sha256": "6dfd516d6e54696accbe6bb499f4e70686061abd0afa192897b32d7fd0c3f32e",
+    "size": 2355,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/spectrum/api.md",
+    "sha256": "bef098862434f4c8e253d718d3437091813e45c3bfaa5004e8e86d6ceb83beb2",
+    "size": 4924,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/spectrum/configuration.md",
+    "sha256": "2079f33dfe2ef2ed715927c95c2ba5389f5f426745597aef94e5885da5eec403",
+    "size": 4332,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/spectrum/gotchas.md",
+    "sha256": "cb07bb56c6c5e2b2f88380772cbaa25143d7f32cce69c8f5bbbb1e77d4fdd216",
+    "size": 3739,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/spectrum/patterns.md",
+    "sha256": "087e7d9a1a1a308eb13614332df217137296501cf57082077f05bb3a1f2bf7b0",
+    "size": 4778,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/static-assets/README.md",
+    "sha256": "ef31f6ca300cb5fb1f111a626f6d92ef2b5b48a3ed97c2203874c33a2f38c0e8",
+    "size": 2197,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/static-assets/api.md",
+    "sha256": "619acb0a8d9732395316fc0beeed11e1a10557e08c639338ac92473cea1c5701",
+    "size": 4451,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/static-assets/configuration.md",
+    "sha256": "c35204c02177893d0b8c5b9bf2341d7814ed9d1e8e2ca3fc7c87d05603e9ec50",
+    "size": 4826,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/static-assets/gotchas.md",
+    "sha256": "37b51d4f42e2a685934b7199dc62a0d8fd3d98c9dcf197ca5f5667aee01ea86d",
+    "size": 4127,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/static-assets/patterns.md",
+    "sha256": "a9b508f7936d8edf7c63c65fb217d27f6aa555209a21e0a65eadf7a32d9ec9c4",
+    "size": 4895,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/stream/README.md",
+    "sha256": "ead31da7979689bffda222b1b1c20903fb1aca03301b208eff0b3682a422b6ab",
+    "size": 3864,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/stream/api-live.md",
+    "sha256": "7c384bb3ee0575f41bcc57cf1d7c6f37741e21de5d4ebb86ee4d1a05f6d671b0",
+    "size": 5174,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/stream/api.md",
+    "sha256": "5440838fb2fb329fe815aecde94709a3d32be08c917491355709314ff7e3d8f1",
+    "size": 5260,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/stream/configuration.md",
+    "sha256": "74c156e9c665e9d523bcd7c5d9a763339aba0356b1dc69d723ef6bab41a25328",
+    "size": 3222,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/stream/gotchas.md",
+    "sha256": "65ef0e0f81470833dea11179849d5bf78f695720286db5e5eebe7d8dcf77a1d4",
+    "size": 4308,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/stream/patterns.md",
+    "sha256": "1a18c1989fb525c15167126f98246afa27766e701c86150cb60409759a3e08f4",
+    "size": 6394,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tail-workers/README.md",
+    "sha256": "22776dd6348b07d2c7132ee4a52715f49bc61c1bb50d0af81e49281e44bb9799",
+    "size": 3020,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tail-workers/api.md",
+    "sha256": "d8349bfabdfac0d2cd8c911f2314c34ff1045b2a85b6d135cf4f4692940a94b3",
+    "size": 5132,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tail-workers/configuration.md",
+    "sha256": "e30b9d4e0846c61563696e2db6d645491dedb2dc07172f98ae3ffe51b2e8d126",
+    "size": 3472,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tail-workers/gotchas.md",
+    "sha256": "4ba9dc553f71ed2422a03c4fe8022aef313761227b88551e07b21496f0c68ac7",
+    "size": 4595,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tail-workers/patterns.md",
+    "sha256": "400bb20063049d802f9b9d97924810817234bba9a12d8fd5ff13e9f0913812e4",
+    "size": 4034,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/terraform/README.md",
+    "sha256": "a7070aaa31c8e229b2ebfca6fe66bcf6ead9cdf1ef6d7b494a556080253ec073",
+    "size": 3680,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/terraform/api.md",
+    "sha256": "5dc812c078d06454d801b0e126d50c48031c1a7b0ffef7ebf77a97cf7b41e768",
+    "size": 4020,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/terraform/configuration.md",
+    "sha256": "4d12cad256eaf2b021c1c19e7be29ef79e2d76183e387eefce2d4eb50b8d483e",
+    "size": 7577,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/terraform/gotchas.md",
+    "sha256": "ede039589518cceb96d40c12b7e22aaf0fbb1a5ec4d806af57940dfcaf9da672",
+    "size": 5268,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/terraform/patterns.md",
+    "sha256": "1c5d35e79bdfbb2bfce92b095dbdb4fb08923b651a8f8e40e6e70e2956e6ffef",
+    "size": 6640,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tunnel/README.md",
+    "sha256": "1cbeda06e54ae97dc5db42721579e9b455cc1a2eec61f4756b3d4de29dddf2a0",
+    "size": 3738,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tunnel/api.md",
+    "sha256": "698055870e668a0827b8bbb83d9016b093e22e4a95f4aabeaca7ef2e0d1e099f",
+    "size": 4444,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tunnel/configuration.md",
+    "sha256": "41c67b8a19309f3d626f8ad94bc0d4748be63ad311c220c73f76faaabde461ec",
+    "size": 3698,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tunnel/gotchas.md",
+    "sha256": "267e3fad1f1a328bec1786ce883f7d658ee328ee5e812c2a4ee61739b507c691",
+    "size": 3933,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tunnel/networking.md",
+    "sha256": "99f51bcb065fdd62df94aa116f11effde03d81c4299f369770492346add235ca",
+    "size": 3993,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/tunnel/patterns.md",
+    "sha256": "696d5fe99640934a94b6facb6e3198d93dc38bfac3c3324fd817e47f620bc40d",
+    "size": 3853,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turn/README.md",
+    "sha256": "9b1e36931f40b1faf3c8f24f89acb12c4f4223de0afc83e6b8de636f4730d542",
+    "size": 3693,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turn/api.md",
+    "sha256": "912ec9aa734843078db5ceb9c6732f3aa62778aa7ffb836b9798b46152f377ff",
+    "size": 5220,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turn/configuration.md",
+    "sha256": "8df0cf402a41dd2a8205b9fc94f868df48273ef9e85cf1ad690732ac1e2469b7",
+    "size": 4178,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turn/gotchas.md",
+    "sha256": "7135e3e6e0351bf85fcfd5a914fd499979e7e15540d155810be5bc710e5841d7",
+    "size": 7020,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turn/patterns.md",
+    "sha256": "de0a2e64a0fe6456028cbd0cd8f29195cc8d4da0e8935746357587d5937aa636",
+    "size": 6189,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turnstile/README.md",
+    "sha256": "137caa7c326b4f57fecaa6174179d140aae4e20770301ac9ee207fa0f5a2cffd",
+    "size": 3539,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turnstile/api.md",
+    "sha256": "8d9123ce63066a64d40c7da10ae3251dad64710f8122f3c57f826985d1474d27",
+    "size": 6424,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turnstile/configuration.md",
+    "sha256": "eac60f420fa7122c275c40e6b7a9a55a672c42027d56d5e187432a1653f221b1",
+    "size": 6719,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turnstile/gotchas.md",
+    "sha256": "3166f9a79a6512310b84a7958dc911906395fd10e3540af7698083ec8e5d8286",
+    "size": 6276,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/turnstile/patterns.md",
+    "sha256": "7d229cb935aaa187796a8667b4d9843c8585a7f90fa30ddc6999240960f12bd8",
+    "size": 4677,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/vectorize/README.md",
+    "sha256": "badc6f6e66868e9eaf30e46babf9e5c060fe7e425ed62d29d17161677323b388",
+    "size": 4288,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/vectorize/api.md",
+    "sha256": "1a9eb04dc17cd4c346fdca49f10b8059a8897e3cbc28ea5ec6ca898874b86318",
+    "size": 2442,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/vectorize/configuration.md",
+    "sha256": "057eaef43f53e8bd71699ca17a3d296eb0c165ce1c1a304d71dea53ee9ab0908",
+    "size": 1986,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/vectorize/gotchas.md",
+    "sha256": "ed128e78cb088cd62d3a4a4ada65aa7729e09b0bc9ecde1066fb38d00906fdaf",
+    "size": 2241,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/vectorize/patterns.md",
+    "sha256": "dcc4227997e7a856444a701b9243a9a1c8d1cb38680429ac3047b761f85e71c3",
+    "size": 2514,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/waf/README.md",
+    "sha256": "dfcf0ff026f351637a2c7e9321740a24a87a3a5ee9698712677c2914b5d22163",
+    "size": 3455,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/waf/api.md",
+    "sha256": "d7f67e1a1ee4096edb8382fa04c610fc933593afb442cec3f2d5e76bf6a604fa",
+    "size": 5831,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/waf/configuration.md",
+    "sha256": "e4fb36ebccdb73eb8be9513d316a7294ab62a6ce355b7e09498a77af91cdb095",
+    "size": 4765,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/waf/gotchas.md",
+    "sha256": "d002f5d683577b734b6a1d787b96d04bff5ac47d454e720219ff58a9d850f4cb",
+    "size": 6290,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/waf/patterns.md",
+    "sha256": "8fc5fab71800154d1128725274bcfe1a59b3e667c2c0f841a96f643e5da89ba1",
+    "size": 5356,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/web-analytics/README.md",
+    "sha256": "f284cbfd425e0d2c53f79c79187287d7c0c74e6d84259294f2ca5b996834857c",
+    "size": 5368,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/web-analytics/configuration.md",
+    "sha256": "82a7c2312b3d8d9852d14547ef7771616f0da3cdecaa146afbf6272b77976017",
+    "size": 2003,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/web-analytics/gotchas.md",
+    "sha256": "e81a0ac61dce03a4890b9950ba06662c16e4b9ddb4eecdff204221501cd8d6d5",
+    "size": 1999,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/web-analytics/integration.md",
+    "sha256": "a0dbfd1a658252e25d7ffa86180c691c6976265526b36ab14ce9e4b469d95cba",
+    "size": 1772,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/web-analytics/patterns.md",
+    "sha256": "6ccd1e334d260b968731f5f613ad28882bc199b72883e3254a52ded8d859f5a8",
+    "size": 2237,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workerd/README.md",
+    "sha256": "daed9e582eff91b2c29dc77701c7c18a3d92fde0dc6883b2913df26094c0c597",
+    "size": 2789,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workerd/api.md",
+    "sha256": "7a6652e76e27424b0ce0d7393e1a04595460290d44e5ca937e3b0090a3b61166",
+    "size": 4959,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workerd/configuration.md",
+    "sha256": "656371e6aa55e315ea02e4304228f5c1151023f68af8058ad60984b90e00a9ad",
+    "size": 5263,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workerd/gotchas.md",
+    "sha256": "ed3107537e54d440445408131b89db5f81f869902bade11cda7978f31234f74a",
+    "size": 4781,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workerd/patterns.md",
+    "sha256": "dc293c43c732adf6e3edfeaf72510904c7e8d097ca26c8b168748dd3d57e4408",
+    "size": 4938,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-ai/README.md",
+    "sha256": "e1f1fae0a795cbf975d4751e36f28a2b9eb48ad9cd10a9edf48cc9211581c241",
+    "size": 6042,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-ai/api.md",
+    "sha256": "2b6093736b90376cf9089726eddc580f77d9f719be5031a1552cd05a4f3e991c",
+    "size": 2715,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-ai/configuration.md",
+    "sha256": "acfe8100a30a006b2b35ba9f81897130402825b062a087984258fa597ea8fa1a",
+    "size": 1989,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-ai/gotchas.md",
+    "sha256": "10fe3b26750c2fc92ff6ccdefc1200352cdae88c573071cd7735d0a84ff925da",
+    "size": 2693,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-ai/patterns.md",
+    "sha256": "1ebfd949690bd1e8150435c1bd1bf7b5cd3e6ab35eec5442f7af8bf39ea80198",
+    "size": 3063,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-for-platforms/README.md",
+    "sha256": "8c1b123a124f0da9da6ee5944723f6a1fdf39bf753c8bbf5aae23aeab4de6000",
+    "size": 3913,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-for-platforms/api.md",
+    "sha256": "6bc581bf87e21dd9764b88e7658b8cce841491943bd67b0ab8c37e1fcb2b9835",
+    "size": 5515,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-for-platforms/configuration.md",
+    "sha256": "21e9034f5b014589e05e98eb5fa368e1c4fe4f287215c4b8f38ce12b95fd588a",
+    "size": 3892,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-for-platforms/gotchas.md",
+    "sha256": "98904178ec81e30e0503ae512cedf76e0d8bdcc517009984b474a6008243e18f",
+    "size": 5440,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-for-platforms/patterns.md",
+    "sha256": "08ea9e56309bf663fca61a9bb6e5115d23758fcde7112d482944ac510ae43643",
+    "size": 5587,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-playground/README.md",
+    "sha256": "88428c57b687c3c6ca23ce95559d0217dcc218a806172ddd70d0c86db0ed5231",
+    "size": 4033,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-playground/api.md",
+    "sha256": "10ca3f561c09227408451ead3809331429e5deb29d3eb2af48ce984dae8959fd",
+    "size": 2265,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-playground/configuration.md",
+    "sha256": "ce0183c32a0df67ae263f8fbbe459b0dfb6247adff5e869c0b1b4d06ae1f6300",
+    "size": 4479,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-playground/gotchas.md",
+    "sha256": "478b65b6a1827a2c95789dfe6038c16837a7dd463b6b943c630afea63a7454bd",
+    "size": 2060,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-playground/patterns.md",
+    "sha256": "c95d27741ecccbad12386ff4fa9dae6c8ff21438bf83f3edfd177ec156a8da69",
+    "size": 3303,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-vpc/README.md",
+    "sha256": "6bfab65387d76709296161a0206a1a943f773374c1fb8fa435853693b16902df",
+    "size": 5484,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-vpc/api.md",
+    "sha256": "60bae66d5674a5e54a0077168adfbc5c44a9c87050149381b119941bb4c45f41",
+    "size": 5321,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-vpc/configuration.md",
+    "sha256": "0a3f90caf7b17158687c6f4ce5a6e2f292c19255eb2bf766d7eec96de926104b",
+    "size": 3898,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-vpc/gotchas.md",
+    "sha256": "70e2d004800e75ccdbbdcc37623b97d9f5b4592183aae1421e21bad19e111d80",
+    "size": 4477,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers-vpc/patterns.md",
+    "sha256": "87dc009bc45b057408dfbeaace374ff169295bba7d9d4d40fa973945848c9ecc",
+    "size": 6011,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers/README.md",
+    "sha256": "4e00df1c6d64cd393c909430769c183b7027b4fe1db0c2dbb31090987baff14c",
+    "size": 3451,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers/api.md",
+    "sha256": "96dafb63543f3a52a791ba56b0c3fb45efd7bef5b31331ce520cb999b8956c8d",
+    "size": 5158,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers/configuration.md",
+    "sha256": "e7c5fb85f60a8e79d1e84225e3282797850ce5edd31c4d09d70969c0c325878e",
+    "size": 4349,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers/frameworks.md",
+    "sha256": "520538d460fa6a11360163e3ed0725d840946c776feb9e00bd0bafd9f1cff699",
+    "size": 4276,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers/gotchas.md",
+    "sha256": "5dc63ee4570e2c4ed3817a5f9318454caf3a1602c91cd1ae334e98486fe3b2c1",
+    "size": 4924,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workers/patterns.md",
+    "sha256": "f408d6db9c13ef192511b506b7f83b15df1a0e736c9d10215fcc1c0c0b3ba439",
+    "size": 5447,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workflows/README.md",
+    "sha256": "46e74e07cd72d650f100c0360bc060da94c899948e8e89f2d5eac215cc2cc615",
+    "size": 2871,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workflows/api.md",
+    "sha256": "a91d6cd8713c0a472c560fcfb7c308b2e3883594b1dcb77442769eb06c5716e5",
+    "size": 7744,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workflows/configuration.md",
+    "sha256": "3b6b44ded7b2c065658726f55bea95068aa06184b2cf2c1c1929d80e14b316ad",
+    "size": 3871,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workflows/gotchas.md",
+    "sha256": "2e810201a6f5b4e96451926abb92ecbdfee8c30650745fdc3d7dd0933b4cc4cb",
+    "size": 4564,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/workflows/patterns.md",
+    "sha256": "7b39cce4fbe3a7363add0e299276ee9fd68e58855a1c099ad8ae20ffec54ae5b",
+    "size": 6669,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/wrangler/README.md",
+    "sha256": "67bab7fd889e3296fa48f88398f52b44e0e52f159ab1442ecd594059f3f741f1",
+    "size": 4460,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/wrangler/api.md",
+    "sha256": "0872bc513368c167efbf8bc16024140963f44fd2cdc8777cd615b15831997d53",
+    "size": 4624,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/wrangler/configuration.md",
+    "sha256": "25a61168938f398eac23e686ff0558c3b82fc03e4bda43e9a8b856dd02ca2791",
+    "size": 4720,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/wrangler/gotchas.md",
+    "sha256": "6a77032704538305c87afc98f8e7296b145141c322a1f401b99c5b2024caebaa",
+    "size": 5950,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/wrangler/patterns.md",
+    "sha256": "eef3fa927fea3594313d72c0107b6552e65c0a86ad0324558d73e579bbd74772",
+    "size": 4876,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/zaraz/IMPLEMENTATION_SUMMARY.md",
+    "sha256": "eba1671fc4ba17fae19d1ff2d1b312d5042b5821e7a4dbc2f6367a4fa8bd5506",
+    "size": 3494,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/zaraz/README.md",
+    "sha256": "929bee8e3efffad15b1a2ee2e20ff87b5d89cc724b4f450f07f6ef15caf4b2f9",
+    "size": 3909,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/zaraz/api.md",
+    "sha256": "6b28a3e1525d46aad707b1bf4edd2739df9f48ae880f71a705448270b42f8b9e",
+    "size": 3197,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/zaraz/configuration.md",
+    "sha256": "6f3666ac64d1b36b4a708b3dea9d3b1d9679b34c58a00e3ca8e254edd602418a",
+    "size": 1811,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/zaraz/gotchas.md",
+    "sha256": "30378f48fde6e866780466228a3e698005a9ce23a24188c8ed520195b03eac3e",
+    "size": 2001,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/cloudflare/references/zaraz/patterns.md",
+    "sha256": "2ea1d00fe81b1e881c00090fd18c96d8c78ebb41fcc55f540b68150320d90d17",
+    "size": 2133,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/durable-objects/SKILL.md",
+    "sha256": "cd6797cb18f3ae8f721dfd2e5cb27b73a0aa8636683f1a38163dab2fd51a8dfb",
+    "size": 5867,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/durable-objects/references/rules.md",
+    "sha256": "92f12b305df75710fed778c22880ca7de73797f8f4fbbc4cffcf3e6c8ac919e5",
+    "size": 8483,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/durable-objects/references/testing.md",
+    "sha256": "08c4064e090ff1a8692543c38fc694c42622f59a27390af26c5825b3970f7f02",
+    "size": 6541,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/durable-objects/references/workers.md",
+    "sha256": "3149c3ee371b5dbf3a84dac7d5bb42c4c6553762480741f6d2808e4ca20fd932",
+    "size": 7543,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/emacsclient/SKILL.md",
+    "sha256": "6efd6d40302090ac688d7759da867b238333c858e642acf89f75eefb5db622c3",
+    "size": 6079,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/explain-diff/SKILL.md",
+    "sha256": "76a4954a272ba0af16eb4420d7e59100d4635187b1e66a56005ef4657878dda0",
+    "size": 5826,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".agents/skills/explain-diff/scripts/render.py",
+    "sha256": "7c72ca1d4e192ff79a70244cacd5fed0cb8fd6d604d2cfe4fde36054e22888ef",
+    "size": 18956,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/explain-diff/tests/test_render.py",
+    "sha256": "2b3c8d8d4afe520df7f9e30fff323aca1067404bb4da07c3cd9df2de02323823",
+    "size": 8205,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/fly-sprites/SKILL.md",
+    "sha256": "2eb6c65dc52a00b3e880851a3a262a5b04db4f38dfb37b2b4af49a30102de510",
+    "size": 5832,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/fly-sprites/references/networking-and-access.md",
+    "sha256": "472c5fb191e010bb1e3b70240459644f73ab388313b3a14648942b530ce04fff",
+    "size": 2723,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/fly-sprites/references/services-and-wakeup.md",
+    "sha256": "2c9f7d101d8fb46dcfaeaa4f210a5b96dd700e1eb449a0d10a7f1efa1ca0e64a",
+    "size": 4846,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/gob/SKILL.md",
+    "sha256": "6e1c7c3a329381de75bd4ca2c878c55bc837d92df65e2803be9f5fd57426cdf2",
+    "size": 4413,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/herdr-subagents/SKILL.md",
+    "sha256": "b29f52d583b69bfe41837c5dbf96f507fd5dbd5d9bf5809bec5ea8f40ee0c3ae",
+    "size": 5270,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/herdr-subagents/references/herdr-operations.md",
+    "sha256": "ccacd5ebe8df05cffc6fdd72544b04710a63368e9fd6432a501bc270a649e2f1",
+    "size": 3301,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/herdr-subagents/references/implementation-loop.md",
+    "sha256": "dc8a1c8cd3a06e2ea6040ad1c3e711d68839b2721c084551066fb025a9fee134",
+    "size": 2953,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/herdr-subagents/references/sequential-queues.md",
+    "sha256": "c618569d897d68262ef4611b0a5e238b924c0660c554dd4d460c655d395e4863",
+    "size": 2971,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/martin-fowler-refactoring/SKILL.md",
+    "sha256": "b689f96ea02a6a7e4b398a571b26597d8af97b88213cef0aa5455f62a4052363",
+    "size": 4936,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/metabase-cli/README.md",
+    "sha256": "e0c17e9303c88d9001f13c2260c19f34515e6de276c697627adfabba88c33d59",
+    "size": 803,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/metabase-cli/SKILL.md",
+    "sha256": "d681a57b9289241bbf2761e4850b3f61728e7e8c6a1a42b6fd5bca4ca8de4663",
+    "size": 946,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/pair-programming/SKILL.md",
+    "sha256": "98d4a26f665b9076ca945c3e1414eab534e39196e69c4fbe7fd865bf6361b852",
+    "size": 5350,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/pi-sessions-duckdb/SKILL.md",
+    "sha256": "26cc1633670f32c4d0aed4d45f38591f688c95b7d35e48f6667ac38a0e458147",
+    "size": 4619,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/pi-sessions-duckdb/references/queries.md",
+    "sha256": "91dd895913cbd74a96b6f34217116c7d53fbe216c660a56ae1cf9295a0d54105",
+    "size": 5935,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/pi-sessions-duckdb/references/schema.md",
+    "sha256": "eaac3b839f241339cc342525f848c3e694b435d9e5e37fe51681c03aa07c1155",
+    "size": 3736,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".agents/skills/pi-sessions-duckdb/scripts/conversation-text.sh",
+    "sha256": "a623a84381fd5ca25495020149bb5a83c2074e140fea6264de5955c5a85f6115",
+    "size": 1106,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/pi-sessions-duckdb/scripts/create_views.sql",
+    "sha256": "3f9b59c5665aeb7edaa0a5412b688635ee5a8a9fb68bcb8e8dd5e67075457977",
+    "size": 3524,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".agents/skills/pi-sessions-duckdb/scripts/query.sh",
+    "sha256": "49aca51836dfdf634a49badb4bd8bc6defb5fce67501035b4bc832972efd0b48",
+    "size": 187,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/safe-refactoring/SKILL.md",
+    "sha256": "eac44333570e0ba3c4e21a034291db3eca0a671938ba531c4bcc521e2c058b29",
+    "size": 4423,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sandbox-migrate-to-next/SKILL.md",
+    "sha256": "0586f041b140fe8073065138dc5638a0198423e353a0ca8aa0738e6e71683b99",
+    "size": 8128,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sandbox-next/SKILL.md",
+    "sha256": "fa9b342d9e516bce1a382b7d456d659f2005cfea5ea8848796894cda49675ba2",
+    "size": 7071,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sandbox-next/references/api-quick-ref.md",
+    "sha256": "0b29ee510f7a177cb6abf9cf563ccb2140548fca674cf2634b8b80413ff40c91",
+    "size": 3344,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sandbox-next/references/examples.md",
+    "sha256": "08d1e6776e16931dec2bb637b82a425679ff217081ac1d50182ab94de40f4fc6",
+    "size": 526,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sandbox-stable/SKILL.md",
+    "sha256": "6ced225f22f6180edd9490a8eae04b3f3819f3ac4a9d47e8f9677ac040790910",
+    "size": 9009,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/SKILL.md",
+    "sha256": "e9f7262a9f90f334b62ba4dad6ea4ed70bf424cbf735f4ae7f3ee1673b752f76",
+    "size": 23256,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/alert.md",
+    "sha256": "ae8f5bf8848d2a6f62551398734d55ca39f9f7e332c61c0ce13a132392598cb3",
+    "size": 6838,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/api.md",
+    "sha256": "296ceb725cefc5594ac94bf2b45ad1560405deec6250a6a171769d9194f816a4",
+    "size": 1917,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/auth.md",
+    "sha256": "0488c09a2875fd64a78323796c95db9b1a37cc8918428557518338f7ce0573e2",
+    "size": 2457,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/cli.md",
+    "sha256": "f755eac275f16698c1054735336c1b6bd64886d0d96905aaffa82ade4fb68a9b",
+    "size": 4304,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/code-mappings.md",
+    "sha256": "56f5f945053706defe31d3ca89d7414b82e2971168020ed9771b26f5b85d8f36",
+    "size": 1018,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/dart-symbol-map.md",
+    "sha256": "1f8e84e8d887a273f426345b1be3be3ad126ad8e738556832d2bbb0e72030007",
+    "size": 965,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/dashboard.md",
+    "sha256": "a17c43a3cc852ee8f3b0337ea432d12fea53c702c79ca2b5bad9cebd8ccb80ab",
+    "size": 6494,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/event.md",
+    "sha256": "387ce4d3f9d5a83a1e29bcde3b814493bce0ec35a508fe850286bf8c13821e14",
+    "size": 5061,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/explore.md",
+    "sha256": "117591aec2ebc1b96c5ae6ad48c8dab3d17ced0de3fe82cc26f600ef1ab9b6f8",
+    "size": 3125,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/init.md",
+    "sha256": "15a3c50e43aef907c87c0546a1d5b00fe09869a7e385a6567f11f99ae71e5c3d",
+    "size": 1486,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/issue.md",
+    "sha256": "0c40fd110817ba28bd0900f279ce37ed092bfc23374e24cd83a78af59cbc030c",
+    "size": 10580,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/local.md",
+    "sha256": "12bd4454c4548bd2a93fa07dc8765140ab297cfd3261193fdf44c82b4e00b36f",
+    "size": 1843,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/log.md",
+    "sha256": "89577ef87bd93821a29d2a90e1e0642b6637d37dfced4c21f2aea6af41d1286c",
+    "size": 2296,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/monitor.md",
+    "sha256": "9f26ecfecdb621ce0aa3d9656a95e731a5511873e7cfe3a7b1e339c59b1a1f82",
+    "size": 2615,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/org.md",
+    "sha256": "97ea5feb9173602252934cdbbd9e10fe27a77a17ba35cba3c40efd163707388f",
+    "size": 867,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/proguard.md",
+    "sha256": "26114da6ba46583643f311dd819a2b9ab977bdcbde9f1e39de547f7db0f1525c",
+    "size": 966,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/project.md",
+    "sha256": "cfd14260275f151736df23c78d2f685e6b89cc9674d8fd19c3abffdb5dcb5ba2",
+    "size": 2054,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/release.md",
+    "sha256": "dfbbabd9170db6c22104e0bcb396fe7672a4a6fa0072a077b08b8dedad3fe7dc",
+    "size": 4943,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/replay.md",
+    "sha256": "95ddbee20d8175e9a4a1f7e71ffd737aaefe9a3e883dab82a03da240ef1986b1",
+    "size": 5811,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/repo.md",
+    "sha256": "fa1d2a35c772ec36514446192b28d93656329828e90bb177f4475b2044ae2af6",
+    "size": 1354,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/schema.md",
+    "sha256": "a9c771b966631a213dad5fc510e85ea40f7dff5259c3d0c8a0c9a63b0cace909",
+    "size": 762,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/sourcemap.md",
+    "sha256": "48229f4c32ce5d10b84f1f89534a5ec07e3b3c2e5aa60551bec4fadb6c9d5a94",
+    "size": 2971,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/span.md",
+    "sha256": "36c2ac025760988493b6e9041727e813d8df33995530487016d5941a1866acdd",
+    "size": 2778,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/team.md",
+    "sha256": "d05dc47d8fad2aa51f4378dd2dd483c72b067a81d3cdecbe93dcb6f02d9c3edf",
+    "size": 1170,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/trace.md",
+    "sha256": "cdf95e72240e03d8b038824275615d7311f668bea509a6fda9faee1457d8c1d8",
+    "size": 3453,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/sentry-cli/references/trial.md",
+    "sha256": "f7967a599e1f0a9dd4c4e0ea83ad879753b3173cca176efc6e81f07ffdc767d8",
+    "size": 1175,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/skill-retrospective/SKILL.md",
+    "sha256": "1f2f8b327753829acac6a08035c591b54f7ea9a0fc8820e8e703337f4754ab18",
+    "size": 7075,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/skill-retrospective/references/session-selection.md",
+    "sha256": "95f69c6bf063649d257e92a7f57d92b174ff53913505398642160ef628cc31ea",
+    "size": 3251,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/story-splitting/LICENSE",
+    "sha256": "6b68792ca013567904a631632ac17c67f776d86439a895d20021ab5135461295",
+    "size": 1069,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/story-splitting/SKILL.md",
+    "sha256": "2dd7b2ff4c972f75d7531765c1b68655fbf8e65b44870cdffd138dff63c23fe6",
+    "size": 14841,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/story-splitting/resources/pattern-catalog.md",
+    "sha256": "0ed48a2caf0093d1e372e3731e038a9c8a82d441634c8c6761c7c18d39134f7a",
+    "size": 9679,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/story-splitting/resources/source-notes.md",
+    "sha256": "bd852e03d9ab4329f3ec8be340d083d525d70ae3ceb5d5b6c30387dc169df71f",
+    "size": 7456,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/test-driven-development/SKILL.md",
+    "sha256": "4db527e3c0c5f9c2bb90755d1dd9cd32757c373dcac66b769181e09b45a2b606",
+    "size": 10244,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/tidy-first-analysis/SKILL.md",
+    "sha256": "9ed2086397b0497bb0b9273920621fe1008fb6fc035d53395bc7c4238a5bebea",
+    "size": 2670,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/README.md",
+    "sha256": "e5c50413b3db0fc2e1bf5ae0147b093f36ed9a66567c5e39f6bd93b2c972f440",
+    "size": 3757,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/SKILL.md",
+    "sha256": "0d8df415c594c96ca5a4d393b70681d95d92365465e0eb14af3ab2eaa76d800b",
+    "size": 28708,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/references/astro.md",
+    "sha256": "6e2faeba9bf9ad24c062c6a723dc37c74644e5843dd7a06164999240e83d7a96",
+    "size": 5929,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/references/hugo.md",
+    "sha256": "5bc91dca7264de9bcb163d4c8e21a20d64afcad7becdd69926f9c7a09d1bb05c",
+    "size": 3852,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/references/nextjs-app.md",
+    "sha256": "a8e10a569937efd076c3f32f37b48a8083c8c52918c9aa309b770d35d5a03273",
+    "size": 7643,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/references/nextjs-pages.md",
+    "sha256": "f6fa729155fa682f6c77b157cbb75492caf172f7451bcc889bc417441a3f02a5",
+    "size": 2737,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/references/sveltekit.md",
+    "sha256": "da8dbe10014a0a94d25c51e80010ffd4fb5f0719caa7226c42b9dacb3ae8933a",
+    "size": 5513,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/references/vanilla-html.md",
+    "sha256": "bb01ca94b0e942c0e329c2fcaf50d0c5ff846f1ae166aa6d654d4c962d48fa9d",
+    "size": 5756,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".agents/skills/turnstile-spin/scripts/auth-probe.sh",
+    "sha256": "a54d7ab1f6e6ac98a6aeb45498d7bb3568d173669d2d3a7c6a08b56ed2c20182",
+    "size": 11270,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".agents/skills/turnstile-spin/scripts/persist-skill.sh",
+    "sha256": "4fea0bcda9fded16dd63f77dad196474d3c15c1fe93ac4718b50517fa834330c",
+    "size": 3576,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".agents/skills/turnstile-spin/scripts/validate.sh",
+    "sha256": "45af59068104650ac8b247cf2059d985fa17960d9c2f3d867287fc296771de81",
+    "size": 4438,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".agents/skills/turnstile-spin/scripts/widget-create.sh",
+    "sha256": "ebc3ef13ef99f4f6f93400ce66ffc3848c1913aac0cb0876470c6378cf1d9fed",
+    "size": 4149,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/turnstile-spin/tests/validation.md",
+    "sha256": "e92fedb23a709b104877733365162bddb2d2be7c8a25c1dec9483bbedddae46f",
+    "size": 2916,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/web-perf/SKILL.md",
+    "sha256": "94c5cb37766676a8321a82861d2ac1072d3dd0ef612f0c946792014ad48fb0c2",
+    "size": 8198,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/workers-best-practices/SKILL.md",
+    "sha256": "099432ff265ff6080327ef0b392c118b835d2a5bda98a7de07e1afd115ed6458",
+    "size": 7092,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/workers-best-practices/references/review.md",
+    "sha256": "3e32da345be0906d020e5235d01f2b6398a41216900b5370a267e3f17757ade0",
+    "size": 8145,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/workers-best-practices/references/rules.md",
+    "sha256": "124645fe941360c6e98a179131f580e410a61356ec23c05f34618402ea61f0c0",
+    "size": 16473,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/workflow-to-skill/SKILL.md",
+    "sha256": "016ad948163859a9f47d0eb3392df37771feda30bd9e45501e55f66d25a55585",
+    "size": 9080,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/workflow-to-skill/references/session-discovery.md",
+    "sha256": "026aa9800620905ee685ad4ca278248d83ef70f6158b4daa83ec0c8d8dbd2694",
+    "size": 4160,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".agents/skills/wrangler/SKILL.md",
+    "sha256": "42abe11ba6c0cb0c135deed1d591d844838fe0b61fc8c6d675a832435508a61b",
+    "size": 18359,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".config/ghostty/config",
+    "sha256": "dc020f811562a58811198317ebb1997395f2da2d64c74d9124f1f9be3a1e39b1",
+    "size": 736,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".config/git/allowed_signers",
+    "sha256": "e195b9a9c0f7a46e0bed095eb2a54aa7b57b9b4f425b80bfc8beb0997a3f91a5",
+    "size": 114,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".config/herdr/config.toml",
+    "sha256": "2ebe8e8be7eb88fc2857bc9d4f802e623e2e88b0b81a803c309d9ddecbb693ad",
+    "size": 825,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".config/mise/config.toml",
+    "sha256": "6cb00b0fef2dcd3cd71eb05d64f845dbd1c3d67619d5ea8b618195d4b1982802",
+    "size": 1064,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".config/starship.toml",
+    "sha256": "2c8b47ed968753ba327793500e5abd223ea4a1d49cc12a915d4b7f60b33d81ef",
+    "size": 471,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".gitconfig",
+    "sha256": "0a72dffb75da6ea36858c3979e11fa24e5a8a39e49c6aa1e2607189ca33226c4",
+    "size": 1422,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".global-gitignore",
+    "sha256": "ff2b87ae17d3380993b2f039ada70aa17a6aa9b556282f480e02154f6405f1a3",
+    "size": 113,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/bin/PROMPT.example.md",
+    "sha256": "9628c1cf713033eb21ede6e6fe3e2475db538ab8efca9783fd0f5a52c7622e28",
+    "size": 955,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/bin/README-ralph.md",
+    "sha256": "567a2f1e2db27143fd7118f28039ef1201d42b7d69c946b1069957f16f4c0f77",
+    "size": 4960,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".local/bin/ffmpeg-reencode",
+    "sha256": "41b6a3eece869b9ea624ea19417dc2f800ed57e92968d3751845e6b620ecaafa",
+    "size": 5018,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".local/bin/pi-auth-setup",
+    "sha256": "3d5409e0c58e1d0d8d6ac7dbc7450e8bbb0815ec110b71a10606009f026560ea",
+    "size": 2715,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".local/bin/pifind",
+    "sha256": "ad1ece9b060a905702e2f37e3bc115fc41695ed46a442c68b06585d5cc910ba8",
+    "size": 127,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".local/bin/ralph-pi",
+    "sha256": "02c58b63221c31d7c6d3958c4ec85a8051f88265b148a9a31f2f30e90c19fc47",
+    "size": 11410,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".local/bin/update-zsh-completions",
+    "sha256": "64b643c6ff75e49174ddeb365c84cfcec699293b62c63026eb651e2a29b2986d",
+    "size": 1273,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".local/bin/wt",
+    "sha256": "22594a3e67f49e67b1d93fde9a73702da62b10d6bc4152c41f057da422d3f372",
+    "size": 6450,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/README.md",
+    "sha256": "8c90f9cfaf77f39ace3857950227b8588a724ff1a795fbd7a62f66f901634322",
+    "size": 1201,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/candidate-collector.js",
+    "sha256": "7f666dd94fd39281d80f4afbc6187190153263d1a5d023441ec696abf9403cee",
+    "size": 944,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".local/lib/pifind/cli.js",
+    "sha256": "32124aebadd3dad95dd72e9ee62f9507d720b5cc62360ea55b8b2493788c683e",
+    "size": 1943,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/duckdb.js",
+    "sha256": "f00cfeb196ef8f2d1a2ac04c138cf099748d0e77ba167ed8dd7ca57ec604787e",
+    "size": 1305,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/finder.js",
+    "sha256": "60af3adbec6625dab61c49eeaf59eb8b04c0a439898fa0873ac292155e7f5441",
+    "size": 4919,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/launch.js",
+    "sha256": "5b287c161ae15a057512cf627f7034d5e78c5050d84af23c2bead8d35d1cc923",
+    "size": 1226,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/package-lock.json",
+    "sha256": "8cccf842535dcc83323fe9852c22a0d1e9f9bc6a4eb66200bb5863462ef30da9",
+    "size": 118378,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/package.json",
+    "sha256": "8606decca22e12865d9e9bfbe6c5042e1a48bee7f33f1b3d0c253850c29d14ea",
+    "size": 291,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/selector.js",
+    "sha256": "0b474ca9b820279e9ccdf0f5da322a9a7ba21ab7d1612c94e82b9312dcb538d0",
+    "size": 1404,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/session-search.js",
+    "sha256": "14a20c8668daa107c7fe09e2df87efea7e35f6d74d460fc79878d8a595f5e1aa",
+    "size": 2944,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/test/candidate-collector.test.js",
+    "sha256": "aca92a1ce108872ecea62e5ba8ac8b26b1e03fd66f0be6bcc3b10a7eea3525d9",
+    "size": 1015,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/test/launch.test.js",
+    "sha256": "4a0183b9cd1ae1ecfe51f9e7fc19ee59cc335ca063b3d0f1b5bece354daf306b",
+    "size": 938,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/test/selector.test.js",
+    "sha256": "3bbce89dffa3476cf62276a77f1350c0a8132c91e1ab20959363df7dffa50e6d",
+    "size": 1015,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".local/lib/pifind/test/session-search.test.js",
+    "sha256": "6e935314ed21e27ad5526063f7344bbf2b4abc5cb4baf14c810fa5acf4c7e03e",
+    "size": 571,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/APPEND_SYSTEM.md",
+    "sha256": "7839da4810538c1c3200d961797b63150b0dd8c31c5119f64eed291a1806a9fd",
+    "size": 453,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/agents/reviewer.md",
+    "sha256": "c57602bd221ad2831da3fb7606ec46c6f46cdd0e59df83347debe514061589dc",
+    "size": 2019,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/auth.op.json",
+    "sha256": "bd550d8709de5ad34b873e001a9225edd810edcbb708a0017442371bd448c580",
+    "size": 704,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/auto-exit.ts",
+    "sha256": "e03f69f2bcec2b029303c04a76d6e95d3bd61ee8f76e37078690a2ceeaa37d94",
+    "size": 607,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/copy-message-file/clipboard.test.ts",
+    "sha256": "e5adc650f03e252cbb8f4e94a43b83e45d025b42e3b2763e42d3991d37df2063",
+    "size": 846,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/copy-message-file/clipboard.ts",
+    "sha256": "6de6979a07f9a903d588b0a8cdb28e7f3cf44333ff05b7e2af155c4e9e0c39d9",
+    "size": 875,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/copy-message-file/index.ts",
+    "sha256": "b4fb1dad291377b70c8ccfb4666a47476764cd589ecc3bf9a53457db4739ed55",
+    "size": 3580,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/copy-message-file/message.test.ts",
+    "sha256": "6ee0295a43bf8792d2b9ae3fbe3d5c225daaf90f30166591527dc0a6a5e834c9",
+    "size": 1372,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/copy-message-file/message.ts",
+    "sha256": "96685cbf1ccba3c15e569ff6ea76b5fdd436296769b6fb2f7cac2ce5c0f6f4e3",
+    "size": 640,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/LICENSE.pi-sub",
+    "sha256": "c9a918a950c777951cd57aba2be7a66cdc363a5688751ea0c22cd78e9e9c0c7a",
+    "size": 1067,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/package-lock.json",
+    "sha256": "aead429476917d83dbda5013e2a87b320271a7529fb1a6bf9cc870332c90e9ff",
+    "size": 141643,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/package.json",
+    "sha256": "a690696b094a46788ad379672a0582c3ddd7e74e281c92fe1137ce322e41e756",
+    "size": 536,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/branch-status.ts",
+    "sha256": "8948607451206eb07b8b221c288a15fd8b2ef5d122685c68bb7b92d8e56cad89",
+    "size": 1600,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/context-usage.ts",
+    "sha256": "05a3e160b3873bb1514662be683e5b1fe1349c4db27d7c30dbcd6c4046c9d727",
+    "size": 3534,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/footer-line.ts",
+    "sha256": "3c99773a9331fc79772b08ff3e42803d87ba49a027edd625069ab03ce4f2f656",
+    "size": 5822,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/index.ts",
+    "sha256": "6e3aaf3688bc72b2d99de9986fce35e6cbce45426414e62dc8be677f2565eb29",
+    "size": 8162,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage-adapter.ts",
+    "sha256": "611a5e6e91da9325532544ad948c9691b9a43dfde9d7d81b4edb90088f74c294",
+    "size": 532,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage-defaults.ts",
+    "sha256": "154e748186d4211502262c623f1dd0768b3e2291a9361560e35e447e7efd6f63",
+    "size": 3729,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/README.md",
+    "sha256": "7f041753031ce2c67154fcc70ef4aff2cb81822e73a77e662754415e90169687",
+    "size": 407,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/errors.ts",
+    "sha256": "0e0019e92b1be294f9118a72592d15774b55bc4693e57d26badaa6e88893115c",
+    "size": 1936,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/formatting.ts",
+    "sha256": "c3732fd8a791788ee0adf187ce7714d29458f12ec7fc269a5c2ca0791d3d8d44",
+    "size": 34225,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/paths.ts",
+    "sha256": "c5b7d030f8346798913e3027d52d10edc87b5e2febc3ab82eb56e28f43ffb71a",
+    "size": 573,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/providers/extras.ts",
+    "sha256": "8e5e7ff0bc71890d8f0b766ad6e52a3a90701559cc9d02dc35c037cd1fb19180",
+    "size": 543,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/providers/metadata.ts",
+    "sha256": "6881dc58088e633fb779a8789b9561138ab3c8ba28dbf393f4e0edb82ad78771",
+    "size": 7542,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/providers/windows.ts",
+    "sha256": "3cc313c70950c361a67123f14e647f96918b4fc4f8112ee8e0232620857897ee",
+    "size": 584,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/settings-types.ts",
+    "sha256": "011cf594d499a2a4379bbc839d576bf4a9d84c4465e2ab0b734d3474cb763ff6",
+    "size": 15793,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/settings.ts",
+    "sha256": "633f9a33ff24e264f131d631566ed6e3da50dd63eb0082aea24061a5706557e4",
+    "size": 5087,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/status.ts",
+    "sha256": "c830f5f7fe8d69d9b1e2603ad9b89299711ad9d1eeb95b7c72567486a82f6fa2",
+    "size": 2634,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/storage.ts",
+    "sha256": "0034d8d28c3cb2a39dbaa0108bdce010be4793f936a8497f5d62aae2d9ca7e2c",
+    "size": 1467,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/types.ts",
+    "sha256": "2260cb14e8597cb54809463e129387e4ff88e77d04a92bd2c3494214398ed694",
+    "size": 362,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/bar/src/utils.ts",
+    "sha256": "fb9a00c137d04b18386529b522515972b0d071eddb2071c91cb24560878bab59",
+    "size": 1184,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/index.ts",
+    "sha256": "d5be2d11e1d08f34f37797d47800420b6818e91fb1538c66d7a0b9029c0b967f",
+    "size": 14246,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/cache.ts",
+    "sha256": "21cdfb8856d55974b171ec7e9f494fbe3084d7025e041e7d8aa0fd9ef7af9491",
+    "size": 12707,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/config.ts",
+    "sha256": "9a9ae408073785630a6841ffe8be7ee47427273eaf55e1dec9e1ef7d4825cb89",
+    "size": 776,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/dependencies.ts",
+    "sha256": "1008c7855b132493411ab8661e21b8afefa9dc42be7d817ec036f59c9d27f261",
+    "size": 921,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/errors.ts",
+    "sha256": "0e0019e92b1be294f9118a72592d15774b55bc4693e57d26badaa6e88893115c",
+    "size": 1936,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/paths.ts",
+    "sha256": "1873d5bd6c0d1ac602c1840c5699b7096c56593ee5f362c140ae29424915f84c",
+    "size": 1571,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/provider.ts",
+    "sha256": "5aad7d5779e5c5e4c9ac3b42040a86cd937a05393b436f4b35b06a2edd34bc15",
+    "size": 1459,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/detection.ts",
+    "sha256": "800e5d7da4f1a33fdd47ac898f64a24d6d45e419ae0eb468541fccd074abbee1",
+    "size": 1350,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/anthropic.ts",
+    "sha256": "1d0cdf876a6ec94d00f4eee162ad814047b93d9525089d64fa143e79c836c6e5",
+    "size": 5265,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/antigravity.ts",
+    "sha256": "e9b2db2aac58e63a901c5ebc5f8972df07e275f42c27795891274354ecd04987",
+    "size": 6942,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/codex.ts",
+    "sha256": "2417d30cd26d10588213cbbca7d725418ef936c99460b5f82d356f71566e1f5a",
+    "size": 5519,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/copilot.ts",
+    "sha256": "65a78b84ba46cb0bf4444ce2fb0ae6cbfcc658a29e34d4fceb639c06d4255170",
+    "size": 5117,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/gemini.ts",
+    "sha256": "c21968897088cbfab1d924b61034653a3578765f814c7e47ab25cfe79270e3ed",
+    "size": 3482,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/kimi.ts",
+    "sha256": "5f60dc814fab6ef49275d98b1da53a24759c0aa3105fd77f30165bf930396973",
+    "size": 5936,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/kiro.ts",
+    "sha256": "b609c352cb200245d8f453bf639e6b80b97e98b04909d19cefc673f8d7862f32",
+    "size": 2733,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/impl/zai.ts",
+    "sha256": "f512090dc9d882d296e6bf07ec415731421e078c2e3d11805a882ea4be1d5246",
+    "size": 3126,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/metadata.ts",
+    "sha256": "4207e23c136b682ed9abbdc4c9579a454254a51494590e2da46000845baca1c0",
+    "size": 276,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/registry.ts",
+    "sha256": "aeced28573e2d8896f786fc2c7f6fcaf1760364c2f3622b22cb487b8bf24a750",
+    "size": 1938,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/settings.ts",
+    "sha256": "cef8ce21c320425ec1cf3d0b98894312b320316a52cddba7711d88455988f031",
+    "size": 2904,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/providers/status.ts",
+    "sha256": "b5a79db99ec95b726faa6343578ad983223f642b1f02e7422801d013a7ec8ff2",
+    "size": 834,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/settings-types.ts",
+    "sha256": "5181bbbdec1759bc8e64928ec74f4d2bf2494bfb149925aefd009e845e65fd31",
+    "size": 2143,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/settings-ui.ts",
+    "sha256": "5fbf742fe276ac3a428eb8f5a2e835587b9a5455a318c205ab634e4c8f9b5786",
+    "size": 51,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/settings.ts",
+    "sha256": "3a102f66f24e58f28831c83f2c15e8f757f6cb4310d23d02c0da25c2dda18e86",
+    "size": 3580,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/settings/behavior.ts",
+    "sha256": "919973dad2c209f345cf72e38d16f96c5d38049a238c2500f3b52423bde4a583",
+    "size": 1890,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/settings/menu.ts",
+    "sha256": "36f48e4b949f564ba84edcdb8679a858ce67f5e45318b4255ece4daf4399a66e",
+    "size": 2976,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/settings/tools.ts",
+    "sha256": "1fa0d0c575ed1fb6e2143b7e55584e503934f4c70c3fcb199e4a54c274f889e2",
+    "size": 989,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/settings/ui.ts",
+    "sha256": "00f87186050bd19d4ba321f56aa86888c015177003b0554a806f3ca7e204ede7",
+    "size": 15630,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/status.ts",
+    "sha256": "476723f381f11e65fb810068b66fd0c7bb0afd99d02d178af563d1573197a740",
+    "size": 6419,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/storage.ts",
+    "sha256": "4cbc5c8d5dadb2050c323ed49a1c4fdb8d7972446e998f6d7c6b425d94cfdbf6",
+    "size": 1477,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/storage/lock.ts",
+    "sha256": "563188d4da44a78093b4203234f223ce9ea3d6b1995d0648cca06fd40311613a",
+    "size": 1256,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/types.ts",
+    "sha256": "8fa3072f64f9c21f3835531ff13881b5b127ad0f50b6f6bd43e36150f055569e",
+    "size": 778,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/ui/keybindings.ts",
+    "sha256": "46e3fe4de5532f356175d7dbe01dbad048a2ba6bbe307100693d15ee0373f6d6",
+    "size": 2627,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/ui/settings-list.ts",
+    "sha256": "61bf7c612bc8fe4118190cca45e7005d50beb28aea3b623c182c66d7df6a17ec",
+    "size": 9281,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/usage/controller.ts",
+    "sha256": "efc0c8b18124bc1c849e4b71f9dcc3e956b5594726901d890aae1cf036640920",
+    "size": 7868,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/usage/fetch.ts",
+    "sha256": "7ea8639dcc234e7ed4f2220032e6e01d2168d6668fc5396c05314b2bda6d535e",
+    "size": 7332,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/usage/types.ts",
+    "sha256": "877697477cfd12999d02fe172dc85c2642056211d2c3612af36b2c9a1016a5fe",
+    "size": 114,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/core/src/utils.ts",
+    "sha256": "f536f2e72061b38eec91d9a4a119ae613f09b207586601cf070e0340558b6d64",
+    "size": 4593,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/src/subscription-usage/shared.ts",
+    "sha256": "8dc93b6c1f0e6cceb69ec2028a60fcbfe26d3c099d62775c70479433d89ac6f1",
+    "size": 5521,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/branch-status.test.mjs",
+    "sha256": "ef51ee241526de0d0ca35d932d2441c56b135e85805c1f06c27083d1b2985733",
+    "size": 1370,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/cache-stats.test.mjs",
+    "sha256": "987130c3aade78e63f526e3e1016b6bf4169745778e46f77ffce642c3dc53057",
+    "size": 828,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/context-usage.test.mjs",
+    "sha256": "f3c4f32cd8800a9c8b63eaabd7f19f999f8b7eb7d285e16dbc0ca4fe2f4dbcf4",
+    "size": 2611,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/footer-line.test.mjs",
+    "sha256": "31ce70524b5df460db4eecde8a06d82b95c915daefe101a3e6579fa4640b15db",
+    "size": 2576,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/package-structure.test.mjs",
+    "sha256": "78461708017b3350bc1db3b901497a311b7702800735cd0bb5c61ba1c6b3e3f0",
+    "size": 2178,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage-defaults.test.mjs",
+    "sha256": "bd8fc6710e8519d7a88dd86b5fe4e85d17b02e0b5af02302ac17dbf95001431b",
+    "size": 1169,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/bar/all.test.ts",
+    "sha256": "694a366f3198fa490f43b9213d3379e0ac5fbd59fb91ccd47f8375b212ab71bd",
+    "size": 146,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/bar/defaults.test.ts",
+    "sha256": "1838a09d7d8ef96f5408eb4c410848b9925930a6811d6347714b80b68e0b5469",
+    "size": 1951,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/bar/formatting.test.ts",
+    "sha256": "41cdf0e80f28bd5e84ced11c9fbf9f78e76e5d572114dd7decd1974aa9f3a217",
+    "size": 15528,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/bar/providers.test.ts",
+    "sha256": "13594ad393c37bd2222f2b9d0ff5c77a16adcd4198a00133f76a4b44b78aed36",
+    "size": 1607,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/bar/settings.test.ts",
+    "sha256": "96bbf87991883da9c0d23034db05a48e568e23d41e78a2b5d8343026f7a38a12",
+    "size": 2999,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/bar/status.test.ts",
+    "sha256": "e03796f06f59d5abb5053d359518d543ffcb5111b3896105312d840c75e9b090",
+    "size": 1238,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/all.test.ts",
+    "sha256": "99608c397391d470b17697a523bd8339a7b2a40debe2367d1cc1dd78adedb9cf",
+    "size": 232,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/cache.test.ts",
+    "sha256": "ebe52d75c23fd2cec43933c9c55e0ed9dc9f02255e830ae4ca7145adcf8cfd39",
+    "size": 2936,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/controller.test.ts",
+    "sha256": "a83e9f943f06da9ba5eba31c1a96713cf80365e214b0054510e9770a02c201d2",
+    "size": 3508,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/detection.test.ts",
+    "sha256": "f5284c0a6898f5b851853bf94ca3e208775b91b6b62aa5cf23593b0369c3c18e",
+    "size": 1154,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/helpers.ts",
+    "sha256": "d20c5d872f00681e42e88611a906d9d4355efad3f3dafb81b4c4750133f04f69",
+    "size": 1337,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/keybindings.test.ts",
+    "sha256": "9c6914d5bc53857ef1f7f9be13aa7c0ba2bf48a81097253410f233a6e9f2034e",
+    "size": 2185,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/lock.test.ts",
+    "sha256": "b272447432a6090091b4523141f96fda62ff6fd0e5238ea5a32fe5c111913bfc",
+    "size": 1378,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/prioritize.test.ts",
+    "sha256": "a477a200660fd600a87839c0f1476a5d0dcbd8ec1a13b4ca121c54edd0e075e0",
+    "size": 2430,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/providers.test.ts",
+    "sha256": "e0856181bf034b46b80b11a691c60a5858b49bafead3ca905431cfec39c190d4",
+    "size": 16437,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/footer/test/subscription-usage/core/status.test.ts",
+    "sha256": "55712ad4fc62d70008fa69f027700f4701b0bd268d6a0c889bcb2be8ab8980c8",
+    "size": 2270,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/guardrails.json",
+    "sha256": "ffe18130b399e8297dfce852a1bea98b707591fa1192d640bcdfa6d1fc974fdb",
+    "size": 191,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/handoff.ts",
+    "sha256": "5eeccc49de5348fa5efc61840ff0f6e53758d399b80a08ed8859b401ee8fd0ed",
+    "size": 6127,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/herdr-agent-state.ts",
+    "sha256": "9b1c41cd72520fc2abe5f2a2aec995c12a926cce844df472c7fd5fcae4f4dbfa",
+    "size": 6602,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-autoresearch.json",
+    "sha256": "6a99acbe955e24acc3b16d7a9a453d05b04524d7c3c123fa52d121ba8b7c4d91",
+    "size": 67,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-herdr/LICENSE",
+    "sha256": "cc8c186b765c8a46cb98f5aa7c90ff2ca5ffd3e5ccca05dfe3f4d886bc95d872",
+    "size": 1066,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-herdr/README.md",
+    "sha256": "147c8c2a72c3c52da2538f3fc08c52da1905dccf0ab20f6bb7bbb4bd19ec2345",
+    "size": 6314,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-herdr/index.test.ts",
+    "sha256": "6feb57f1a9d4e3c4c890b42705a8a43f00d78c5ef62d5fd7ca549b084f86775f",
+    "size": 8778,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-herdr/index.ts",
+    "sha256": "e70ebff1e4e3396ccdb4bc888a3ad321bd44861b9c68468b9c19cb04625b11dc",
+    "size": 36461,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-herdr/package.json",
+    "sha256": "a23d6970ec77f442e956d05717d54b120a662096df23d8c99ddd9132781b519c",
+    "size": 1087,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/branch-cursor.test.ts",
+    "sha256": "e2df6e6693e501857f587c80b59d277879cbb50a79943fbe7e414a048e4c285a",
+    "size": 492,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/branch-cursor.ts",
+    "sha256": "26dc365ebd10b4990c74421ec9bf939bccbf1179a8294d97b9833b5d59e0c904",
+    "size": 359,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/emacsclient.test.ts",
+    "sha256": "7cef0ddd6e6611d75004b28b6e4de7d03ce2129275134ea58e008ebf9d80f25f",
+    "size": 433,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/emacsclient.ts",
+    "sha256": "d53199d0aab32c4d7b5d428d493d45e3cf52cdcd66c830b6693d28b3083b5994",
+    "size": 789,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/index.ts",
+    "sha256": "1d53cd98fee27d15abbe5538475d9d3b4e69c9d864354f14ce53eb40b881b05e",
+    "size": 2373,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/paths.test.ts",
+    "sha256": "acb01bc23df6769d29e092206b25d5686538ef475b5d5846b9345d1e7df9f155",
+    "size": 3060,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/paths.ts",
+    "sha256": "e355117edaf748b85545bafc3af0bc1671db3c093c8a1367a3f74833837e4259",
+    "size": 3043,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/picker.ts",
+    "sha256": "63117e616c5e8c61bc5efa8fe738f3849869ef6bda8a37a21275d3879ad37469",
+    "size": 4909,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/sections.test.ts",
+    "sha256": "87302d2091e31337392bace0b42c7b0bf4197f3ede99af5b5d1f958b817ae66f",
+    "size": 778,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/sections.ts",
+    "sha256": "dbcfc176bc0fa71eec4f98fbda17fd804d9172a3368a597bb009ea8627c5cb8d",
+    "size": 769,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/session.test.ts",
+    "sha256": "cf4fef896a81e72dbc2f2c5f0ea956c5dcea6c68ab631f7b2367a8f3891a4fcf",
+    "size": 3196,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/pi-open-in-editor/session.ts",
+    "sha256": "258c28b49657fa9b27cd66da6d8cbd163638a68d9d5c3f8fedaef6487db6c17d",
+    "size": 3466,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/python-env.json",
+    "sha256": "9bce4438d7101d2dccc28ab420eeab64a25f00cc470ecab56d6bfd9e5b1c762b",
+    "size": 118,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/python-env.ts",
+    "sha256": "35db6c755575825dcf5e6cfce68ecb97a1ce4688dff795da5e433b5f9706bcd0",
+    "size": 8663,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/read-directories.ts",
+    "sha256": "fe561c34905a730ce3dbdd8bda109eaaa0bd663e8a3f1c0fe5e0e0b0d3ed684d",
+    "size": 1945,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/synthetic.json",
+    "sha256": "a984d6f296e081991cae606f50e7c755d9fcde0e96e565fd7ae0e4f6a3ca4f7f",
+    "size": 183,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/tavily/.gitignore",
+    "sha256": "4d56952b0fb13bf8f9b6c13a6d4c34a075bac3af447636a1df4335d7576e2f97",
+    "size": 14,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/tavily/README.md",
+    "sha256": "1d4d09fff6f5ad8ed84199c4a25a26893e04db1d24cf62e9e4cf8fe94d9a5624",
+    "size": 2104,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/tavily/index.ts",
+    "sha256": "03875211b3042bb3e6f0f359adf3f598576530c3deaeae206a8689a43435d299",
+    "size": 14125,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/tavily/package-lock.json",
+    "sha256": "1f0bff8f917e1c3668fea676081759666fecc31fe9612d2c691b358bb3fb5867",
+    "size": 11602,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/tavily/package.json",
+    "sha256": "e3e3724ad1028238dd5d4ee380d74781bfcfc8244d27273ad0ea5cf4a4dca039",
+    "size": 272,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/titlebar-spinner.ts",
+    "sha256": "2d0822eda11da7c255002740c1119074f1a7fc49ecc0790a1f4e45a7e2bbe7d8",
+    "size": 1611,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/extensions/tree.ts",
+    "sha256": "5c932df5d8f9e2f690cdc0d34a9af18401a493d6abdbdf120c3f999005f53272",
+    "size": 6267,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/keybindings.json",
+    "sha256": "f8494972d6e611adef97b9b6656f02a4e455a0d8281ad450e45ac9c4afe8751c",
+    "size": 789,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/mcp.json",
+    "sha256": "9d6ad63af218da580c320e1a4096931210d75c004042bd2c6631d58458bbfe4c",
+    "size": 708,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/prompts/accretive.md",
+    "sha256": "7e0d6227d4a7f6ca2b8fd7f9106ce138621dd5bf24975f8fadab72f21ff94811",
+    "size": 151,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/prompts/herdr-delegate.md",
+    "sha256": "213d2cc678fd5528f9356475192e3fd69050b943933051d5b4d6ed87776ff148",
+    "size": 1923,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/prompts/implement-and-review.md",
+    "sha256": "019ba4bf42d596ea03fc4564be5b2cc55a06227c95db19a4d5a5bb96697a75f9",
+    "size": 494,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/prompts/implement.md",
+    "sha256": "65462de33c97ac1372cfed270dad9af164605b05028c069dd4c013ff9792675b",
+    "size": 579,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/prompts/ousterhout-review.md",
+    "sha256": "407811aeb5258bd586dc4d3ba8d2b63326121b345bfb6488170432d2501d816f",
+    "size": 6327,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/prompts/scout-and-plan.md",
+    "sha256": "9506399391e0d2c71826c45f26cc332175dd964465f99a8bb880e109f8ed89f4",
+    "size": 496,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/settings.json",
+    "sha256": "90485567c893b3a8681bb2d081fa6684dea9cfae35f1c441d25f3c5ceb6c71ee",
+    "size": 1540,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/copywriting/SKILL.md",
+    "sha256": "9625d63adca364d473763d536565a688d818c7bc70c4dbdda77e9807843dcc98",
+    "size": 7139,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/copywriting/references/copy-frameworks.md",
+    "sha256": "f387b6ed4b510efa9f0d3c459f4898971c8b0176e8c34185040cb264eca50186",
+    "size": 7887,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/copywriting/references/natural-transitions.md",
+    "sha256": "4ff23f8943af2f65b072f26f1c53ce55f19cc26d7be211c11cae8e34b43e859f",
+    "size": 5684,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/frontend-design/LICENSE.txt",
+    "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+    "size": 10174,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/frontend-design/SKILL.md",
+    "sha256": "b81e2ff87ed8fa4d6c377ccb127a7254c9e6a77e3ae94f21e6b514f7bb2945a0",
+    "size": 4440,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/release-notes/SKILL.md",
+    "sha256": "9535b69d73a87a76365ffcb2b42b27a257063666f7bdeee91185dd9c1bc803bf",
+    "size": 2080,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/SKILL.md",
+    "sha256": "ff73540f0fef4967e5a8d6e50bf2fb88a74dc377b9cb985a16744949df5ac6a5",
+    "size": 4236,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/architecture-review-checklist.md",
+    "sha256": "f8eaf90a7f22f8a19bf94f9f13d1fe313d714d650c20b43019e5e22a2532b654",
+    "size": 2725,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/architecture-state.md",
+    "sha256": "ee02fcf2aa9c7b3dcaf5f0db96d44e3c0b3d6a749d4c865a861f54f15497f658",
+    "size": 2124,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/concurrency.md",
+    "sha256": "8bac7135ea661faaea2a0368cc07dcd158f258851f46b9393c3175424de99004",
+    "size": 1416,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/multi-surface-sync.md",
+    "sha256": "f01bf41edf2c43488eb99bdfa4287643dca0a784f2caccd03cb658f1018e63f5",
+    "size": 2239,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/persistence.md",
+    "sha256": "b889ed5f272ed002e258141988046b1970a147fc35b311574fe7a6421757d1f1",
+    "size": 1937,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/quality-platform.md",
+    "sha256": "b31a805edc57214f691e8c7de4678b2cc928c196bac509981d7c2829078b78ba",
+    "size": 1592,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/reference-search.md",
+    "sha256": "5f11f49d388cd786274cb5ca2b1b1fc246735b55c36ac0a4935c2e829dae5403",
+    "size": 1370,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/task-playbooks.md",
+    "sha256": "ec3c681032e45eb0c726ced1cb09326de7e4bd7d991e6843255da706d9bc20f0",
+    "size": 1720,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/swiftui-ios-project-guide/references/testing-ci.md",
+    "sha256": "8a25be138bf00e87d50093695f7b0ea03331b2bf4db7b3c5638acda1adcbb276",
+    "size": 1707,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/LICENSE.txt",
+    "sha256": "79f6d8f5b427252fa3b1c11ecdbdb6bf610b944f7530b4de78f770f38741cfaa",
+    "size": 1467,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/SKILL.md",
+    "sha256": "dd316db7785a6be12966c2a2d848931fbf5f518b3cdb0a66fa62ee835ead1cfc",
+    "size": 11463,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/helpers/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/helpers/merge_runs.py",
+    "sha256": "7c40ed838b88639c51f9ffdcfd564b568f26832b78fe44008c0e01b742669ca7",
+    "size": 5567,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/helpers/simplify_redlines.py",
+    "sha256": "560cb55978a834c505406eb18e2c61f62f998fc7a2d8e9721b9c563b42597896",
+    "size": 5754,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".pi/agent/skills/xlsx/scripts/office/pack.py",
+    "sha256": "b1800987e568261a31f462df8e1303d386e9e6ccc11a75ef46e60cc528c20683",
+    "size": 4991,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chart.xsd",
+    "sha256": "41b93bd8857cc68b1e43be2806a872d736a9bdd6566900062d8fdb57d7bbb354",
+    "size": 74984,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd",
+    "sha256": "3fd0586f2637b98bb9886f0e0b67d89e1cc987c2d158cc7deb5f5b9890ced412",
+    "size": 6956,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd",
+    "sha256": "29b254ee0d10414a8504b5a08149c7baec35a60d5ff607d6b3f492aa36815f40",
+    "size": 51302,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd",
+    "sha256": "5cb76dabd8b97d1e9308a1700b90c20139be4d50792d21a7f09789f5cccd6026",
+    "size": 624,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-main.xsd",
+    "sha256": "5375417f0f5394b8dd1a7035b9679151f19a6b65df309dec10cfb4a420cb00e9",
+    "size": 152039,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-picture.xsd",
+    "sha256": "5d389d42befbebd91945d620242347caecd3367f9a3a7cf8d97949507ae1f53c",
+    "size": 1231,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd",
+    "sha256": "b4532b6d258832953fbb3ee4c711f4fe25d3faf46a10644b2505f17010d01e88",
+    "size": 8862,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd",
+    "sha256": "bdad416b096b61d37b71603b2c949484f9070c830bdaeba93bf35e15c8900614",
+    "size": 14795,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/pml.xsd",
+    "sha256": "d173c3e5d61e42e2e3a97226c632fd2ab7cc481fc4e492365b87024ab546daff",
+    "size": 83612,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd",
+    "sha256": "3c6709101c6aaa82888df5d8795c33f9e857196790eb320d9194e64be2b6bdd8",
+    "size": 1269,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd",
+    "sha256": "0b364451dc36a48dd6dae0f3b6ada05fd9b71e5208211f8ee5537d7e51a587e2",
+    "size": 7328,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd",
+    "sha256": "e2abacbb9a55ce1365f8961bc1b1395bbc811e512b111000d8c333f98458dece",
+    "size": 6382,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd",
+    "sha256": "0ef4bb354ff44b923564c4ddbdda5987919d220225129ec94614a618ceafc281",
+    "size": 1248,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd",
+    "sha256": "0d103b99a4a8652f8871552a69d42d2a3760ac6a5e3ef02d979c4273257ff6a4",
+    "size": 880,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd",
+    "sha256": "9c085407751b9061c1f996f6c39ce58451be22a8d334f09175f0e89e42736285",
+    "size": 2608,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd",
+    "sha256": "bc92e36ccd233722d4c5869bec71ddc7b12e2df56059942cce5a39065cc9c368",
+    "size": 3507,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd",
+    "sha256": "7b5b7413e2c895b1e148e82e292a117d53c7ec65b0696c992edca57b61b4a74b",
+    "size": 7507,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-math.xsd",
+    "sha256": "3213ef1631606250f5010b42cad7ef716f7c59426367798e33c374c0ec391d3a",
+    "size": 23313,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd",
+    "sha256": "12264f3c03d738311cd9237d212f1c07479e70f0cbe1ae725d29b36539aef637",
+    "size": 1367,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/sml.xsd",
+    "sha256": "beffeed56945c22a77440122c8bdc426f3fcbe7f3b12ea0976c770d1f8d54578",
+    "size": 242277,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-main.xsd",
+    "sha256": "f5ee623b08b6a66935e5aced2f5d8ad0fc71bf9e8e833cd490150c0fa94b8763",
+    "size": 26148,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd",
+    "sha256": "585bedc1313b40888dcc544cb74cd939a105ee674f3b1d3aa1cc6d34f70ff155",
+    "size": 25279,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd",
+    "sha256": "133c9f64a5c5d573b78d0a474122b22506d8eadb5e063f67cdbbb8fa2f161d0e",
+    "size": 535,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd",
+    "sha256": "6bdeb169c3717eb01108853bd9fc5a3750fb1fa5b82abbdd854d49855a40f519",
+    "size": 5712,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd",
+    "sha256": "475dcae1e7d1ea46232db6f8481040c15e53a52a3c256831d3df204212b0e831",
+    "size": 4010,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/wml.xsd",
+    "sha256": "c2dd9f61f892deae6acd8d20771ea79b12018af25f3bf8d06639c8542d218cfd",
+    "size": 171367,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/xml.xsd",
+    "sha256": "a539aa2fb154fa50e0f5cc97e6ad7cbc66f8ec3e3746f61ec6a8b0d5d15ecdf2",
+    "size": 4646,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-contentTypes.xsd",
+    "sha256": "9e0b7209fc69ab11987900404540969976000c5ebe4d4f58c43dc3842886bf3a",
+    "size": 1963,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-coreProperties.xsd",
+    "sha256": "451958454e8588dfc7cd945981ada142ca06ff3307937f5700df059c2b307fa8",
+    "size": 2515,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-digSig.xsd",
+    "sha256": "6de111e11403f7cd49027400755bae0ea1cabef2815f09bd40a24f0017613b24",
+    "size": 2856,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-relationships.xsd",
+    "sha256": "f565adfef5a502044abc3a9153e157edc25af78304d335994afb958874b15e26",
+    "size": 1344,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/mce/mc.xsd",
+    "sha256": "3a37e461ecf5a8670fdec34029703401f8728ab9c96ec1739a6ae58d55212413",
+    "size": 3127,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/microsoft/wml-2010.xsd",
+    "sha256": "568b26ee156cb9549aa439ca2158965f77b7c1602b7e0316f40ac6cf586e35f2",
+    "size": 26549,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/microsoft/wml-2012.xsd",
+    "sha256": "0fa75578a000439a7988ba0c59fdc69f774bbd416cbacc14d07125b3f686cb74",
+    "size": 3745,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/microsoft/wml-2018.xsd",
+    "sha256": "be0ff793a22dd31384650c3a4da14c2fa8062751c2e97b0e5ee852bda13c60ad",
+    "size": 901,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/microsoft/wml-cex-2018.xsd",
+    "sha256": "fddc2b880cabb9005aebbc7e783e53c19fec1c03df7d0e2f2076a33a0fdfd081",
+    "size": 1778,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/microsoft/wml-cid-2016.xsd",
+    "sha256": "127ca209fa73d7cb708449cb355c871867948a96e4a74f7bf5811ef62d17991d",
+    "size": 1002,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/microsoft/wml-sdtdatahash-2020.xsd",
+    "sha256": "842e7163409c8d74f4d7088a8bc99500d80bc75332681a0980055b08f374a604",
+    "size": 600,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/schemas/microsoft/wml-symex-2015.xsd",
+    "sha256": "16f6f8072249f431370723c2cd8974672e0d9c897e00e97dd918079df934871b",
+    "size": 745,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/soffice.py",
+    "sha256": "a3e21840e29e32f947d5286028931b96eaf2dee63f75d883b8eb19c943c80aa0",
+    "size": 5301,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".pi/agent/skills/xlsx/scripts/office/unpack.py",
+    "sha256": "83f69cecc87910183654c06345837244402e8a99edbf3bdddc1cf72f11304b62",
+    "size": 4052,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0755",
+    "path": ".pi/agent/skills/xlsx/scripts/office/validate.py",
+    "sha256": "1aef24f8e316965a0584c30859776bd2c82a9fb69f72d79cfed041119cf95514",
+    "size": 3668,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/validators/__init__.py",
+    "sha256": "83e0f035c5abea238d3f2c3968afbd511ed022b527b7c9cb60a9434cc34ff987",
+    "size": 336,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/validators/base.py",
+    "sha256": "d6358b67252df4dbfe4fa6647423a765960c949346ef6a8c4eb8722bb1108d25",
+    "size": 32651,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/validators/docx.py",
+    "sha256": "0ef04ce86b2e6b6a1cb088c0276fd0bd5b770d96fdfe7a6cc73d005feb3f0345",
+    "size": 16376,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/validators/pptx.py",
+    "sha256": "f937961e62a5fa0d002b8dc51a4c4e2cd8fcd59fe65853fa54edaca3fe99eccc",
+    "size": 9824,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/skills/xlsx/scripts/office/validators/redlining.py",
+    "sha256": "f4c33fdb9da0651d1d9aa76f0d5294cc9955869339ae131b2f75f3b2e366cb40",
+    "size": 8918,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0755",
+    "path": ".pi/agent/skills/xlsx/scripts/recalc.py",
+    "sha256": "cf419d15e02965aeaec17773c05b61303f7f520f67fa2696547e7da07502eac7",
+    "size": 5782,
+    "source_mode": "0755"
+  },
+  {
+    "mode": "0644",
+    "path": ".pi/agent/system-prompts/pair.md",
+    "sha256": "ca591658cfc258800efe6c1ae083e96e2337d8121b1b77084b9504bd3b85ae9f",
+    "size": 2294,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".tmux.conf",
+    "sha256": "3c85df77f1117839f1e716c413171619bd374951a4600d1c712a1e78866751f9",
+    "size": 2537,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": ".zshrc",
+    "sha256": "f52a40d6d02f5b7c0d89f3019703b09f35a115eadb06b1f88ad6d7424b2520c3",
+    "size": 3463,
+    "source_mode": "0644"
+  },
+  {
+    "mode": "0644",
+    "path": "Library/KeyBindings/DefaultKeyBinding.dict",
+    "sha256": "958e13a0da7b33fdf470a273f6da25ee771203e23f6e21d6218b98ceab0e3fc3",
+    "size": 136,
+    "source_mode": "0644"
+  }
+]

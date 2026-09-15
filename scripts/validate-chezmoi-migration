@@ -24,6 +24,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 BASELINE_FILE = ROOT / ".chezmoi-migration-baseline"
 PACKAGE_FILE = ROOT / "migration" / "packages.txt"
+EXPECTED_DIFFERENCES_FILE = ROOT / "migration" / "expected-differences.json"
 
 
 def run(*args: str, cwd: Path | None = None, capture: bool = False) -> str:
@@ -234,14 +235,16 @@ def main() -> int:
             "--no-tty",
             "--no-pager",
         ]
-        run(*common, "apply")
+        # Externals are tested separately: the parity comparison covers only the
+        # files that Stow used to install and must never perform network access.
+        run(*common, "apply", "--exclude=externals,scripts")
         first_physical = physical_manifest(chezmoi_home)
-        run(*common, "apply")
+        run(*common, "apply", "--exclude=externals,scripts")
         second_physical = physical_manifest(chezmoi_home)
         if first_physical != second_physical:
             raise RuntimeError("chezmoi apply is not idempotent")
-        run(*common, "verify")
-        if run(*common, "diff", capture=True):
+        run(*common, "verify", "--exclude=externals,scripts")
+        if run(*common, "diff", "--exclude=externals,scripts", capture=True):
             raise RuntimeError("chezmoi diff is not empty after apply")
 
         managed_output = run(
@@ -263,6 +266,42 @@ def main() -> int:
         chezmoi_physical = second_physical
         mismatches = compare_semantic(baseline_semantic, chezmoi_semantic)
 
+        difference_rules = json.loads(EXPECTED_DIFFERENCES_FILE.read_text())
+        expected_differences: list[dict[str, Any]] = []
+        unexplained_differences: list[dict[str, Any]] = []
+        mismatched_paths: set[str] = set()
+        for mismatch in mismatches:
+            path = mismatch["path"]
+            mismatched_paths.add(path)
+            rule = difference_rules.get(path)
+            if rule is None or mismatch["stow"] is None or mismatch["chezmoi"] is None:
+                unexplained_differences.append(mismatch)
+                continue
+            changed_fields = sorted(
+                key
+                for key in mismatch["stow"].keys() | mismatch["chezmoi"].keys()
+                if mismatch["stow"].get(key) != mismatch["chezmoi"].get(key)
+            )
+            if set(changed_fields) <= set(rule["fields"]):
+                expected_differences.append(
+                    mismatch | {"changed_fields": changed_fields, "reason": rule["reason"]}
+                )
+            else:
+                unexplained_differences.append(
+                    mismatch
+                    | {
+                        "changed_fields": changed_fields,
+                        "allowed_fields": rule["fields"],
+                    }
+                )
+        stale_rules = sorted(
+            path
+            for path in difference_rules
+            if path in expected and path not in mismatched_paths
+        )
+        if stale_rules:
+            raise RuntimeError(f"expected-difference rules no longer differ: {stale_rules}")
+
         baseline_links = [
             row for row in baseline_physical if row["type"] == "symlink"
         ]
@@ -279,7 +318,10 @@ def main() -> int:
             "baseline_revision": baseline_revision,
             "packages": packages,
             "managed_leaf_count": len(expected),
-            "semantic_mismatch_count": len(mismatches),
+            "semantic_difference_count": len(mismatches),
+            "expected_difference_count": len(expected_differences),
+            "unexplained_difference_count": len(unexplained_differences),
+            "expected_differences": expected_differences,
             "idempotent_apply": True,
             "chezmoi_verify": "passed",
             "chezmoi_diff_after_apply": "empty",
@@ -290,7 +332,7 @@ def main() -> int:
                 "stow_symlink_count": len(baseline_links),
                 "chezmoi_symlink_count": len(chezmoi_links),
             },
-            "result": "passed" if not mismatches else "failed",
+            "result": "passed" if not unexplained_differences else "failed",
         }
 
         if args.artifacts_dir:
@@ -301,10 +343,13 @@ def main() -> int:
             write_json(artifact_dir / "chezmoi-semantic.json", chezmoi_semantic)
             write_json(artifact_dir / "stow-physical.json", baseline_physical)
             write_json(artifact_dir / "chezmoi-physical.json", chezmoi_physical)
-            write_json(artifact_dir / "comparison.json", summary | {"mismatches": mismatches})
+            write_json(
+                artifact_dir / "comparison.json",
+                summary | {"unexplained_differences": unexplained_differences},
+            )
 
         print(json.dumps(summary, indent=2, sort_keys=True))
-        return 0 if not mismatches else 1
+        return 0 if not unexplained_differences else 1
 
 
 if __name__ == "__main__":

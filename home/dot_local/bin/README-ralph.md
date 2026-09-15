@@ -16,7 +16,7 @@ The agent reads a prompt file, performs work, and the loop continues. You "tune 
 
 ## Installation
 
-The script is installed via your dotfiles stow setup. After running `make stow`, it will be available at:
+The script is installed by chezmoi. After running `make apply`, it is available at:
 
 ```bash
 ~/.local/bin/ralph-pi

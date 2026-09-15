@@ -1,0 +1,85 @@
+[
+  {
+    "mode": "0755",
+    "path": ".agents",
+    "target": "<BASELINE_SOURCE>/agents/.agents",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".config",
+    "type": "directory"
+  },
+  {
+    "mode": "0755",
+    "path": ".config/ghostty",
+    "target": "<BASELINE_SOURCE>/ghostty/.config/ghostty",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".config/git",
+    "target": "<BASELINE_SOURCE>/git/.config/git",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".config/herdr",
+    "target": "<BASELINE_SOURCE>/herdr/.config/herdr",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".config/mise",
+    "target": "<BASELINE_SOURCE>/mise/.config/mise",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".config/starship.toml",
+    "target": "<BASELINE_SOURCE>/zsh/.config/starship.toml",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".gitconfig",
+    "target": "<BASELINE_SOURCE>/git/.gitconfig",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".global-gitignore",
+    "target": "<BASELINE_SOURCE>/git/.global-gitignore",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".local",
+    "target": "<BASELINE_SOURCE>/bin/.local",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".pi",
+    "target": "<BASELINE_SOURCE>/pi/.pi",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".tmux.conf",
+    "target": "<BASELINE_SOURCE>/tmux/.tmux.conf",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": ".zshrc",
+    "target": "<BASELINE_SOURCE>/zsh/.zshrc",
+    "type": "symlink"
+  },
+  {
+    "mode": "0755",
+    "path": "Library",
+    "target": "<BASELINE_SOURCE>/keybindings/Library",
+    "type": "symlink"
+  }
+]

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-chezmoi-external.XXXXXX")
+trap 'rm -rf "$tmp_dir"' EXIT HUP INT TERM
+mkdir "$tmp_dir/home"
+
+common=(
+    chezmoi
+    --source "$repo_dir"
+    --destination "$tmp_dir/home"
+    --config "$tmp_dir/config.toml"
+    --cache "$tmp_dir/cache"
+    --persistent-state "$tmp_dir/state.db"
+    --no-tty
+    --no-pager
+)
+
+"${common[@]}" apply --include=externals
+[[ -f "$tmp_dir/home/.zgenom/zgenom.zsh" ]]
+[[ $(git -C "$tmp_dir/home/.zgenom" remote get-url origin) == \
+    "https://github.com/jandamm/zgenom.git" ]]
+first_revision=$(git -C "$tmp_dir/home/.zgenom" rev-parse HEAD)
+
+# A second apply must preserve a valid checkout and succeed without conflict.
+"${common[@]}" apply --include=externals
+second_revision=$(git -C "$tmp_dir/home/.zgenom" rev-parse HEAD)
+[[ "$first_revision" == "$second_revision" ]]
+
+printf 'chezmoi zgenom external smoke test passed at %s\n' "$first_revision"

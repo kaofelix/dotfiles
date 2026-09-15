@@ -1,64 +1,61 @@
-STOW_PACKAGES = bin zsh git pi agents tmux ghostty herdr mise keybindings
-STOW_DIR = .
-TARGET_DIR = ${HOME}
+CHEZMOI ?= chezmoi
+SOURCE_DIR := $(CURDIR)
+TARGET_DIR ?= $(HOME)
+CHEZMOI_ARGS = --source=$(SOURCE_DIR) --destination=$(TARGET_DIR)
 
-.PHONY: stow adopt $(STOW_PACKAGES)
+.PHONY: apply diff verify add setup update gh-config pi-auth pifind-deps shell-completions test test-migration
 
-# Always restow everything
-stow: $(STOW_PACKAGES)
-	@echo "🚚 All packages stowed!"
+apply:
+	@mkdir -p "$(TARGET_DIR)"
+	$(CHEZMOI) $(CHEZMOI_ARGS) apply
 
-bin zsh git pi agents tmux ghostty herdr mise keybindings:
-	@echo "📦 $@"
-	stow -v -R $@ --target=$(TARGET_DIR)
-	@echo ""
+# Preview and verify the generated target state without changing it.
+diff:
+	$(CHEZMOI) $(CHEZMOI_ARGS) diff
 
-# Adopting copies target files into this repository, so require an explicit package.
-adopt:
-	@test -n "$(PACKAGE)" || (echo "Usage: make adopt PACKAGE=<package>" >&2; exit 2)
-	@case " $(STOW_PACKAGES) " in *" $(PACKAGE) "*) ;; *) echo "Unknown package: $(PACKAGE)" >&2; exit 2;; esac
-	stow -v -R $(PACKAGE) --target=$(TARGET_DIR) --adopt
+verify:
+	$(CHEZMOI) $(CHEZMOI_ARGS) verify
 
-.PHONY: setup update gh-config pi-auth pifind-deps shell-completions zgenom
+# Import one explicit target into chezmoi's source state.
+add:
+	@test -n "$(TARGET)" || (echo "Usage: make add TARGET=$(HOME)/path" >&2; exit 2)
+	$(CHEZMOI) --source=$(SOURCE_DIR) add "$(TARGET)"
+
 setup:
 	brew bundle install
-	$(MAKE) zgenom
-	$(MAKE) stow
+	$(MAKE) apply
 	mise install
 	$(MAKE) pifind-deps
 	$(MAKE) shell-completions
 	$(MAKE) gh-config
 	$(MAKE) pi-auth
 
-zgenom: $(HOME)/.zgenom/zgenom.zsh
-
-$(HOME)/.zgenom/zgenom.zsh:
-	git clone https://github.com/jandamm/zgenom.git "$(HOME)/.zgenom"
-
 shell-completions:
-	mise exec -- ./bin/.local/bin/update-zsh-completions
+	mise exec -- "$(TARGET_DIR)/.local/bin/update-zsh-completions"
 
 pifind-deps:
-	mise exec -- npm ci --prefix bin/.local/lib/pifind
+	mise exec -- npm ci --prefix "$(TARGET_DIR)/.local/lib/pifind"
 
 gh-config:
 	mise exec -- gh config set git_protocol ssh --host github.com
 
 pi-auth:
-	./bin/.local/bin/pi-auth-setup
+	"$(TARGET_DIR)/.local/bin/pi-auth-setup"
 
 update:
 	brew update
 	brew upgrade
 	mise upgrade
+	$(MAKE) apply
 	$(MAKE) shell-completions
 
-.PHONY: unstow
-unstow:
-	@echo "🗑️  Unstowing all packages..."
-	@for pkg in $(STOW_PACKAGES); do \
-		echo "📦 $$pkg"; \
-		stow -v -D $$pkg --target=$(TARGET_DIR); \
-		echo ""; \
-	done
-	@echo "✅ All packages unstowed!"
+# Application tests do not touch HOME.
+test:
+	./tests/pi-auth-setup.test.sh
+	./tests/pi-auth-setup-generation.test.sh
+	npm test --prefix home/dot_local/lib/pifind
+
+# Full isolated Stow-vs-chezmoi parity, idempotence, and verify checks.
+test-migration:
+	./scripts/validate-chezmoi-migration
+	./scripts/test-chezmoi-external

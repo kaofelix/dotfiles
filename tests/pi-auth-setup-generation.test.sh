@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-script="$repo_dir/bin/.local/bin/pi-auth-setup"
+script="$repo_dir/home/dot_local/bin/executable_pi-auth-setup"
 test_dir=$(mktemp -d)
 trap 'rm -rf "$test_dir"' EXIT
 

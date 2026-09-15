@@ -1,0 +1,77 @@
+{
+  "baseline_revision": "36a12067652b708f07ba22f0c4ad74193468aa6a",
+  "chezmoi_diff_after_apply": "empty",
+  "chezmoi_verify": "passed",
+  "expected_difference_count": 2,
+  "expected_differences": [
+    {
+      "changed_fields": [
+        "sha256",
+        "size"
+      ],
+      "chezmoi": {
+        "mode": "0644",
+        "path": ".local/bin/README-ralph.md",
+        "sha256": "567a2f1e2db27143fd7118f28039ef1201d42b7d69c946b1069957f16f4c0f77",
+        "size": 4960,
+        "source_mode": "0644"
+      },
+      "path": ".local/bin/README-ralph.md",
+      "reason": "Installed usage text now names chezmoi and make apply instead of the removed Stow workflow.",
+      "stow": {
+        "mode": "0644",
+        "path": ".local/bin/README-ralph.md",
+        "sha256": "d2527ff99725a9309b31ce1fd5d8e7f4c8e8ea7260185eff1946baaa59b2394a",
+        "size": 4982,
+        "source_mode": "0644"
+      }
+    },
+    {
+      "changed_fields": [
+        "sha256",
+        "size"
+      ],
+      "chezmoi": {
+        "mode": "0644",
+        "path": ".local/lib/pifind/README.md",
+        "sha256": "8c90f9cfaf77f39ace3857950227b8588a724ff1a795fbd7a62f66f901634322",
+        "size": 1201,
+        "source_mode": "0644"
+      },
+      "path": ".local/lib/pifind/README.md",
+      "reason": "The development command now points at pifind's encoded chezmoi source path.",
+      "stow": {
+        "mode": "0644",
+        "path": ".local/lib/pifind/README.md",
+        "sha256": "b9e50b09c7ff7edfc003275c24f30e3451cbd3a74349510456403d88e8fd7549",
+        "size": 1197,
+        "source_mode": "0644"
+      }
+    }
+  ],
+  "idempotent_apply": true,
+  "managed_leaf_count": 678,
+  "packages": [
+    "bin",
+    "zsh",
+    "git",
+    "pi",
+    "agents",
+    "tmux",
+    "ghostty",
+    "herdr",
+    "mise",
+    "keybindings"
+  ],
+  "physical_difference_policy": {
+    "chezmoi": "ordinary directories and regular files",
+    "chezmoi_symlink_count": 0,
+    "reason": "intentional adoption of chezmoi's default portable file mode",
+    "stow": "symlinks into the frozen source tree",
+    "stow_symlink_count": 13
+  },
+  "result": "passed",
+  "semantic_difference_count": 2,
+  "unexplained_difference_count": 0,
+  "unexplained_differences": []
+}

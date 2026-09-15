@@ -1,0 +1,4 @@
+# Local build/runtime artifacts inside managed source directories are not targets.
+**/node_modules
+**/__pycache__
+**/.DS_Store
