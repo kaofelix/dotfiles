@@ -3,7 +3,7 @@ SOURCE_DIR := $(CURDIR)
 TARGET_DIR ?= $(HOME)
 CHEZMOI_ARGS = --source=$(SOURCE_DIR) --destination=$(TARGET_DIR)
 
-.PHONY: apply diff verify add setup update gh-config pi-auth pifind-deps shell-completions test test-migration
+.PHONY: apply diff verify add setup update gh-config pi-auth pifind-deps shell-completions test test-migration test-adoption
 
 apply:
 	@mkdir -p "$(TARGET_DIR)"
@@ -63,3 +63,7 @@ test:
 test-migration:
 	./scripts/validate-chezmoi-migration
 	./scripts/test-chezmoi-external
+	$(MAKE) test-adoption
+
+test-adoption:
+	./tests/adopt-from-stow.test.sh

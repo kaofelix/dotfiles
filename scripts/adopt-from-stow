@@ -1,0 +1,291 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Safely replace this repository's GNU Stow installation with chezmoi.
+
+Usage:
+  adopt-from-stow --stow-source DIR --chezmoi-source DIR [options]
+
+Required:
+  --stow-source DIR       Checkout that currently owns the Stow links
+  --chezmoi-source DIR    Checkout containing the migrated chezmoi source
+
+Options:
+  --target DIR            Home directory to adopt (default: $HOME)
+  --backup-dir DIR        New rollback directory (default: sibling timestamp)
+  --promote REVISION      Fast-forward the Stow checkout to REVISION after apply
+  --exclude-externals     Do not fetch/apply chezmoi externals (useful offline)
+  --yes                   Confirm the destructive cutover non-interactively
+  -h, --help              Show this help
+
+The Stow checkout must be clean. Runtime files ignored by Git are allowed. The
+script snapshots effective managed/runtime content, creates a Git bundle,
+unstows, restores the snapshot as ordinary files, applies and verifies chezmoi,
+and only then performs an optional fast-forward promotion.
+EOF
+}
+
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+stow_source=
+chezmoi_source=
+target=${HOME:?HOME is not set}
+backup_dir=
+promote_revision=
+exclude_externals=false
+confirmed=false
+
+while (($#)); do
+  case $1 in
+    --stow-source) (($# >= 2)) || die "$1 requires a value"; stow_source=$2; shift 2 ;;
+    --chezmoi-source) (($# >= 2)) || die "$1 requires a value"; chezmoi_source=$2; shift 2 ;;
+    --target) (($# >= 2)) || die "$1 requires a value"; target=$2; shift 2 ;;
+    --backup-dir) (($# >= 2)) || die "$1 requires a value"; backup_dir=$2; shift 2 ;;
+    --promote) (($# >= 2)) || die "$1 requires a value"; promote_revision=$2; shift 2 ;;
+    --exclude-externals) exclude_externals=true; shift ;;
+    --yes) confirmed=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown argument: $1" ;;
+  esac
+done
+
+[[ -n $stow_source ]] || die '--stow-source is required'
+[[ -n $chezmoi_source ]] || die '--chezmoi-source is required'
+stow_source=$(cd "$stow_source" && pwd -P)
+chezmoi_source=$(cd "$chezmoi_source" && pwd -P)
+mkdir -p "$target"
+target=$(cd "$target" && pwd -P)
+[[ $target != / ]] || die 'refusing to use / as the target'
+
+for command in chezmoi git python3 stow; do
+  command -v "$command" >/dev/null || die "required command not found: $command"
+done
+[[ -d $stow_source/.git || -f $stow_source/.git ]] || die "not a Git checkout: $stow_source"
+[[ -f $chezmoi_source/.chezmoiroot ]] || die "not a migrated chezmoi checkout: $chezmoi_source"
+packages_file=$chezmoi_source/migration/packages.txt
+[[ -f $packages_file ]] || die "missing package manifest: $packages_file"
+[[ -z $(git -C "$stow_source" status --porcelain --untracked-files=normal) ]] ||
+  die 'the Stow checkout has tracked or non-ignored changes; commit or reconcile them first'
+
+packages=()
+while IFS= read -r package; do
+  [[ -n $package && ${package:0:1} != '#' ]] || continue
+  [[ -d $stow_source/$package ]] || die "Stow package is missing: $stow_source/$package"
+  packages+=("$package")
+done < "$packages_file"
+((${#packages[@]})) || die 'package manifest is empty'
+
+if [[ -n $promote_revision ]]; then
+  git -C "$stow_source" rev-parse --verify "$promote_revision^{commit}" >/dev/null 2>&1 ||
+    die "promotion revision is unavailable in the Stow checkout: $promote_revision"
+  git -C "$stow_source" merge-base --is-ancestor HEAD "$promote_revision" ||
+    die "promotion is not a fast-forward from the Stow checkout: $promote_revision"
+fi
+
+if [[ -z $backup_dir ]]; then
+  backup_dir="$(dirname "$stow_source")/dotfiles-adoption-$(date '+%Y%m%d-%H%M%S')"
+fi
+[[ ! -e $backup_dir ]] || die "backup path already exists: $backup_dir"
+
+if ! $confirmed; then
+  cat <<EOF
+This will replace Stow links under:
+  $target
+using chezmoi source:
+  $chezmoi_source
+Rollback data will be written to:
+  $backup_dir
+
+Close Pi, Herdr, and other programs writing configuration or runtime state.
+EOF
+  printf "Type 'adopt' to continue: "
+  read -r answer
+  [[ $answer == adopt ]] || die 'cancelled'
+fi
+
+umask 077
+mkdir -p "$backup_dir/home"
+printf 'stow_source=%s\nchezmoi_source=%s\ntarget=%s\nstarted=%s\n' \
+  "$stow_source" "$chezmoi_source" "$target" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+  > "$backup_dir/adoption.env"
+git -C "$stow_source" bundle create "$backup_dir/dotfiles.bundle" --all
+: > "$backup_dir/empty-chezmoi.toml"
+# Chezmoi derives ordinary target modes through the process umask. Use the
+# repository's validated 0644/0755 defaults; secure rollback artifacts below.
+umask 022
+
+phase=snapshot
+on_error() {
+  rc=$?
+  printf '\nAdoption stopped during %s (exit %d).\nRollback data: %s\n' "$phase" "$rc" "$backup_dir" >&2
+  printf 'Do not delete the Stow checkout. Inspect the target before retrying or restoring.\n' >&2
+  exit "$rc"
+}
+trap on_error ERR
+
+manifest=$backup_dir/paths.txt
+: > "$manifest"
+for package in "${packages[@]}"; do
+  git -C "$stow_source" ls-files -z -- "$package" |
+    python3 -c 'import sys; p=sys.argv[1]+"/"; data=sys.stdin.buffer.read().split(b"\0"); print("\n".join(x.decode()[len(p):] for x in data if x))' "$package" \
+    >> "$manifest"
+done
+for runtime_path in \
+  .pi/agent \
+  .config/herdr \
+  .local/lib/pifind \
+  .agents/skills \
+  .config/chezmoi/chezmoi.toml
+do
+  [[ -e $target/$runtime_path || -L $target/$runtime_path ]] && printf '%s\n' "$runtime_path" >> "$manifest"
+done
+sort -u "$manifest" -o "$manifest"
+
+# Copy effective target content while materializing only links that resolve into
+# the Stow checkout. Unrelated links retain their original link semantics.
+python3 - "$target" "$backup_dir/home" "$stow_source" "$manifest" <<'PY'
+import os, shutil, stat, sys
+from pathlib import Path
+
+source_root, backup_root, stow_root, manifest = map(Path, sys.argv[1:])
+stow_root = stow_root.resolve()
+paths = [Path(line) for line in manifest.read_text().splitlines() if line]
+selected = []
+for path in sorted(paths, key=lambda p: (len(p.parts), str(p))):
+    if not any(path == parent or parent in path.parents for parent in selected):
+        selected.append(path)
+
+def remove(path):
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.exists():
+        shutil.rmtree(path)
+
+def copy_item(src, dst):
+    try:
+        mode = src.lstat().st_mode
+    except FileNotFoundError:
+        return
+    if stat.S_ISLNK(mode):
+        resolved = Path(os.path.realpath(src))
+        try:
+            owned = os.path.commonpath((resolved, stow_root)) == str(stow_root)
+        except ValueError:
+            owned = False
+        if owned and resolved.exists():
+            copy_item(resolved, dst)
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if dst.exists() or dst.is_symlink():
+                remove(dst)
+            dst.symlink_to(os.readlink(src))
+    elif stat.S_ISDIR(mode):
+        if dst.is_symlink() or (dst.exists() and not dst.is_dir()):
+            remove(dst)
+        dst.mkdir(parents=True, exist_ok=True)
+        for child in src.iterdir():
+            copy_item(child, dst / child.name)
+    elif stat.S_ISREG(mode):
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists() or dst.is_symlink():
+            remove(dst)
+        shutil.copy2(src, dst, follow_symlinks=False)
+    # Sockets and other ephemeral special files are deliberately skipped.
+
+for relative in selected:
+    copy_item(source_root / relative, backup_root / relative)
+PY
+
+phase=unstow
+stow --dir "$stow_source" --target "$target" --delete "${packages[@]}"
+
+phase=restore
+python3 - "$backup_dir/home" "$target" <<'PY'
+import os, shutil, stat, sys
+from pathlib import Path
+
+source, target = map(Path, sys.argv[1:])
+def remove(path):
+    if path.is_symlink() or path.is_file(): path.unlink()
+    elif path.exists(): shutil.rmtree(path)
+def overlay(src, dst):
+    mode = src.lstat().st_mode
+    if stat.S_ISLNK(mode):
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists() or dst.is_symlink(): remove(dst)
+        dst.symlink_to(os.readlink(src))
+    elif stat.S_ISDIR(mode):
+        if dst.is_symlink() or (dst.exists() and not dst.is_dir()): remove(dst)
+        dst.mkdir(parents=True, exist_ok=True)
+        for child in src.iterdir(): overlay(child, dst / child.name)
+    elif stat.S_ISREG(mode):
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists() or dst.is_symlink(): remove(dst)
+        shutil.copy2(src, dst, follow_symlinks=False)
+for child in source.iterdir(): overlay(child, target / child.name)
+PY
+
+chezmoi_args=(--config "$backup_dir/empty-chezmoi.toml" --source "$chezmoi_source" --destination "$target")
+$exclude_externals && chezmoi_args+=(--exclude=externals)
+phase=preview
+chezmoi "${chezmoi_args[@]}" --no-pager diff > "$backup_dir/pre-apply.diff"
+printf '\nChezmoi preview saved to %s (%s lines).\n' \
+  "$backup_dir/pre-apply.diff" "$(wc -l < "$backup_dir/pre-apply.diff" | tr -d ' ')"
+if ! $confirmed; then
+  printf "Inspect it in another terminal. Type 'apply' to continue: "
+  read -r answer
+  [[ $answer == apply ]] || die "stopped before apply; restored content and rollback data remain at $backup_dir"
+fi
+phase=apply
+chezmoi "${chezmoi_args[@]}" apply
+chezmoi "${chezmoi_args[@]}" verify
+[[ -z $(chezmoi "${chezmoi_args[@]}" status) ]]
+[[ -z $(chezmoi "${chezmoi_args[@]}" --no-pager diff) ]]
+
+final_source=$chezmoi_source
+if [[ -n $promote_revision ]]; then
+  phase=promote
+  git -C "$stow_source" merge --ff-only "$promote_revision" > "$backup_dir/promotion.log"
+  [[ -f $stow_source/.chezmoiroot ]] || die 'promoted checkout is not a chezmoi source'
+  final_source=$stow_source
+  mkdir -p "$backup_dir/legacy-source-residue"
+  for package in "${packages[@]}"; do
+    if [[ -e $stow_source/$package ]]; then
+      [[ -z $(git -C "$stow_source" ls-files -- "$package") ]] ||
+        die "refusing to move a promoted directory that still has tracked files: $package"
+      mv "$stow_source/$package" "$backup_dir/legacy-source-residue/"
+    fi
+  done
+fi
+
+phase=configure
+config=$target/.config/chezmoi/chezmoi.toml
+mkdir -p "$(dirname "$config")"
+python3 - "$config" "$final_source" <<'PY'
+import json, re, sys
+from pathlib import Path
+path, source = Path(sys.argv[1]), sys.argv[2]
+text = path.read_text() if path.exists() else ""
+line = f"sourceDir = {json.dumps(source)}"
+pattern = re.compile(r'(?m)^sourceDir\s*=.*$')
+text = pattern.sub(line, text, count=1) if pattern.search(text) else line + "\n" + text
+path.write_text(text)
+path.chmod(0o600)
+PY
+
+final_args=(--config "$config" --source "$final_source" --destination "$target")
+$exclude_externals && final_args+=(--exclude=externals)
+chezmoi "${final_args[@]}" verify
+[[ -z $(chezmoi "${final_args[@]}" status) ]]
+[[ -z $(chezmoi "${final_args[@]}" --no-pager diff) ]]
+
+phase=complete
+trap - ERR
+printf 'completed=%s\nfinal_source=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$final_source" \
+  >> "$backup_dir/adoption.env"
+find "$backup_dir" -type d -exec chmod 700 {} +
+find "$backup_dir" -type f -exec chmod 600 {} +
+printf '\nAdoption complete.\nSource: %s\nBackup: %s\n' "$final_source" "$backup_dir"
+printf 'Keep the backup and old Git history until the new setup is stable.\n'

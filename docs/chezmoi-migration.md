@@ -48,11 +48,12 @@ roots are deliberately omitted; Stow link targets are normalized to
 `<BASELINE_SOURCE>` so artifacts are reproducible and do not leak a temporary
 path.
 
-Run the comparison from any checkout containing the frozen Git object:
+Run the comparison and isolated adoption rehearsal from any checkout containing
+the frozen Git object:
 
 ```sh
 make test-migration
-# or persist a fresh evidence set:
+# or persist a fresh parity evidence set:
 ./scripts/validate-chezmoi-migration \
   --artifacts-dir docs/migration-evidence/03-full
 ```
@@ -110,6 +111,14 @@ and [setup workflow](https://www.chezmoi.io/user-guide/setup/): inspect with
 - Existing tests now execute scripts from encoded source paths; setup commands
   execute the installed target paths. This tests source behavior without
   coupling unit tests to the real home.
+- `scripts/adopt-from-stow` performs a guarded live cutover when another Mac is
+  still using the old Stow layout. It requires separate old and migrated
+  checkouts, snapshots effective managed and mutable state, creates a Git
+  bundle, previews/applies/verifies chezmoi, optionally fast-forwards the
+  canonical checkout, and retains rollback artifacts. The isolated
+  `tests/adopt-from-stow.test.sh` fixture proves that Pi credentials, sessions,
+  and Herdr state survive even when they were written beneath folded Stow
+  links. See the README for the exact worktree-based procedure.
 
 ## Expected differences and assumptions
 

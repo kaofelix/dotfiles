@@ -30,6 +30,50 @@ make apply
 make verify
 ```
 
+## Existing Stow-managed Mac
+
+Do not pull the chezmoi migration directly over a Stow checkout. Mutable Pi and
+Herdr data may live below links into that checkout and become unreachable when
+Git removes the old package directories. Instead, keep the old checkout in
+place and fetch the new version into a temporary worktree:
+
+```sh
+cd ~/dotfiles
+git status                         # must be clean
+git fetch origin
+git worktree add --detach ../dotfiles-chezmoi origin/main
+```
+
+Quit Pi, Herdr, and other programs writing below `~/.pi`, `~/.config/herdr`, or
+`~/.local`, then run the adoption helper from the temporary worktree:
+
+```sh
+../dotfiles-chezmoi/scripts/adopt-from-stow \
+  --stow-source "$HOME/dotfiles" \
+  --chezmoi-source "$HOME/dotfiles-chezmoi" \
+  --promote origin/main
+```
+
+The helper requires `chezmoi`, `git`, `python3`, and `stow`. It refuses a dirty
+checkout, creates a private rollback snapshot and Git bundle, materializes only
+links owned by the Stow checkout, unstows, restores mutable state, saves a
+chezmoi preview for inspection, applies and verifies, and finally fast-forwards
+the canonical checkout. It also configures chezmoi to use `~/dotfiles` and
+moves ignored residue from former package directories into the rollback
+folder. It prints that folder's path when complete; retain it for several days.
+
+After the setup is stable, remove the temporary worktree:
+
+```sh
+git worktree remove ../dotfiles-chezmoi
+```
+
+Use `--backup-dir DIR` to select the rollback location, or `--yes` only after a
+previously reviewed rehearsal. Run `scripts/adopt-from-stow --help` for all
+options. If `git status` is not clean, first commit or manually reconcile those
+machine-local source changes; the helper deliberately will not guess how to
+translate them into the chezmoi layout.
+
 Chezmoi writes ordinary files rather than Stow-style symlinks. Edit through
 `chezmoi edit ~/.zshrc`, edit the encoded file in `home/` directly, or import an
 intentional target-side change with `chezmoi re-add ~/.zshrc`. Add a new target
