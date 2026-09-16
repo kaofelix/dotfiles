@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Sessions + DuckDB"
+  short_description: "Inspect and analyze Codex rollout logs"
+  default_prompt: "Use $codex-sessions-duckdb to inspect this Codex session or analyze my rollout history."
