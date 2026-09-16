@@ -21,3 +21,4 @@
 # font-family = Source Code Pro
 font-family = SF Mono
 font-size = 13
+macos-option-as-alt = left
