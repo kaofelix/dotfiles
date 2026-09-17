@@ -4,18 +4,40 @@ Load this reference when several bounded items will be delegated with fresh task
 
 ## Choose the cadence
 
-- **Continuous:** keep advancing through the requested list. After durable acceptance, retire the item's locations before starting the next item.
-- **Checkpointed:** complete one item, retain its locations for inspection or direct user follow-up, report their identities and state, and pause until the user requests the next item.
+- **Continuous — default:** keep advancing through the requested list. Status updates report progress but do not become permission gates. After durable acceptance, retire the item's locations and start the next item without asking again.
+- **Checkpointed — explicit:** complete one item, retain its locations for inspection or direct user follow-up, report their identities and state, and pause until the user requests the next item.
 
-Infer cadence from the request: “complete the list” or “keep going” usually means continuous; “one at a time,” direct interaction with each agent, or a requested stop after every item means checkpointed. If intent is unclear and affects whether locations or work will be closed, ask.
+Use checkpointed cadence only when the user asks to proceed one item at a time, wants direct interaction with each agent, or requests a stop after every item. If retention intent is unclear, ask once before starting the queue.
+
+Continuous cadence pauses only for an authorization or decision the lead does not own, a specific environment or credential blocker, an agreed human checkpoint, a second review rejection requiring redesign, or queue completion.
+
+## Establish the operating contract
+
+Before the first item in a multi-item queue, agree on one compact temporary contract covering:
+
+- exact item identifiers, order, and dependencies;
+- worktree and branch;
+- continuous or checkpointed cadence;
+- lead, writer, reviewer, commit, push, and external-effect authority;
+- checkpoint and acceptance-commit policy;
+- review, native-evidence, and broad-gate sequence;
+- agreed human or product milestones;
+- process ownership and cleanup;
+- pause conditions.
+
+Keep the contract in durable state that every fresh owner can read. Project policy decides its location and lifecycle. Do not duplicate item acceptance criteria, implementation plans, command transcripts, reviewer dialogue, or per-stage metrics in it.
+
+The lead owns the contract. Child briefs cite it but still state the child's role and bounded assignment. Repository state, item retirement, and commits record progress; do not maintain a parallel status matrix.
+
+When replacing a goal, session, or orchestrator, preserve the contract verbatim, including exact remaining identifiers and order, accepted or skipped items, cadence, authority, commit/push permissions, milestones, and cleanup policy. Avoid ordinal-only handoffs such as “continue from story four.”
 
 ## Process each item
 
-1. Brief a fresh owner from durable repository state.
+1. Brief a fresh owner from durable repository state and the operating contract.
 2. Complete the bounded implementation and proportionate lead review.
 3. Record accepted code, decisions, verification, and any commit evidence in durable state.
 4. Apply the selected cadence and retention rule.
-5. Provision the next task-labelled location only when the next item begins.
+5. In continuous mode, provision the next task-labelled location immediately after cleanup unless a contract pause condition applies.
 
 Retained conversations are inspection history, not required context. Do not assign a retained agent a new queue item. Put essential decisions in code, commits, issue text, project documents, or the next prompt.
 

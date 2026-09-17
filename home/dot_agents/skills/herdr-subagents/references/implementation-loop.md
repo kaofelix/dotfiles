@@ -9,10 +9,10 @@ Assign one coherent change. Apply the briefing principle from the main skill and
 - owns only the named scope;
 - preserves unrelated and pre-existing work;
 - leaves the change uncommitted unless finalization is explicitly delegated later;
-- reports readiness, changed files, focused verification, risks, and blockers;
+- reports readiness, changed files, focused verification, risks, and explicit remaining native or broad evidence gaps;
 - does not create reviewers or alter Herdr topology unless granted orchestration authority.
 
-When workflow status exists, keep it in progress until lead acceptance. Assign verification ownership so writer, reviewer, and lead do not repeat the same broad suite without a requirement-driven reason.
+Writer-ready means the implementation is settled and reviewable, not that every final acceptance gate has run. Final native evidence or a broad suite may remain lead-owned after review when the contract assigns them there. When workflow status exists, keep it in progress until lead acceptance. Assign verification ownership so writer, reviewer, and lead do not repeat the same broad suite without a requirement-driven reason.
 
 ## Lead review
 
@@ -43,6 +43,8 @@ When used, provision the reviewer only after the writer is ready. Give it read-o
 Adjudicate every finding. Require correction only when it maps to a requirement, acceptance criterion, or regression introduced by the diff. Reuse the reviewer after corrections when continuity is useful; choose a fresh reviewer only when independence or a materially changed review surface warrants it.
 
 ## Finalization
+
+Follow the contract's evidence order. A common high-confidence sequence is writer-ready, checkpoint, independent review, one correction batch and focused re-review, targeted native evidence, then one fresh broad acceptance gate. Move native evidence earlier only when native behavior is the implementation uncertainty or the project policy requires it.
 
 Use focused checks during correction and one fresh broad acceptance gate when the risk or project workflow requires it. Do not make every role rerun the full suite.
 

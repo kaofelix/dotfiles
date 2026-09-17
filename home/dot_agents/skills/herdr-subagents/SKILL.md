@@ -5,7 +5,13 @@ description: "Herdr subagent delegation. Use when the user explicitly asks to de
 
 # Herdr Subagents
 
-Delegate through Herdr only when the user explicitly asks. Act as the lead unless ownership is deliberately handed to the user or another orchestrator: define the boundary, preserve unrelated work, and treat subagent reports as claims to verify rather than proof of completion.
+Delegate through Herdr only when the user explicitly asks. Preserve the role assigned by the current task:
+
+- **Lead:** coordinate only the delegation explicitly authorized for this task.
+- **Writer:** perform the assigned change and verification directly, then report to the lead.
+- **Reviewer:** inspect the assigned target read-only and return findings to the lead.
+
+Loading this skill does not change the assigned role or grant orchestration authority. A parent's permission to delegate is not inherited by its children. Further delegation requires explicit authorization in the agent's own assignment; if the role is unclear, clarify it before creating agents or topology. The lead defines the boundary, preserves unrelated work, and treats subagent reports as claims to verify rather than proof of completion.
 
 ## Use the simplest fitting pattern
 
@@ -17,7 +23,7 @@ Delegate through Herdr only when the user explicitly asks. Act as the lead unles
 
 Use parallel agents for independent read-only work. Keep one writer at a time in a shared working tree; concurrent writers need separate worktrees and explicit ownership.
 
-Subagents report to the lead by default. Delegation depth is one unless the brief explicitly grants orchestration authority and bounds the child count and topology.
+Subagents report to the lead by default. Assigned writers and reviewers create no child agents unless their own brief explicitly grants orchestration authority and bounds the child count and topology.
 
 Complete when the pattern, owner, task boundary, working directory, write authority, and any external effects are explicit.
 
@@ -32,7 +38,7 @@ Give the subagent the complete user intent and the context it cannot safely disc
 
 Trust the subagent to inspect the project, follow its instructions, select applicable skills, find relevant files, plan the work, and verify proportionately. Do not invent methodology, file lists, checks, or report structure merely to make the brief look complete.
 
-For an investigation, ask for a decision artifact only when the result must support a choice. For a review, identify the exact target and dimensions when they are not obvious. For an implementation, assign one coherent change and preserve unrelated work.
+For an investigation, ask for a decision artifact only when the result must support a choice. For a review, identify the exact target and dimensions when they are not obvious. For an implementation, assign one coherent change and preserve unrelated work. Put role, report target, authority, and delegation permission before the task context in every child brief. Do not repeat the parent's request to use Herdr inside a writer or reviewer brief; that is lead context, not child authority.
 
 Do not make a fresh agent reconstruct essential context from another agent's conversation. Put accepted decisions in code, commits, issue text, documents, or the next prompt.
 

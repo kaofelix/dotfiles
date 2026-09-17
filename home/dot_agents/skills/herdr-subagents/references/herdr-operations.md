@@ -19,11 +19,13 @@ Use `herdr_agent` for coding-agent lifecycle and conversation. Use `herdr_pane` 
 
 ## Collection
 
-Submit independent work without waiting when useful lead work remains. Otherwise wait for `idle`, `done`, or `blocked`; omit arbitrary timeouts when an indefinite wait is acceptable.
+Submit an asynchronous assignment with `prompt(wait: false)` when the lead should continue coordinating. Do not use a short prompt timeout as fire-and-forget; an expected timeout is still an error and creates noisy recovery work.
+
+Submit independent work without waiting when useful lead work remains. Otherwise make one lifecycle wait for `idle`, `done`, or `blocked` and omit the timeout when an indefinite wait is acceptable. Repeated fixed-interval waits are not the normal scheduler.
 
 For a settled Pi agent, retrieve `last_message` from its native session. Use terminal reads for live inspection, approval overlays, questions, or agents without a readable native session.
 
-After a timeout, resolve the target once. Continue waiting if it is working; inspect output only when there is evidence of a blocker or diagnostic need. Before every follow-up in a multi-agent workflow, confirm the target still owns the task.
+Use a bounded wait only when the lead has another useful observation boundary or the user may need timely control. After a timeout, resolve the target once. Continue waiting if it is working; inspect output only when there is evidence of a blocker or diagnostic need. Before every follow-up in a multi-agent workflow, confirm the target still owns the task.
 
 ## Recovery
 
