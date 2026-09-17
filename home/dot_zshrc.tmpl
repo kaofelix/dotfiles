@@ -139,3 +139,10 @@ if [ -f "$HOME/.zshrc.local" ]; then
 fi
 
 eval "$(mise activate zsh)"
+{{- if eq .chezmoi.os "darwin" }}
+
+# Docker Desktop CLI completions.
+fpath=("$HOME/.docker/completions" $fpath)
+autoload -Uz compinit
+(( ${+_comps[docker]} )) || compinit
+{{- end }}
