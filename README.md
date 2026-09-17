@@ -1,14 +1,14 @@
 # Kao Felix's Dotfiles
 
-These macOS dotfiles are managed by [chezmoi](https://www.chezmoi.io/). The
-repository uses `home/` as its chezmoi source state (selected by
+These macOS and Linux dotfiles are managed by
+[chezmoi](https://www.chezmoi.io/). The repository uses `home/` as its chezmoi
+source state (selected by
 [`.chezmoiroot`](.chezmoiroot)); files elsewhere in the repository are project
 documentation, tests, or automation and are not copied into `$HOME`.
 
-## New Mac
+## New machine
 
-Add an SSH key to GitHub, install [Homebrew](https://brew.sh), then clone this
-repository and run setup:
+Add an SSH key to GitHub, clone this repository, and run setup:
 
 ```sh
 git clone git@github.com:kaofelix/dotfiles.git ~/.local/share/chezmoi
@@ -16,9 +16,24 @@ cd ~/.local/share/chezmoi
 make setup
 ```
 
-`make setup` installs the `Brewfile` (including chezmoi), applies the dotfiles,
-installs mise tools, builds local dependencies and completions, configures the
-GitHub CLI, and resolves Pi credentials. Chezmoi's external declaration clones
+`make setup` bootstraps Homebrew when necessary, installs the cross-platform
+`Brewfile`, applies the dotfiles, installs mise tools, builds local dependencies
+and completions, configures the GitHub CLI, and resolves Pi credentials.
+Homebrew bootstrap on Debian/Ubuntu requires passwordless or interactive
+`sudo`; other Linux distributions should install Homebrew and its prerequisites
+first. Chezmoi omits native macOS key bindings and 1Password-specific Git/shell
+settings on Linux.
+
+For a headless Linux machine, skip interactive credential resolution and run
+it later only if 1Password is configured:
+
+```sh
+NONINTERACTIVE=1 make setup
+# Optional later:
+make pi-auth
+```
+
+Chezmoi's external declaration clones
 [zgenom](https://github.com/jandamm/zgenom) into `~/.zgenom`; zgenom then loads
 Oh My Zsh and the configured plugins on first shell startup.
 

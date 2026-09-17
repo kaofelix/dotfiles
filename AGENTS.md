@@ -1,8 +1,8 @@
 # Agent Guide: Dotfiles Repository
 
-This macOS dotfiles repository uses chezmoi. Target state lives under `home/`,
-selected by `.chezmoiroot`; repository files outside `home/` are never applied
-to `$HOME`.
+This macOS and Linux dotfiles repository uses chezmoi. Target state lives under
+`home/`, selected by `.chezmoiroot`; repository files outside `home/` are never
+applied to `$HOME`.
 
 ## Workflow
 
@@ -26,7 +26,7 @@ unmanaged; only its 1Password reference file is tracked.
 
 ## Locations
 
-- Shell config: `home/dot_zshrc`
+- Shell config: `home/dot_zshrc.tmpl`
 - Executable scripts: `home/dot_local/bin/executable_*`
 - Pi config/extensions: `home/dot_pi/agent/`
 - Cross-agent skills: `home/dot_agents/skills/`
@@ -37,7 +37,9 @@ When adding an executable script, include a shebang, useful `--help` output, and
 executable source attributes; then test the installed mode through
 `make test-migration`.
 
-`Brewfile` owns machine-level packages and macOS applications. Mise owns
-language runtimes and standalone development tools. `make setup` applies both
-plus generated completions and Pi credentials; `make update` upgrades and
-reapplies them.
+`Brewfile` owns cross-platform packages and guards macOS-only applications with
+`OS.mac?`. Chezmoi templates and `.chezmoiignore` own target differences; keep
+macOS output stable when adding Linux branches. Mise owns language runtimes and
+standalone development tools. `make setup` bootstraps Homebrew, applies both
+manifests, and generates dependencies and completions. With `NONINTERACTIVE=1`,
+it leaves Pi credential resolution for an explicit later `make pi-auth`.

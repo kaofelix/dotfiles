@@ -59,7 +59,9 @@ set -g pane-border-format "#{?#{pane_active},#[fg=colour71]#[bg=colour71#,fg=
 
 # Copy mode (emacs keys)
 setw -g mode-keys emacs
+{{- if eq .chezmoi.os "darwin" }}
 set -s copy-command 'pbcopy'
+{{- end }}
 
 # Window splitting (open in current directory)
 bind | split-window -h -c "#{pane_current_path}"

@@ -76,8 +76,8 @@ This review targets chezmoi 2.72.2 and links to the current official
 | Default file mode instead of [symlink mode](https://www.chezmoi.io/user-guide/frequently-asked-questions/design/) | **Adopted** | Ordinary files are portable and atomically updated. Validation explicitly accounts for the only intentional physical difference from Stow. |
 | [Minimum version declaration](https://www.chezmoi.io/reference/special-files/) | **Adopted** | `.chezmoiversion` prevents silently applying this source with an incompatible client. |
 | [Externals](https://www.chezmoi.io/user-guide/include-files-from-elsewhere/) | **Adopted for zgenom** | Replaces the Makefile's hand-written clone-if-missing rule. A `git-repo` external matches zgenom's desired independent Git checkout and weekly refresh lifecycle. Large vendored agent skills remain first-party tracked state; making them externals would hide their contents from `diff`/`dump` and weaken reproducibility. |
-| [Templates and machine data](https://www.chezmoi.io/user-guide/manage-machine-to-machine-differences/) | **Deferred until a real variation exists** | The repository explicitly targets one macOS setup and currently has no host-dependent values to prompt for. Adding identity or host templates now would invent inputs and make noninteractive bootstrap less reliable. `.zshrc.local` remains the documented untracked override boundary. |
-| [`.chezmoiignore`](https://www.chezmoi.io/reference/special-files/chezmoiignore/) | **Adopted narrowly** | `.chezmoiroot` ensures only `home/` can become target state, while `.chezmoiignore` prevents local `node_modules`, Python caches, and Finder metadata created *inside* that tree from becoming targets. Runtime Pi/Herdr patterns are no longer needed because ordinary target files cannot write back through Stow links. Machine conditionals should be added only for genuine differences. |
+| [Templates and machine data](https://www.chezmoi.io/user-guide/manage-machine-to-machine-differences/) | **Adopted for operating-system differences** | Linux support introduced real platform variation after the migration. Git signing, clipboard integration, the 1Password SSH agent, and Homebrew shell initialization now branch on `.chezmoi.os` without prompting. `.zshrc.local` remains the untracked host-specific override boundary. |
+| [`.chezmoiignore`](https://www.chezmoi.io/reference/special-files/chezmoiignore/) | **Adopted narrowly** | `.chezmoiroot` ensures only `home/` can become target state, while `.chezmoiignore` prevents local build artifacts from becoming targets and omits native macOS key bindings on Linux. Runtime Pi/Herdr patterns are unnecessary because ordinary target files cannot write back through Stow links. |
 | `exact_` directories | **Rejected for mutable application trees** | Pi, Herdr, and completion directories contain runtime state not owned by this repo. Exact directories would delete those unmanaged entries during apply, unlike Stow and contrary to behavior preservation. |
 | `private_` files/directories | **Not applied to tracked references** | `auth.op.json` contains 1Password references, not plaintext credentials, and changing its mode would break byte/mode parity. The generated, untracked `auth.json` is already atomically written as `0600` by `pi-auth-setup`. New truly private managed targets should use `private_`. |
 | [Password-manager template functions](https://www.chezmoi.io/user-guide/password-managers/1password/) | **Rejected for Pi `auth.json`** | Pi mutates the same file with OAuth credentials. A whole-file template would overwrite that state, while invoking secrets during normal source reads would create unnecessary 1Password coupling. The tested merge helper preserves OAuth entries, validates references without shell evaluation, avoids printing secrets, and is explicitly run by setup. |
@@ -135,9 +135,10 @@ and [setup workflow](https://www.chezmoi.io/user-guide/setup/): inspect with
 4. **Repository runtime pollution:** application state can no longer flow back
    through links into this Git checkout. Stale Pi/Herdr runtime ignore rules
    were removed.
-5. **Platform:** the configuration remains intentionally macOS-oriented. No
-   unsupported Linux behavior was invented during a behavior-preserving
-   migration.
+5. **Platform:** the original migration preserved the macOS target exactly.
+   Subsequent Linux support uses templates and conditional ignores while the
+   platform-rendering test requires the historical macOS output to remain
+   stable.
 6. **Fresh clone history:** the frozen baseline commit is an ancestor of the
    migration branch and therefore available to the validation harness after a
    normal clone of the completed history.

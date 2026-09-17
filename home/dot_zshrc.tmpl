@@ -1,3 +1,8 @@
+{{ if eq .chezmoi.os "linux" -}}
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+{{ end -}}
 typeset -U path PATH fpath FPATH
 
 COMPLETION_WAITING_DOTS="true"
@@ -28,12 +33,12 @@ if ! zgenom saved; then
     zgenom ohmyzsh plugins/z
     [[ "$(uname -s)" = Darwin ]] && zgenom ohmyzsh plugins/macos
 
-    zgenom load "${HOME}/.emacs.d/vterm.sh"
-
+{{ if eq .chezmoi.os "darwin" }}    zgenom load "${HOME}/.emacs.d/vterm.sh"
+{{ end }}
     # completions
     zgenom load "${HOMEBREW_PREFIX}/share/zsh/site-functions" --completion
-    zgenom load "${HOME}/.zfunc" --completion
-    zgenom load zsh-users/zsh-completions
+{{ if eq .chezmoi.os "darwin" }}    zgenom load "${HOME}/.zfunc" --completion
+{{ end }}    zgenom load zsh-users/zsh-completions
     zgenom load "${HOME}/.local/share/zsh/site-functions" --completion
 
     # Syntax highlighting should be loaded last
@@ -98,7 +103,9 @@ export PAGER='less'
 export LESS='FSRX'
 export EDITOR="emacsclient"
 export ALTERNATE_EDITOR="emacs"
+{{- if eq .chezmoi.os "darwin" }}
 export SSH_AUTH_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+{{- end }}
 
 ##################################
 ## Custom functions and aliases ##
@@ -120,8 +127,8 @@ upi() {
     cd -
 }
 
-alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
-
+{{ if eq .chezmoi.os "darwin" }}alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+{{ end }}
 _ask() {
     pi -p --provider deepseek --model deepseek-v4-flash  "$*" | glow
 }

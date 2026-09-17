@@ -1,0 +1,35 @@
+#!/bin/sh
+set -eu
+
+if command -v brew >/dev/null 2>&1 ||
+   [ -x /opt/homebrew/bin/brew ] ||
+   [ -x /home/linuxbrew/.linuxbrew/bin/brew ] ||
+   [ -x /usr/local/bin/brew ]; then
+    exit 0
+fi
+
+if [ "$(uname -s)" = Linux ]; then
+    if ! command -v sudo >/dev/null 2>&1; then
+        printf 'Homebrew is missing and sudo is required to install Linux prerequisites.\n' >&2
+        exit 1
+    fi
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y build-essential procps curl file git
+    else
+        printf 'Homebrew is missing. Install your distribution prerequisites first.\n' >&2
+        exit 1
+    fi
+fi
+
+command -v curl >/dev/null 2>&1 || {
+    printf 'curl is required to install Homebrew.\n' >&2
+    exit 1
+}
+
+installer=$(mktemp)
+trap 'rm -f "$installer"' EXIT HUP INT TERM
+curl --proto '=https' --tlsv1.2 -fsSL \
+    https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh \
+    > "$installer"
+NONINTERACTIVE=1 /bin/bash "$installer"

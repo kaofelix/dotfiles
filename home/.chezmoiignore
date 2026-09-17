@@ -2,3 +2,6 @@
 **/node_modules
 **/__pycache__
 **/.DS_Store
+{{ if ne .chezmoi.os "darwin" -}}
+Library/KeyBindings
+{{ end -}}
