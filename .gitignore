@@ -5,6 +5,8 @@ node_modules
 # Local environments and plaintext credentials
 .env
 .env.*
+.envrc
+.envrc.*
 *.pem
 *.key
 *.p12

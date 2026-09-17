@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "dash": {
+{{ if eq .chezmoi.os "darwin" }}    "dash": {
       "command": "uvx",
       "args": [
         "--from",
@@ -8,7 +8,7 @@
         "dash-mcp-server"
       ]
     },
-    "maestro": {
+{{ end }}    "maestro": {
       "command": "maestro",
       "args": ["mcp"]
     },
