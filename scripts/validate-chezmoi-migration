@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare an isolated Stow install at the frozen baseline with chezmoi.
+"""Compare the frozen Stow baseline with the frozen chezmoi migration.
 
 The real HOME is never read or written. The semantic manifests dereference
 Stow's implementation symlinks so contents and modes can be compared with
@@ -23,6 +23,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 BASELINE_FILE = ROOT / "migration" / "stow-baseline-revision"
+CHEZMOI_REVISION_FILE = ROOT / "migration" / "chezmoi-migration-revision"
 PACKAGE_FILE = ROOT / "migration" / "packages.txt"
 EXPECTED_DIFFERENCES_FILE = ROOT / "migration" / "expected-differences.json"
 
@@ -179,15 +180,19 @@ def main() -> int:
         parser.error(f"unknown packages: {', '.join(unknown)}")
 
     baseline_revision = BASELINE_FILE.read_text().strip()
-    # Prove that the frozen baseline object is present before creating fixtures.
+    chezmoi_revision = CHEZMOI_REVISION_FILE.read_text().strip()
+    # Prove that both frozen objects are present before creating fixtures.
     run("git", "cat-file", "-e", f"{baseline_revision}^{{commit}}", cwd=ROOT)
+    run("git", "cat-file", "-e", f"{chezmoi_revision}^{{commit}}", cwd=ROOT)
 
     with tempfile.TemporaryDirectory(prefix="dotfiles-chezmoi-validation-") as raw_tmp:
         tmp = Path(raw_tmp)
         baseline_source = tmp / "baseline-source"
+        chezmoi_source = tmp / "chezmoi-source"
         baseline_home = tmp / "stow-home"
         chezmoi_home = tmp / "chezmoi-home"
         baseline_source.mkdir()
+        chezmoi_source.mkdir()
         baseline_home.mkdir()
         chezmoi_home.mkdir()
 
@@ -203,6 +208,19 @@ def main() -> int:
         archive.stdout.close()
         if archive.wait() != 0 or extract.returncode != 0:
             raise RuntimeError("could not extract frozen Stow baseline")
+
+        archive = subprocess.Popen(
+            ["git", "archive", chezmoi_revision], cwd=ROOT, stdout=subprocess.PIPE
+        )
+        assert archive.stdout is not None
+        extract = subprocess.run(
+            ["tar", "-xf", "-", "-C", str(chezmoi_source)],
+            stdin=archive.stdout,
+            check=True,
+        )
+        archive.stdout.close()
+        if archive.wait() != 0 or extract.returncode != 0:
+            raise RuntimeError("could not extract frozen chezmoi migration")
 
         for package in packages:
             run(
@@ -223,7 +241,7 @@ def main() -> int:
         common = [
             "chezmoi",
             "--source",
-            str(ROOT),
+            str(chezmoi_source),
             "--destination",
             str(chezmoi_home),
             "--config",
@@ -316,6 +334,7 @@ def main() -> int:
 
         summary = {
             "baseline_revision": baseline_revision,
+            "chezmoi_revision": chezmoi_revision,
             "packages": packages,
             "managed_leaf_count": len(expected),
             "semantic_difference_count": len(mismatches),

@@ -159,9 +159,9 @@ make test-migration
 
 The migration suite never touches the real home directory. It checks out the
 frozen Stow baseline into a temporary directory, Stows it into one temporary
-home, applies the current chezmoi source into another, and compares every
-managed file's path, bytes, and mode. It also records physical file types,
-validates the intentional symlink-to-regular-file transition, applies twice,
-runs `chezmoi verify`, and requires an empty post-apply diff. See
+home, applies the frozen completed chezmoi migration into another, and compares
+every managed file's path, bytes, and mode. It also records physical file
+types, validates the intentional symlink-to-regular-file transition, applies
+twice, runs `chezmoi verify`, and requires an empty post-apply diff. See
 [`docs/chezmoi-migration.md`](docs/chezmoi-migration.md) for design decisions,
 feature review, checkpoints, and evidence.

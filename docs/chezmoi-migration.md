@@ -8,7 +8,11 @@ worktree at `/Users/kaofelix/dotfiles` was not modified. Before restructuring,
 its tracked modifications and non-ignored untracked files were copied into the
 migration worktree and committed. That complete Stow state is frozen at commit
 `36a12067652b708f07ba22f0c4ad74193468aa6a`, also recorded in
-`migration/stow-baseline-revision`.
+`migration/stow-baseline-revision`. The completed chezmoi migration and
+adoption workflow are frozen at commit
+`448b1596e69845c3ca80f59f31deedd4a88f6f2c`, recorded in
+`migration/chezmoi-migration-revision`. Validation archives both revisions so
+later dotfile changes do not invalidate the historical migration proof.
 
 The source moved from ten package-shaped trees to one declarative target tree
 under `home/`:
@@ -58,11 +62,11 @@ make test-migration
   --artifacts-dir docs/migration-evidence/03-full
 ```
 
-The harness uses `mktemp`, explicit `--source`, `--destination`, `--config`,
-`--cache`, and `--persistent-state` paths. It does not read or write the real
-home, chezmoi config, cache, or state. Networked externals and scripts are
-excluded from parity because they were not part of `make stow`; their
-declarations are validated separately.
+The harness archives both frozen Git revisions, then uses `mktemp`, explicit
+`--source`, `--destination`, `--config`, `--cache`, and `--persistent-state`
+paths. It does not read or write the real home, chezmoi config, cache, or state.
+Networked externals and scripts are excluded from parity because they were not
+part of `make stow`; their declarations are validated separately.
 
 ## Feature and best-practice review
 
