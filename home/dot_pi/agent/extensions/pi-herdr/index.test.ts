@@ -75,6 +75,32 @@ describe("pi-herdr", () => {
 		expect(tools.get("herdr_layout").description).toContain("Workspaces contain tabs; tabs contain panes");
 		expect(tools.get("herdr_pane").description).toContain("ordinary processes");
 		expect(tools.get("herdr_agent").description).toContain("existing Herdr pane");
+		expect(tools.get("herdr_agent").parameters.properties.kind.enum).toEqual([
+			"pi",
+			"claude",
+			"codex",
+			"gemini",
+			"cursor",
+			"devin",
+			"agy",
+			"cline",
+			"omp",
+			"mastracode",
+			"opencode",
+			"copilot",
+			"kimi",
+			"kiro",
+			"droid",
+			"amp",
+			"grok",
+			"hermes",
+			"kilo",
+			"qodercli",
+			"qwen",
+			"letta",
+			"maki",
+			"muse",
+		]);
 	});
 
 	test("splits the caller pane from geometry while preserving cwd and focus", async () => {

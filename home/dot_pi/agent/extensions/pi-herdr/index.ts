@@ -122,7 +122,10 @@ const AgentKindEnum = StringEnum(
 		"hermes",
 		"kilo",
 		"qodercli",
+		"qwen",
+		"letta",
 		"maki",
+		"muse",
 	] as const,
 	{ description: "Supported coding agent kind and canonical executable" },
 );

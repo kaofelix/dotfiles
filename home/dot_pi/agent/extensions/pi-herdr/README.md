@@ -1,6 +1,6 @@
 # pi-herdr
 
-Pi-native tools for controlling [Herdr](https://github.com/ogulcancelik/herdr) layouts, terminal panes, and coding agents.
+Pi-native tools for controlling [Herdr](https://github.com/herdrdev/herdr) layouts, terminal panes, and coding agents.
 
 ## Install
 
@@ -167,7 +167,7 @@ For a settled Pi agent with a reported session path, prefer `last_message`; it d
 ## Requirements
 
 - Pi 0.80 or newer
-- Herdr 0.7.5 or newer
+- Herdr 0.9.1 or newer
 - Pi running inside a Herdr pane
 
 ## License
