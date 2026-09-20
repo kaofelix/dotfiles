@@ -120,18 +120,28 @@ async function ensurePython3Alias(): Promise<void> {
   }
 }
 
-async function bootstrapPythonEnv(force = false): Promise<void> {
+async function pythonIsRunnable(): Promise<boolean> {
+  if (!(await exists(PYTHON))) return false;
+  try {
+    return (await run(PYTHON, ["--version"], 30_000)).code === 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function bootstrapPythonEnv(force = false): Promise<void> {
   pythonDeps = await loadDependencies();
   const stamp = dependencyStamp(pythonDeps);
   const currentStamp = await readFile(STAMP, "utf8").catch(() => undefined);
+  const runnable = await pythonIsRunnable();
 
-  if (!force && currentStamp === stamp && (await exists(PYTHON)) && (await exists(PYTHON3))) {
+  if (!force && currentStamp === stamp && runnable && (await exists(PYTHON3))) {
     return;
   }
 
   await runChecked("uv", ["--version"], 30_000);
   await mkdir(ENV_DIR, { recursive: true });
-  if (!(await exists(PYTHON))) {
+  if (!runnable) {
     await runChecked("uv", ["venv", "--clear", ENV_DIR], 120_000);
   }
   await ensurePython3Alias();

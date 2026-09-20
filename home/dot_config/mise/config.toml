@@ -9,6 +9,7 @@ postinstall = 'if [ -x "$HOME/.local/bin/update-zsh-completions" ]; then "$HOME/
 [tools]
 ast-grep = "latest"
 bat = "latest"
+bun = "latest"
 crush = "latest"
 difftastic = "latest"
 fd = "latest"

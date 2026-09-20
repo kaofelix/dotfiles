@@ -64,6 +64,7 @@ update:
 # Application tests do not touch HOME.
 test:
 	./tests/platform-rendering.test.sh
+	bun test tests/python-env.test.ts
 	./tests/pi-auth-setup.test.sh
 	./tests/pi-auth-setup-generation.test.sh
 	npm ci --prefix home/dot_local/lib/pifind
