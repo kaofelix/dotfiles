@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Open a verified Herdr worktree and start a named Codex session in it.
+set -euo pipefail
+
+usage() {
+  printf 'Usage: %s <session-name>\n' "${0##*/}" >&2
+  printf 'Creates a Herdr worktree from $HERDR_WORKSPACE_ID and starts Codex.\n' >&2
+}
+
+if [[ "${HERDR_ENV:-}" != "1" ]]; then
+  printf 'error: run this command from a Herdr-managed pane\n' >&2
+  exit 1
+fi
+
+if [[ ${1:-} == "--help" || ${1:-} == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ $# -ne 1 ]]; then
+  usage
+  exit 2
+fi
+
+agent_name=$1
+if [[ ! $agent_name =~ ^[a-z][a-z0-9_-]{0,31}$ ]]; then
+  printf 'error: session name must match [a-z][a-z0-9_-]{0,31}\n' >&2
+  exit 2
+fi
+
+for command in herdr jq; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    printf 'error: required command not found: %s\n' "$command" >&2
+    exit 1
+  fi
+done
+
+if [[ -z "${HERDR_WORKSPACE_ID:-}" ]]; then
+  printf 'error: HERDR_WORKSPACE_ID is not set\n' >&2
+  exit 1
+fi
+
+agent_list=$(herdr agent list)
+if jq -e --arg name "$agent_name" '.result.agents[]? | select(.name == $name)' \
+  <<<"$agent_list" >/dev/null; then
+  printf 'error: an active Herdr agent already uses session name %s\n' "$agent_name" >&2
+  exit 1
+fi
+
+create_result=$(herdr worktree create --workspace "$HERDR_WORKSPACE_ID" --label "$agent_name" --no-focus)
+workspace_id=$(jq -er '.result.workspace.workspace_id' <<<"$create_result")
+pane_id=$(jq -er '.result.root_pane.pane_id' <<<"$create_result")
+worktree_path=$(jq -er '.result.worktree.path' <<<"$create_result")
+
+pane_result=$(herdr pane list --workspace "$workspace_id")
+verified_cwd=$(jq -er --arg pane "$pane_id" '.result.panes[] | select(.pane_id == $pane) | .cwd' <<<"$pane_result")
+if [[ $verified_cwd != "$worktree_path" ]]; then
+  printf 'error: Herdr pane cwd did not match created worktree\n' >&2
+  exit 1
+fi
+
+start_result=$(herdr agent start "$agent_name" --kind codex --pane "$pane_id")
+agent_cwd=$(jq -er '.result.agent.cwd' <<<"$start_result")
+if [[ $agent_cwd != "$worktree_path" ]]; then
+  printf 'error: Codex started outside the created worktree\n' >&2
+  exit 1
+fi
+
+printf 'Worktree: %s\n' "$worktree_path"
+printf 'Workspace: %s\n' "$workspace_id"
+printf 'Agent: %s\n' "$agent_name"
+printf 'Run herdr agent prompt %s "<prompt>" to prompt.\n' "$agent_name"
