@@ -4,6 +4,7 @@ if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
 fi
 {{ end -}}
 typeset -U path PATH fpath FPATH
+path=("$HOME/.local/bin" $path)
 
 COMPLETION_WAITING_DOTS="true"
 DISABLE_AUTO_TITLE="true"

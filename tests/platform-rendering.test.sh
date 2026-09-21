@@ -50,6 +50,8 @@ grep -Fq "copy-command 'pbcopy'" "$mac/.tmux.conf"
 assert_not_contains 'pbcopy' "$linux/.tmux.conf"
 grep -Fq '/home/linuxbrew/.linuxbrew/bin/brew shellenv' "$linux/.zshrc"
 assert_not_contains '/home/linuxbrew/.linuxbrew/bin/brew shellenv' "$mac/.zshrc"
+grep -Fq 'path=("$HOME/.local/bin" $path)' "$mac/.zshrc"
+grep -Fq 'path=("$HOME/.local/bin" $path)' "$linux/.zshrc"
 grep -Fq '"dash"' "$mac/.pi/agent/mcp.json"
 assert_not_contains '"dash"' "$linux/.pi/agent/mcp.json"
 python3 -m json.tool "$mac/.pi/agent/mcp.json" >/dev/null
