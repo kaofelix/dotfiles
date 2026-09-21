@@ -5,6 +5,7 @@ set -euo pipefail
 usage() {
   printf 'Usage: %s <session-name>\n' "${0##*/}" >&2
   printf 'Creates a Herdr worktree from $HERDR_WORKSPACE_ID and starts Codex.\n' >&2
+  printf 'Optionally runs ~/.config/herdr/worktree-setup/<repo-id> or default first.\n' >&2
 }
 
 if [[ "${HERDR_ENV:-}" != "1" ]]; then
@@ -47,7 +48,7 @@ if jq -e --arg name "$agent_name" '.result.agents[]? | select(.name == $name)' \
   exit 1
 fi
 
-create_result=$(herdr worktree create --workspace "$HERDR_WORKSPACE_ID" --label "$agent_name" --no-focus)
+create_result=$(herdr worktree create --workspace "$HERDR_WORKSPACE_ID" --branch "$agent_name" --label "$agent_name" --no-focus)
 workspace_id=$(jq -er '.result.workspace.workspace_id' <<<"$create_result")
 pane_id=$(jq -er '.result.root_pane.pane_id' <<<"$create_result")
 worktree_path=$(jq -er '.result.worktree.path' <<<"$create_result")
@@ -57,6 +58,38 @@ verified_cwd=$(jq -er --arg pane "$pane_id" '.result.panes[] | select(.pane_id =
 if [[ $verified_cwd != "$worktree_path" ]]; then
   printf 'error: Herdr pane cwd did not match created worktree\n' >&2
   exit 1
+fi
+
+setup_root=${HERDR_WORKTREE_SETUP_DIR:-"${XDG_CONFIG_HOME:-"$HOME/.config"}/herdr/worktree-setup"}
+repo_id=
+if command -v git >/dev/null 2>&1; then
+  origin_url=$(git -C "$worktree_path" remote get-url origin 2>/dev/null || true)
+  if [[ -n $origin_url ]]; then
+    origin_url=${origin_url%.git}
+    if [[ $origin_url == *://* ]]; then
+      origin_url=${origin_url#*://}
+      origin_url=${origin_url#*@}
+    elif [[ $origin_url == *@*:* ]]; then
+      origin_url=${origin_url#*@}
+      origin_url=${origin_url/:/\/}
+    fi
+    origin_url=${origin_url#/}
+    if [[ $origin_url =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ && $origin_url != *..* ]]; then
+      repo_id=$origin_url
+    fi
+  fi
+fi
+
+setup_script=
+if [[ -n $repo_id && -f "$setup_root/$repo_id" && -x "$setup_root/$repo_id" ]]; then
+  setup_script="$setup_root/$repo_id"
+elif [[ -f "$setup_root/default" && -x "$setup_root/default" ]]; then
+  setup_script="$setup_root/default"
+fi
+
+if [[ -n $setup_script ]]; then
+  printf 'Running worktree setup: %s\n' "$setup_script"
+  "$setup_script" "$worktree_path" "$agent_name" "$repo_id"
 fi
 
 start_result=$(herdr agent start "$agent_name" --kind codex --pane "$pane_id")
