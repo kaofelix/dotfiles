@@ -21,6 +21,7 @@ herdr = "latest"
 jq = "latest"
 maestro = "latest"
 node = "lts"
+opentofu = "latest"
 "npm:@earendil-works/pi-coding-agent" = "latest"
 "npm:@juanibiapina/browse-cli" = { version = "latest", allow_low_downloads = true }
 "npm:glimpseui" = { version = "latest", allow_builds = ["glimpseui"] }
