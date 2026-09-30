@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: refresh_dotfiles
+
+Fast-forward the configured dotfiles checkout from its upstream branch, then
+apply the latest chezmoi state to this machine.
+
+The checkout must be clean. Commit or stash local source changes before running
+this command. It does not install or upgrade packages.
+
+Options:
+  -h, --help  Show this help.
+EOF
+}
+
+case "${1:-}" in
+    "") ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+esac
+
+if ! command -v chezmoi >/dev/null 2>&1; then
+    printf 'error: chezmoi is required; run the dotfiles setup first\n' >&2
+    exit 1
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+    printf 'error: git is required\n' >&2
+    exit 1
+fi
+
+if ! command -v make >/dev/null 2>&1; then
+    printf 'error: make is required\n' >&2
+    exit 1
+fi
+
+source_dir=$(chezmoi source-path)
+repo_dir=$(git -C "$source_dir" rev-parse --show-toplevel)
+
+if [[ -n $(git -C "$repo_dir" status --porcelain) ]]; then
+    printf 'error: dotfiles checkout has local changes; commit or stash them first\n' >&2
+    git -C "$repo_dir" status --short >&2
+    exit 1
+fi
+
+git -C "$repo_dir" pull --ff-only
+make -C "$repo_dir" apply TARGET_DIR="$HOME"
