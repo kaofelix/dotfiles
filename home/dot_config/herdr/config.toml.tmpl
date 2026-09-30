@@ -43,3 +43,7 @@ overlay0 = "#646E82"
 
 [experimental]
 kitty_graphics = true
+
+[terminal]
+default_shell = "{{ if eq .chezmoi.os "linux" }}/home/linuxbrew/.linuxbrew/bin/zsh{{ else }}/bin/zsh{{ end }}"
+shell_mode = "login"
