@@ -148,8 +148,8 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 			return new Text(text, 0, 0);
 		},
 
-		renderResult(result, { expanded }, theme) {
-			if (result.isError) {
+		renderResult(result, { expanded }, theme, context) {
+			if (context.isError) {
 				return new Text(theme.fg("error", `✗ ${resultText(result)}`) + theme.fg("muted", renderMetadata(result, expanded)), 0, 0);
 			}
 
@@ -222,8 +222,10 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 
 		renderCall(args, theme) {
 			let text = theme.fg("toolTitle", theme.bold("tavily_extract "));
-			const urls = args.urls as string[];
-			if (urls.length === 1) {
+			const urls = args.urls ?? [];
+			if (urls.length === 0) {
+				text += theme.fg("muted", "...");
+			} else if (urls.length === 1) {
 				text += theme.fg("muted", urls[0]);
 			} else {
 				text += theme.fg("muted", `${urls.length} URLs`);
@@ -231,8 +233,8 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 			return new Text(text, 0, 0);
 		},
 
-		renderResult(result, { expanded }, theme) {
-			if (result.isError) {
+		renderResult(result, { expanded }, theme, context) {
+			if (context.isError) {
 				return new Text(theme.fg("error", `✗ ${resultText(result)}`) + theme.fg("muted", renderMetadata(result, expanded)), 0, 0);
 			}
 

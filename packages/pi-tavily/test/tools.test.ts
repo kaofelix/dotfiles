@@ -3,7 +3,7 @@ import test from 'node:test';
 import { Value } from 'typebox/value';
 import { readFile, stat } from 'node:fs/promises';
 import { visibleWidth } from '@earendil-works/pi-tui';
-import { initTheme, type ExtensionAPI, type ExtensionToolContext, type ToolDefinition } from '@earendil-works/pi-coding-agent';
+import { initTheme, ToolExecutionComponent, type ExtensionAPI, type ExtensionToolContext, type ToolDefinition } from '@earendil-works/pi-coding-agent';
 initTheme('dark', false);
 process.env.TAVILY_API_KEY = 'test-key';
 import extension from '../index.ts';
@@ -68,6 +68,35 @@ test('invalid option combinations are rejected before a billable request', async
     assert.equal(result.isError, true, JSON.stringify(params));
   }
   assert.equal(calls, 0);
+});
+
+test('tool failures remain visible through Pi’s interactive component in compact and expanded views', async () => {
+  const registered = tools(async () => { throw new Error('Network unavailable'); });
+  for (const [index, params] of [[0, {query: 'q'}], [1, {urls: ['https://example.com']}]] as const) {
+    const tool = registered[index];
+    const result = await tool.execute('id', params, undefined, undefined, ctx);
+    const component = new ToolExecutionComponent(tool.name, 'id', params, {}, tool,
+      {requestRender() {}} as any, process.cwd());
+    component.updateResult({...result, isError: result.isError === true}, false);
+    for (const expanded of [false, true]) {
+      component.setExpanded(expanded);
+      assert.match(component.render(100).join('\n'), /Network unavailable/);
+    }
+  }
+});
+
+test('extraction calls stay readable while URL arguments stream in', () => {
+  const tool = tools(async () => searchResponse)[1];
+  const theme = {fg: (_color: string, text: string) => text, bold: (text: string) => text};
+  for (const [args, expected] of [
+    [{}, /tavily_extract/],
+    [{urls: []}, /tavily_extract/],
+    [{urls: ['https://exa']}, /https:\/\/exa/],
+    [{urls: ['https://example.com', 'https://example.org']}, /2 URLs/],
+  ] as const) {
+    const rendered = tool.renderCall!(args as any, theme as any, {argsComplete: false} as any).render(100);
+    assert.match(rendered.join('\n'), expected);
+  }
 });
 
 test('expanded search exposes every source up to the supported result count', async () => {
