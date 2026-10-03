@@ -105,9 +105,22 @@ function formatExtractResults(results: TavilyExtractResult[], failedResults: Tav
 }
 
 export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = requestTavily) {
+	const namespace = {
+		name: "tavily",
+		description: "Web search and page extraction with source URLs and credit reporting",
+		instructions: "Use tavily_search to discover sources and tavily_extract to read known URLs. " +
+			"Codemode receives structured results: check status (success, partial, error) before using results. " +
+			"Partial extraction retains successful pages; failedResults identifies URLs to retry without repeating successes. " +
+			"Intent extraction with query returns selected chunks, not the complete page. " +
+			"For truncated responses, read fullResponsePath for complete JSON or fullOutputPath for Markdown. " +
+			"usage.credits reports Tavily credits, not model-token usage; zero may precede extraction billing thresholds. " +
+			"Search costs 1 credit, or 2 for advanced; autoParameters can select advanced unless searchDepth is explicit. " +
+			"Basic/advanced extraction costs 1/2 credits per 5 successful URLs. Cancellation cannot undo remote billing.",
+	};
 	// Register tavily_search tool
 	pi.registerTool({
 		name: "tavily_search",
+		namespace,
 		label: "Tavily Search",
 		description:
 			"Search the web for current information. Returns source snippets, optional cleaned full content, images and synthesized answers. Text and structured output are bounded to 50KB; text also to 2000 lines. Truncated responses include full-output file paths.",
@@ -191,6 +204,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 	// Register tavily_extract tool
 	pi.registerTool({
 		name: "tavily_extract",
+		namespace,
 		label: "Tavily Extract",
 		description:
 			"Read cleaned content from HTTP(S) URLs, optionally selecting relevant chunks with query. Text and structured output are bounded to 50KB; text also to 2000 lines. Truncated responses include full-output file paths.",

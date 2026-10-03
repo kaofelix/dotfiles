@@ -112,6 +112,11 @@ successful, potentially billable work.
 
 ## Results, output limits and UI
 
+Both tools remain directly callable and share the `tavily` namespace. Codemode
+can discover them with `searchTools("web", {namespace: "tavily"})` and read shared
+result, extraction and billing guidance with `describeNamespace("tavily")`.
+Namespace grouping does not rename the tools or require codemode-only access.
+
 Both tools declare an output schema. Codemode receives a JSON object instead of
 Markdown. Direct model calls receive readable text. Results expose:
 
