@@ -113,6 +113,28 @@ test('extraction calls stay readable while URL arguments stream in', () => {
   }
 });
 
+test('expanded calls expose all supplied options while compact calls retain their summaries', () => {
+  const registered = tools(async () => searchResponse);
+  for (const [index, args] of [
+    [0, {query: 'guide', searchDepth: 'advanced', autoParameters: true, includeRawContent: 'markdown', timeout: 15}],
+    [1, {urls: ['https://example.com', 'https://example.org'], query: 'cancellation', chunksPerSource: 2, extractDepth: 'advanced', format: 'text', includeImages: true}],
+  ] as const) {
+    const tool = registered[index];
+    const component = new ToolExecutionComponent(tool.name, 'id', args, {}, tool,
+      {requestRender() {}} as any, process.cwd());
+    component.setExpanded(true);
+    const expanded = component.render(120).join('\n');
+    for (const [key, value] of Object.entries(args)) {
+      assert.ok(expanded.includes(key), `Missing expanded ${key}`);
+      for (const item of Array.isArray(value) ? value : [value]) assert.ok(expanded.includes(String(item)), `Missing expanded ${key} value`);
+    }
+    component.setExpanded(false);
+    const compact = component.render(120).join('\n');
+    assert.match(compact, index === 0 ? /guide/ : /2 URLs/);
+    assert.ok(!compact.includes(index === 0 ? 'searchDepth' : 'chunksPerSource'));
+  }
+});
+
 test('expanded search exposes every source up to the supported result count', async () => {
   const response = {...searchResponse, results: Array.from({length: 20}, (_, i) => ({id: `${i}`, title: `Source ${i + 1}`, url: `https://example.com/${i}`, score: 1, content: 'snippet', publishedDate: ''}))};
   const tool = tools(async () => response)[0];

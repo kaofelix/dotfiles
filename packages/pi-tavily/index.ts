@@ -13,7 +13,7 @@ import { SearchParams, ExtractParams, OutputSchema } from "./schemas.ts";
 import { toolResult, errorResult, outputLimitsDescription } from "./output.ts";
 import { searchOptions, extractOptions } from "./options.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { keyHint, type AgentToolResult } from "@earendil-works/pi-coding-agent";
+import { keyHint, type AgentToolResult, type Theme } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 
 import type { TavilySearchResponse, TavilyExtractResponse } from "@tavily/core";
@@ -52,6 +52,10 @@ function renderMetadata(result: AgentToolResult<unknown>, expanded: boolean) {
 	if (data?.fullOutputPath) text += `\nFull output: ${data.fullOutputPath}`;
 	if (data?.fullResponsePath) text += `\nFull structured response: ${data.fullResponsePath}`;
 	return text;
+}
+
+function renderArguments(args: object, theme: Theme, expanded: boolean) {
+	return expanded ? `\n${theme.fg("muted", JSON.stringify(args, null, 2))}` : "";
 }
 
 function formatImages(images: (TavilyImage | string)[]) {
@@ -152,12 +156,13 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 			}
 		},
 
-		renderCall(args, theme) {
+		renderCall(args, theme, context) {
 			let text = theme.fg("toolTitle", theme.bold("tavily_search "));
 			text += theme.fg("muted", `"${args.query}"`);
 			if (args.topic && args.topic !== "general") {
 				text += theme.fg("dim", ` [${args.topic}]`);
 			}
+			text += renderArguments(args, theme, context.expanded);
 			return new Text(text, 0, 0);
 		},
 
@@ -234,7 +239,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 			}
 		},
 
-		renderCall(args, theme) {
+		renderCall(args, theme, context) {
 			let text = theme.fg("toolTitle", theme.bold("tavily_extract "));
 			const urls = args.urls ?? [];
 			if (urls.length === 0) {
@@ -244,6 +249,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 			} else {
 				text += theme.fg("muted", `${urls.length} URLs`);
 			}
+			text += renderArguments(args, theme, context.expanded);
 			return new Text(text, 0, 0);
 		},
 

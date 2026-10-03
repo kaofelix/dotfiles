@@ -151,7 +151,11 @@ they can contain sensitive queries or retrieved content. A reload keeps existing
 artifact paths usable until the OS or user removes the files.
 
 The compact UI shows three search sources or two extraction page previews.
-Expanded search shows every retained source, not only the first ten. Both views
+Expanded call headers show every supplied argument as formatted JSON, including
+search depth, auto parameters, extraction intent and the complete requested URL
+list. Compact headers retain the query or URL-count summary; headers tolerate
+streaming, incomplete arguments. Expanded search shows every retained source,
+not only the first ten. Both views
 show returned credit usage (including zero), truncation and artifact paths;
 expanded views additionally show request identifiers and applied auto parameters.
 Tavily credits are **not** added to Pi's model-token usage accounting.

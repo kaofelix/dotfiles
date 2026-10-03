@@ -57,7 +57,12 @@ try {
       for (const source of data.results) if (source.rawContent) assert.ok(text.includes(source.rawContent));
       for (const image of data.images ?? []) assert.ok(text.includes(image.url));
     }
-    const views = [false, true].map(expanded => tool.renderResult!(result, {expanded, isPartial: false}, theme as any, {} as any).render(100).join('\n'));
+    const views = [false, true].map(expanded => {
+      const context = {args: params, expanded, isError: result.isError === true};
+      return [tool.renderCall!(params, theme as any, context as any),
+        tool.renderResult!(result, {expanded, isPartial: false}, theme as any, context as any)]
+        .map(view => view.render(100).join('\n')).join('\n');
+    });
     await writeFile(join(directory, `${name}-result.json`), JSON.stringify(data, null, 2), {mode: 0o600});
     await writeFile(join(directory, `${name}-render.txt`), views.join('\n\n--- EXPANDED ---\n\n'), {mode: 0o600});
     summary.push({tool: name, results: data.resultCount, credits: data.usage?.credits, requestId: data.requestId, truncated: data.truncated});
