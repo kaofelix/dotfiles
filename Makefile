@@ -3,7 +3,7 @@ SOURCE_DIR := $(CURDIR)
 TARGET_DIR ?= $(HOME)
 CHEZMOI_ARGS = --source=$(SOURCE_DIR) --destination=$(TARGET_DIR)
 
-.PHONY: apply diff verify add setup update gh-config pi-auth pifind-deps pi-extension-deps shell-completions test test-migration test-adoption homebrew
+.PHONY: apply diff verify add setup update gh-config pi-auth pifind-deps pi-extension-deps shell-completions test homebrew
 
 apply:
 	@mkdir -p "$(TARGET_DIR)"
@@ -72,12 +72,3 @@ test:
 	npm ci --prefix home/dot_pi/agent/extensions/footer
 	npm test --prefix home/dot_pi/agent/extensions/footer
 	cd home/dot_pi/agent/extensions/pi-herdr && bun install --no-save && bun test
-
-# Full isolated Stow-vs-chezmoi parity, idempotence, and verify checks.
-test-migration:
-	./scripts/validate-chezmoi-migration
-	./scripts/test-chezmoi-external
-	$(MAKE) test-adoption
-
-test-adoption:
-	./tests/adopt-from-stow.test.sh

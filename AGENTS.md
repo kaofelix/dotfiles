@@ -9,8 +9,6 @@ applied to `$HOME`.
 - Preview target changes with `make diff`.
 - Apply with `make apply`; verify with `make verify`.
 - Run application tests with `make test`.
-- Run isolated GNU Stow baseline parity, idempotence, and external smoke checks
-  with `make test-migration`.
 - Import an intentional target-side file with `make add TARGET="$HOME/path"` or
   `chezmoi re-add "$HOME/path"`; inspect the source diff before committing.
 
@@ -31,11 +29,9 @@ unmanaged; only its 1Password reference file is tracked.
 - Pi config/extensions: `home/dot_pi/agent/`
 - Cross-agent skills: `home/dot_agents/skills/`
 - Chezmoi special files: `home/.chezmoi*`
-- Migration rationale and evidence: `docs/chezmoi-migration.md`
 
 When adding an executable script, include a shebang, useful `--help` output, and
-executable source attributes; then test the installed mode through
-`make test-migration`.
+executable source attributes; then apply and verify the installed target.
 
 `Brewfile` owns cross-platform packages and guards macOS-only applications with
 `OS.mac?`. Chezmoi templates and `.chezmoiignore` own target differences; keep

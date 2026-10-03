@@ -45,51 +45,7 @@ make apply
 make verify
 ```
 
-## Existing Stow-managed Mac
-
-Do not pull the chezmoi migration directly over a Stow checkout. Mutable Pi and
-Herdr data may live below links into that checkout and become unreachable when
-Git removes the old package directories. Instead, keep the old checkout in
-place and fetch the new version into a temporary worktree:
-
-```sh
-cd ~/dotfiles
-git status                         # must be clean
-git fetch origin
-git worktree add --detach ../dotfiles-chezmoi origin/main
-```
-
-Quit Pi, Herdr, and other programs writing below `~/.pi`, `~/.config/herdr`, or
-`~/.local`, then run the adoption helper from the temporary worktree:
-
-```sh
-../dotfiles-chezmoi/scripts/adopt-from-stow \
-  --stow-source "$HOME/dotfiles" \
-  --chezmoi-source "$HOME/dotfiles-chezmoi" \
-  --promote origin/main
-```
-
-The helper requires `chezmoi`, `git`, `python3`, and `stow`. It refuses a dirty
-checkout, creates a private rollback snapshot and Git bundle, materializes only
-links owned by the Stow checkout, unstows, restores mutable state, saves a
-chezmoi preview for inspection, applies and verifies, and finally fast-forwards
-the canonical checkout. It also configures chezmoi to use `~/dotfiles` and
-moves ignored residue from former package directories into the rollback
-folder. It prints that folder's path when complete; retain it for several days.
-
-After the setup is stable, remove the temporary worktree:
-
-```sh
-git worktree remove ../dotfiles-chezmoi
-```
-
-Use `--backup-dir DIR` to select the rollback location, or `--yes` only after a
-previously reviewed rehearsal. Run `scripts/adopt-from-stow --help` for all
-options. If `git status` is not clean, first commit or manually reconcile those
-machine-local source changes; the helper deliberately will not guess how to
-translate them into the chezmoi layout.
-
-Chezmoi writes ordinary files rather than Stow-style symlinks. Edit through
+Chezmoi writes ordinary files. Edit through
 `chezmoi edit ~/.zshrc`, edit the encoded file in `home/` directly, or import an
 intentional target-side change with `chezmoi re-add ~/.zshrc`. Add a new target
 explicitly with `make add TARGET="$HOME/path"`. Review the source diff before
@@ -150,18 +106,10 @@ git clone git@github.com:kaofelix/kao-emacs-config.git ~/.emacs.d
 
 ## Validation
 
-Run application tests and the isolated migration parity suite with:
+Run the application tests with:
 
 ```sh
 make test
-make test-migration
 ```
 
-The migration suite never touches the real home directory. It checks out the
-frozen Stow baseline into a temporary directory, Stows it into one temporary
-home, applies the frozen completed chezmoi migration into another, and compares
-every managed file's path, bytes, and mode. It also records physical file
-types, validates the intentional symlink-to-regular-file transition, applies
-twice, runs `chezmoi verify`, and requires an empty post-apply diff. See
-[`docs/chezmoi-migration.md`](docs/chezmoi-migration.md) for design decisions,
-feature review, checkpoints, and evidence.
+Preview and validate managed target state with `make diff` and `make verify`.
