@@ -3,10 +3,27 @@
   "version": "1.0.0",
   "description": "Tavily extension for Pi coding agent - web search and content extraction",
   "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3"
+  },
   "pi": {
     "extensions": ["./index.ts"]
   },
   "dependencies": {
-    "@tavily/core": "^0.0.2"
+    "@tavily/core": "^0.7.13"
   }
 }

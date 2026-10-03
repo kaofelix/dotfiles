@@ -9,86 +9,57 @@
  * - tavily_extract: Extract content from URLs
  */
 
-import { Type } from "@sinclair/typebox";
-import { StringEnum } from "@mariozechner/pi-ai";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { keyHint } from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
+import { SearchParams, ExtractParams, OutputSchema } from "./schemas.ts";
+import { toolResult, errorResult } from "./output.ts";
+import { searchOptions, extractOptions } from "./options.ts";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { keyHint, type AgentToolResult } from "@earendil-works/pi-coding-agent";
+import { Text } from "@earendil-works/pi-tui";
 
-// Types matching @tavily/core SDK
-interface TavilySearchResult {
-	title: string;
-	url: string;
-	content: string;
-	rawContent?: string;
-	score: number;
-	publishedDate: string;
+import type { TavilySearchResponse, TavilyExtractResponse } from "@tavily/core";
+import { requestTavily, type RequestRunner } from "./transport.ts";
+
+type TavilySearchResult = TavilySearchResponse["results"][number];
+type TavilyImage = TavilySearchResponse["images"][number];
+type TavilyExtractResult = TavilyExtractResponse["results"][number];
+type TavilyExtractFailedResult = TavilyExtractResponse["failedResults"][number];
+
+function getConfig(sessionId: string) {
+	const apiKey = process.env.TAVILY_API_KEY;
+	if (!apiKey) throw new Error("TAVILY_API_KEY environment variable is not set. Get your API key at https://app.tavily.com");
+	return { apiKey, projectId: process.env.TAVILY_PROJECT, sessionId, clientName: "pi-tavily" };
 }
 
-interface TavilyImage {
-	url: string;
-	description?: string;
+type RenderMetadata = {
+	usage?: TavilySearchResponse["usage"];
+	requestId?: string;
+	autoParameters?: TavilySearchResponse["autoParameters"];
+	truncated?: boolean;
+	fullOutputPath?: string;
+	fullResponsePath?: string;
+};
+
+function resultText(result: AgentToolResult<unknown>) {
+	return result.content.find(part => part.type === "text")?.text ?? "Unknown error";
 }
 
-interface TavilySearchResponse {
-	answer?: string;
-	query: string;
-	responseTime: number;
-	images: TavilyImage[];
-	results: TavilySearchResult[];
+function renderMetadata(result: AgentToolResult<unknown>, expanded: boolean) {
+	const data = result.details as RenderMetadata | undefined;
+	let text = data?.usage ? ` | ${data.usage.credits} credits` : "";
+	if (data?.truncated) text += " | truncated";
+	if (expanded && data?.requestId) text += `\nRequest: ${data.requestId}`;
+	if (expanded && data?.autoParameters) text += `\nApplied auto parameters: ${JSON.stringify(data.autoParameters)}`;
+	if (data?.fullOutputPath) text += `\nFull output: ${data.fullOutputPath}`;
+	if (data?.fullResponsePath) text += `\nFull structured response: ${data.fullResponsePath}`;
+	return text;
 }
 
-interface TavilyExtractResult {
-	url: string;
-	rawContent: string;
-}
-
-interface TavilyExtractFailedResult {
-	url: string;
-	error: string;
-}
-
-interface TavilyExtractResponse {
-	results: TavilyExtractResult[];
-	failedResults: TavilyExtractFailedResult[];
-	responseTime: number;
-}
-
-interface TavilySearchOptions {
-	searchDepth?: "basic" | "advanced";
-	topic?: "general" | "news" | "finance";
-	days?: number;
-	maxResults?: number;
-	includeImages?: boolean;
-	includeImageDescriptions?: boolean;
-	includeAnswer?: boolean;
-	includeRawContent?: boolean;
-	includeDomains?: string[];
-	excludeDomains?: string[];
-	maxTokens?: number;
-}
-
-// Lazy-loaded Tavily client
-let tavilyClient: {
-	search: (query: string, options?: TavilySearchOptions) => Promise<TavilySearchResponse>;
-	extract: (urls: string[]) => Promise<TavilyExtractResponse>;
-} | null = null;
-
-function getClient() {
-	if (!tavilyClient) {
-		const apiKey = process.env.TAVILY_API_KEY;
-		if (!apiKey) {
-			throw new Error("TAVILY_API_KEY environment variable is not set. Get your API key at https://app.tavily.com");
-		}
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		const { tavily } = require("@tavily/core");
-		tavilyClient = tavily({ apiKey });
-	}
-	return tavilyClient;
+function formatImages(images: (TavilyImage | string)[]) {
+	return images.map(image => typeof image === "string" ? `- ${image}` : `- ${image.url}${image.description ? ` — ${image.description}` : ""}`).join("\n");
 }
 
 // Format search results for display
-function formatSearchResults(results: TavilySearchResult[], answer?: string): string {
+export function formatSearchResults(results: TavilySearchResult[], answer?: string, images: TavilyImage[] = []): string {
 	let output = "";
 
 	if (answer) {
@@ -100,9 +71,15 @@ function formatSearchResults(results: TavilySearchResult[], answer?: string): st
 		const result = results[i];
 		output += `### ${i + 1}. [${result.title}](${result.url})\n`;
 		output += `${result.content}\n`;
+		if (result.rawContent) output += `\n${result.rawContent}\n`;
+		if (result.images?.length) output += `\nImages:\n${formatImages(result.images)}\n`;
 		output += `*Score: ${result.score.toFixed(2)}*\n\n`;
 	}
 
+	if (images.length) {
+		output += "## Images\n\n";
+		output += formatImages(images) + "\n";
+	}
 	return output;
 }
 
@@ -111,8 +88,9 @@ function formatExtractResults(results: TavilyExtractResult[], failedResults: Tav
 	let output = "## Extracted Content\n\n";
 
 	for (const result of results) {
-		output += `### ${result.url}\n\n`;
+		output += `### ${result.title ? `[${result.title}](${result.url})` : result.url}\n\n`;
 		output += result.rawContent;
+		if (result.images?.length) output += `\n\nImages:\n${formatImages(result.images)}`;
 		output += "\n\n---\n\n";
 	}
 
@@ -126,121 +104,38 @@ function formatExtractResults(results: TavilyExtractResult[], failedResults: Tav
 	return output;
 }
 
-export default function tavilyExtension(pi: ExtensionAPI) {
+export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = requestTavily) {
 	// Register tavily_search tool
 	pi.registerTool({
 		name: "tavily_search",
 		label: "Tavily Search",
 		description:
-			"Search the web for information using Tavily's AI-powered search engine. Returns relevant results with content snippets, and optionally an AI-generated answer. Use this when you need current information from the web.",
+			"Search the web for current information. Returns source snippets, optional cleaned full content, images and synthesized answers. Text and structured output are bounded to 50KB; text also to 2000 lines. Truncated responses include full-output file paths.",
+		annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
 		promptSnippet: "Search the web for current information",
 		promptGuidelines: [
 			"Use tavily_search when you need current information from the web.",
 			"Set includeAnswer to true for a quick synthesized answer to factual queries.",
 			"Use searchDepth 'advanced' for more thorough research on complex topics.",
-			"Use topic 'news' for recent events and time-sensitive information.",
+			"Use topic 'news' for recent events; timeRange or startDate/endDate also filter freshness for other topics.",
+			"Use fast or ultra-fast for low-latency lookups; exactMatch matches quoted phrases exactly.",
+			"autoParameters is opt-in and may choose advanced search (2 credits); explicit settings override inference.",
+			"Read fullOutputPath or fullResponsePath when a response is truncated.",
 		],
-		parameters: Type.Object({
-			query: Type.String({
-				description: "The search query to execute",
-			}),
-			searchDepth: Type.Optional(
-				StringEnum(["basic", "advanced"] as const, {
-					description:
-						"Search depth: 'basic' for fast results, 'advanced' for more thorough content extraction (default: 'basic')",
-				}),
-			),
-			topic: Type.Optional(
-				StringEnum(["general", "news", "finance"] as const, {
-					description: "Search topic category: 'general', 'news', or 'finance' (default: 'general')",
-				}),
-			),
-			days: Type.Optional(
-				Type.Number({
-					description: "Number of days back for news topic (default: 7)",
-				}),
-			),
-			maxResults: Type.Optional(
-				Type.Number({
-					description: "Maximum number of results to return (1-20, default: 5)",
-					minimum: 1,
-					maximum: 20,
-					default: 5,
-				}),
-			),
-			includeAnswer: Type.Optional(
-				Type.Boolean({
-					description: "Include AI-generated answer based on search results (default: false)",
-				}),
-			),
-			includeRawContent: Type.Optional(
-				Type.Boolean({
-					description: "Include full HTML content of each result (default: false)",
-				}),
-			),
-			includeDomains: Type.Optional(
-				Type.Array(Type.String(), {
-					description: "List of domains to specifically include in search results",
-				}),
-			),
-			excludeDomains: Type.Optional(
-				Type.Array(Type.String(), {
-					description: "List of domains to exclude from search results",
-				}),
-			),
-			includeImages: Type.Optional(
-				Type.Boolean({
-					description: "Include related image URLs in response (default: false)",
-				}),
-			),
-			includeImageDescriptions: Type.Optional(
-				Type.Boolean({
-					description: "Include image descriptions (default: false)",
-				}),
-			),
-		}),
+		parameters: SearchParams,
+		outputSchema: OutputSchema,
 
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const client = getClient();
-
+		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			try {
-				const options: TavilySearchOptions = {
-					maxResults: params.maxResults ?? 5, // Default to 5 results
-				};
-				if (params.searchDepth) options.searchDepth = params.searchDepth;
-				if (params.topic) options.topic = params.topic;
-				if (params.days !== undefined) options.days = params.days;
-				if (params.maxResults !== undefined) options.maxResults = params.maxResults;
-				if (params.includeAnswer !== undefined) options.includeAnswer = params.includeAnswer;
-				if (params.includeRawContent !== undefined) options.includeRawContent = params.includeRawContent;
-				if (params.includeDomains) options.includeDomains = params.includeDomains;
-				if (params.excludeDomains) options.excludeDomains = params.excludeDomains;
-				if (params.includeImages !== undefined) options.includeImages = params.includeImages;
-				if (params.includeImageDescriptions !== undefined)
-					options.includeImageDescriptions = params.includeImageDescriptions;
+				const options = searchOptions(params);
 
-				const response: TavilySearchResponse = await client.search(params.query, options);
+				const response = await run({ operation: "search", input: params.query, options }, getConfig(ctx.sessionManager.getSessionId()), signal) as TavilySearchResponse;
 
-				const formatted = formatSearchResults(response.results, response.answer);
+				const formatted = formatSearchResults(response.results, response.answer, response.images);
 
-				return {
-					content: [{ type: "text", text: formatted }],
-					details: {
-						query: response.query,
-						resultCount: response.results.length,
-						responseTime: response.responseTime,
-						images: response.images,
-						results: response.results,
-						answer: response.answer,
-					},
-				};
+				return await toolResult("search", response, formatted);
 			} catch (error) {
-				const message = error instanceof Error ? error.message : String(error);
-				return {
-					content: [{ type: "text", text: `Search failed: ${message}` }],
-					isError: true,
-					details: { error: message },
-				};
+				return errorResult("search", error);
 			}
 		},
 
@@ -255,7 +150,7 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 
 		renderResult(result, { expanded }, theme) {
 			if (result.isError) {
-				return new Text(theme.fg("error", `✗ ${result.content[0]?.text || "Unknown error"}`), 0, 0);
+				return new Text(theme.fg("error", `✗ ${resultText(result)}`) + theme.fg("muted", renderMetadata(result, expanded)), 0, 0);
 			}
 
 			const details = result.details as {
@@ -265,9 +160,9 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 				results?: TavilySearchResult[];
 			};
 
-			// Compact: 3 results; Expanded: 10 results
+			// Compact: 3 results; expanded: every returned source
 			const compactLimit = 3;
-			const expandedLimit = 10;
+			const expandedLimit = Infinity;
 
 			const limit = expanded ? expandedLimit : compactLimit;
 			const allResults = details?.results ?? [];
@@ -276,7 +171,7 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 
 			// Header line with count and time
 			const headerText = `${count} ${count === 1 ? "result" : "results"} (${details?.responseTime?.toFixed(2) ?? "?"}s)`;
-			let text = theme.fg("muted", headerText);
+			let text = theme.fg("muted", headerText + renderMetadata(result, expanded));
 
 			// Content - show titles with scores
 			for (const r of results) {
@@ -286,7 +181,7 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 
 			// Truncation hint at the end
 			if (!expanded && allResults.length > compactLimit) {
-				text += `\n\n${theme.fg("muted", `... (${allResults.length - compactLimit} more results, ${keyHint("expandTools", "to expand")})`)}`;
+				text += `\n\n${theme.fg("muted", `... (${allResults.length - compactLimit} more results, ${keyHint("app.tools.expand", "to expand")})`)}`;
 			}
 
 			return new Text(text, 0, 0);
@@ -298,45 +193,30 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 		name: "tavily_extract",
 		label: "Tavily Extract",
 		description:
-			"Extract and parse content from web URLs. Returns cleaned and structured content. Useful for reading articles, documentation, or any web content.",
+			"Read cleaned content from HTTP(S) URLs, optionally selecting relevant chunks with query. Text and structured output are bounded to 50KB; text also to 2000 lines. Truncated responses include full-output file paths.",
+		annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
 		promptSnippet: "Extract content from web URLs",
 		promptGuidelines: [
 			"Use tavily_extract to read content from specific URLs.",
 			"Provide multiple URLs (up to 20) for batch extraction.",
+			"For focused reading, provide query and chunksPerSource; omit query when the entire page is needed.",
+			"Advanced extraction improves tables and embedded content but costs 2 credits per 5 successful URLs.",
+			"Partial failures retain successful pages; retry only failed URLs if needed.",
+			"Read fullOutputPath or fullResponsePath when a response is truncated.",
 		],
-		parameters: Type.Object({
-			urls: Type.Array(Type.String(), {
-				description: "List of URLs to extract content from (max 20)",
-				minItems: 1,
-				maxItems: 20,
-			}),
-		}),
+		parameters: ExtractParams,
+		outputSchema: OutputSchema,
 
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const client = getClient();
-
+		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			try {
-				const response: TavilyExtractResponse = await client.extract(params.urls);
+				const options = extractOptions(params);
+				const response = await run({ operation: "extract", input: params.urls, options }, getConfig(ctx.sessionManager.getSessionId()), signal) as TavilyExtractResponse;
 
 				const formatted = formatExtractResults(response.results, response.failedResults);
 
-				return {
-					content: [{ type: "text", text: formatted }],
-					details: {
-						successCount: response.results.length,
-						failedCount: response.failedResults.length,
-						responseTime: response.responseTime,
-						results: response.results,
-						failedResults: response.failedResults,
-					},
-				};
+				return await toolResult("extract", response, formatted);
 			} catch (error) {
-				const message = error instanceof Error ? error.message : String(error);
-				return {
-					content: [{ type: "text", text: `Extraction failed: ${message}` }],
-					isError: true,
-					details: { error: message },
-				};
+				return errorResult("extract", error);
 			}
 		},
 
@@ -353,7 +233,7 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 
 		renderResult(result, { expanded }, theme) {
 			if (result.isError) {
-				return new Text(theme.fg("error", `✗ ${result.content[0]?.text || "Unknown error"}`), 0, 0);
+				return new Text(theme.fg("error", `✗ ${resultText(result)}`) + theme.fg("muted", renderMetadata(result, expanded)), 0, 0);
 			}
 
 			const details = result.details as {
@@ -363,16 +243,6 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 				results?: TavilyExtractResult[];
 				failedResults?: TavilyExtractFailedResult[];
 			};
-
-			// If all extractions failed, show as error
-			if (details?.successCount === 0 && details?.failedCount && details.failedCount > 0) {
-				const failed = details.failedResults ?? [];
-				let text = theme.fg("error", `✗ All ${failed.length} URL${failed.length === 1 ? "" : "s"} failed`);
-				for (const f of failed) {
-					text += `\n${theme.fg("error", `  • ${f.url}: ${f.error}`)}`;
-				}
-				return new Text(text, 0, 0);
-			}
 
 			// Compact: 2 pages with 2 preview lines; Expanded: all content
 			const compactPageLimit = 2;
@@ -386,7 +256,7 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 			if (details?.failedCount && details.failedCount > 0) {
 				text += theme.fg("muted", " (") + theme.fg("error", `${details.failedCount} failed`) + theme.fg("muted", ")");
 			}
-			text += theme.fg("muted", ` (${details?.responseTime?.toFixed(2) ?? "?"}s)`);
+			text += theme.fg("muted", ` (${details?.responseTime?.toFixed(2) ?? "?"}s)` + renderMetadata(result, expanded));
 
 			// Content
 			const pageLimit = expanded ? Infinity : compactPageLimit;
@@ -422,7 +292,7 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 					hints.push(`${allResults.length - compactPageLimit} more pages`);
 				}
 				if (hints.length > 0) {
-					text += `\n\n${theme.fg("muted", `... (${hints.join(", ")}, ${keyHint("expandTools", "to expand")})`)}`;
+					text += `\n\n${theme.fg("muted", `... (${hints.join(", ")}, ${keyHint("app.tools.expand", "to expand")})`)}`;
 				}
 			}
 
@@ -440,7 +310,7 @@ export default function tavilyExtension(pi: ExtensionAPI) {
 
 	// Notify on session start
 	pi.on("session_start", async (_event, ctx) => {
-		if (!process.env.TAVILY_API_KEY) {
+		if (!process.env.TAVILY_API_KEY && ctx.hasUI) {
 			ctx.ui.notify("Tavily: Set TAVILY_API_KEY to enable web search and extraction", "info");
 		}
 	});

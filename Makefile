@@ -73,4 +73,7 @@ test:
 	npm test --prefix packages/pifind
 	npm ci --prefix packages/pi-footer
 	npm test --prefix packages/pi-footer
+	npm ci --prefix packages/pi-tavily
+	npm test --prefix packages/pi-tavily
+	npm run typecheck --prefix packages/pi-tavily
 	cd home/dot_pi/agent/extensions/pi-herdr && bun install --no-save && bun test
