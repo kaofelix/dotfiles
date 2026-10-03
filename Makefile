@@ -42,11 +42,11 @@ shell-completions:
 	./scripts/run-with-homebrew mise exec -- "$(TARGET_DIR)/.local/bin/update-zsh-completions"
 
 pifind-deps:
-	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(TARGET_DIR)/.local/lib/pifind"
+	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(SOURCE_DIR)/packages/pifind"
 
 pi-extension-deps:
-	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(TARGET_DIR)/.pi/agent/extensions/footer"
-	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(TARGET_DIR)/.pi/agent/extensions/tavily"
+	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(SOURCE_DIR)/packages/pi-footer"
+	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(SOURCE_DIR)/packages/pi-tavily"
 
 gh-config:
 	./scripts/run-with-homebrew mise exec -- gh config set git_protocol ssh --host github.com
@@ -59,6 +59,8 @@ update:
 	./scripts/run-with-homebrew brew upgrade
 	./scripts/run-with-homebrew mise upgrade
 	$(MAKE) apply
+	$(MAKE) pifind-deps
+	$(MAKE) pi-extension-deps
 	$(MAKE) shell-completions
 
 # Application tests do not touch HOME.
@@ -67,8 +69,8 @@ test:
 	bun test tests/python-env.test.ts
 	./tests/pi-auth-setup.test.sh
 	./tests/pi-auth-setup-generation.test.sh
-	npm ci --prefix home/dot_local/lib/pifind
-	npm test --prefix home/dot_local/lib/pifind
-	npm ci --prefix home/dot_pi/agent/extensions/footer
-	npm test --prefix home/dot_pi/agent/extensions/footer
+	npm ci --prefix packages/pifind
+	npm test --prefix packages/pifind
+	npm ci --prefix packages/pi-footer
+	npm test --prefix packages/pi-footer
 	cd home/dot_pi/agent/extensions/pi-herdr && bun install --no-save && bun test

@@ -37,6 +37,6 @@ PI_SESSIONS_DUCKDB_SKILL_DIR=/path/to/pi-sessions-duckdb pifind "query"
 ## Development
 
 ```bash
-cd home/dot_local/lib/pifind
+cd packages/pifind
 npm test
 ```

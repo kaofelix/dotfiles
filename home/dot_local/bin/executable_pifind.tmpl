@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+
+exec node {{ joinPath .chezmoi.workingTree "packages/pifind/cli.js" | quote }} "$@"

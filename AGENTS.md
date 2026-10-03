@@ -26,7 +26,7 @@ unmanaged; only its 1Password reference file is tracked.
 
 - Shell config: `home/dot_zshrc.tmpl`
 - Executable scripts: `home/dot_local/bin/executable_*`
-- Pi config/extensions: `home/dot_pi/agent/`
+- Pi config: `home/dot_pi/agent/`; local software and Pi packages: `packages/`
 - Cross-agent skills: `home/dot_agents/skills/`
 - Chezmoi special files: `home/.chezmoi*`
 

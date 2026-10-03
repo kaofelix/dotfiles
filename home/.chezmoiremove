@@ -1,3 +1,8 @@
+# Local software now runs directly from the dotfiles checkout.
+.local/lib/pifind
+.pi/agent/extensions/footer
+.pi/agent/extensions/tavily
+
 # Retired global Cloudflare skills. Keep these removal rules so existing
 # installations converge even though .agents/skills remains non-exact.
 .agents/skills/agents-sdk

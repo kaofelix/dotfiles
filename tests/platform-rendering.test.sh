@@ -8,7 +8,15 @@ trap 'rm -rf "$tmp"' EXIT
 render() {
     platform=$1
     destination=$tmp/$platform-home
-    mkdir -p "$destination" "$tmp/$platform-cache"
+    mkdir -p \
+        "$destination/.local/lib/pifind/node_modules/example" \
+        "$destination/.pi/agent/extensions/footer/node_modules/example" \
+        "$destination/.pi/agent/extensions/tavily/node_modules/example" \
+        "$tmp/$platform-cache"
+    touch \
+        "$destination/.local/lib/pifind/node_modules/example/file" \
+        "$destination/.pi/agent/extensions/footer/node_modules/example/file" \
+        "$destination/.pi/agent/extensions/tavily/node_modules/example/file"
     : > "$tmp/$platform-config.toml"
     "$repo_root/scripts/run-with-homebrew" chezmoi \
         --source "$repo_root" \
@@ -56,6 +64,17 @@ grep -Fq '"dash"' "$mac/.pi/agent/mcp.json"
 assert_not_contains '"dash"' "$linux/.pi/agent/mcp.json"
 python3 -m json.tool "$mac/.pi/agent/mcp.json" >/dev/null
 python3 -m json.tool "$linux/.pi/agent/mcp.json" >/dev/null
+
+# Local software is loaded from the checkout rather than copied into HOME.
+for target_home in "$mac" "$linux"; do
+    python3 -m json.tool "$target_home/.pi/agent/settings.json" >/dev/null
+    grep -Fq "$repo_root/packages/pi-footer" "$target_home/.pi/agent/settings.json"
+    grep -Fq "$repo_root/packages/pi-tavily" "$target_home/.pi/agent/settings.json"
+    grep -Fq "$repo_root/packages/pifind/cli.js" "$target_home/.local/bin/pifind"
+    [[ ! -e "$target_home/.pi/agent/extensions/footer" ]]
+    [[ ! -e "$target_home/.pi/agent/extensions/tavily" ]]
+    [[ ! -e "$target_home/.local/lib/pifind" ]]
+done
 
 # The wrapper must adopt Homebrew's shell environment before running a command.
 mkdir -p "$tmp/fake-bin"

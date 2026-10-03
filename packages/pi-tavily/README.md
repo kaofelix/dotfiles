@@ -13,13 +13,13 @@ This extension provides web search and content extraction capabilities via [Tavi
    
    You can add this to your shell profile (e.g., `~/.zshrc`) for persistence.
 
-3. Install dependencies (in this directory):
+3. Install dependencies from the dotfiles checkout:
    ```bash
-   cd ~/.pi/agent/extensions/tavily
-   npm install
+   make pi-extension-deps
    ```
 
-4. Reload pi with `/reload` or restart pi
+4. Apply the dotfiles, then reload Pi with `/reload` or restart it. Pi loads
+   this extension directly from the checkout as a local package.
 
 ## Tools
 

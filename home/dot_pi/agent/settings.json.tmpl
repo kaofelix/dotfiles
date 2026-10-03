@@ -11,6 +11,12 @@
   "tuiMode": "fullscreen",
   "packages": [
     {
+      "source": {{ joinPath .chezmoi.workingTree "packages/pi-footer" | toJson }}
+    },
+    {
+      "source": {{ joinPath .chezmoi.workingTree "packages/pi-tavily" | toJson }}
+    },
+    {
       "source": "git:github.com/steipete/agent-scripts",
       "skills": [
         "skills/swiftui-view-refactor",

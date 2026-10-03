@@ -4,7 +4,9 @@ These macOS and Linux dotfiles are managed by
 [chezmoi](https://www.chezmoi.io/). The repository uses `home/` as its chezmoi
 source state (selected by
 [`.chezmoiroot`](.chezmoiroot)); files elsewhere in the repository are project
-documentation, tests, or automation and are not copied into `$HOME`.
+documentation, tests, automation, or local software and are not copied into
+`$HOME`. Pi extensions and `pifind` run directly from `packages/` in this
+checkout; setup installs their locked dependencies there.
 
 ## New machine
 
