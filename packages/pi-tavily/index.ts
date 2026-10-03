@@ -109,6 +109,7 @@ function formatExtractResults(results: TavilyExtractResult[], failedResults: Tav
 }
 
 export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = requestTavily) {
+	const constrainedSampling = {type: "json_schema", strict: "prefer"} as const;
 	const namespace = {
 		name: "tavily",
 		description: "Web search and page extraction with source URLs and credit reporting",
@@ -140,6 +141,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 			"Read fullOutputPath or fullResponsePath when a response is truncated.",
 		],
 		parameters: SearchParams,
+		constrainedSampling,
 		outputSchema: OutputSchema,
 
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
@@ -224,6 +226,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 			"Read fullOutputPath or fullResponsePath when a response is truncated.",
 		],
 		parameters: ExtractParams,
+		constrainedSampling,
 		outputSchema: OutputSchema,
 
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {

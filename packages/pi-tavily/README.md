@@ -19,6 +19,15 @@ The package uses the host's `@earendil-works/pi-*` and `typebox` peer packages.
 Development and tests require Node.js 22 or newer. Tools also work in Pi's
 non-interactive modes; they do not require a terminal UI.
 
+Both tools request Pi's JSON-schema constrained sampling with `strict: "prefer"`.
+Capable providers enforce compatible argument schemas during generation; Pi
+falls back to ordinary tool calling when a provider or schema cannot support
+strict enforcement. For example, Anthropic currently rejects several of our
+length/range constraints in strict mode, so Pi sends those tools non-strict
+without removing the constraints. Local schema and option-combination validation
+always remains active before Tavily requests. Pi also normalizes optional nulls
+from strict provider calls back to omitted options; extension defaults are unchanged.
+
 ## Search
 
 `tavily_search` accepts the following camelCase parameters:
