@@ -23,7 +23,8 @@ test('footer extension owns its subscription usage implementation', () => {
 
   assert.equal(pkg.name, 'pi-footer-extension');
   assert.equal(pkg.type, 'module');
-  assert.deepEqual(pkg.dependencies, { typebox: '^1.1.24' });
+  assert.equal(pkg.dependencies, undefined);
+  assert.equal(pkg.peerDependencies.typebox, '*');
   assert.deepEqual(pkg.pi.extensions, ['./src/index.ts']);
   for (const requiredPath of [
     usageCorePath,
