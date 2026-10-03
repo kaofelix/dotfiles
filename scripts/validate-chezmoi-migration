@@ -26,6 +26,7 @@ BASELINE_FILE = ROOT / "migration" / "stow-baseline-revision"
 CHEZMOI_REVISION_FILE = ROOT / "migration" / "chezmoi-migration-revision"
 PACKAGE_FILE = ROOT / "migration" / "packages.txt"
 EXPECTED_DIFFERENCES_FILE = ROOT / "migration" / "expected-differences.json"
+REMOVALS_FILE = ROOT / "home" / ".chezmoiremove"
 
 
 def run(*args: str, cwd: Path | None = None, capture: bool = False) -> str:
@@ -111,6 +112,20 @@ def baseline_entries(source: Path, packages: list[str]) -> dict[str, Path]:
                         f"{previous} and {path}"
                     )
     return entries
+
+
+def removal_rules() -> list[str]:
+    if not REMOVALS_FILE.exists():
+        return []
+    return [
+        line.strip().rstrip("/")
+        for line in REMOVALS_FILE.read_text().splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+
+
+def is_removed(path: str, rules: list[str]) -> bool:
+    return any(path == rule or path.startswith(f"{rule}/") for rule in rules)
 
 
 def semantic_manifest(home: Path, entries: dict[str, Path]) -> list[dict[str, Any]]:
@@ -231,7 +246,10 @@ def main() -> int:
                 cwd=baseline_source,
             )
 
-        entries = baseline_entries(baseline_source, packages)
+        baseline = baseline_entries(baseline_source, packages)
+        removals = removal_rules()
+        retired = {path for path in baseline if is_removed(path, removals)}
+        entries = {path: source for path, source in baseline.items() if path not in retired}
         baseline_semantic = semantic_manifest(baseline_home, entries)
         baseline_physical = physical_manifest(baseline_home, baseline_source)
 
@@ -274,10 +292,12 @@ def main() -> int:
         )
         managed = {line for line in managed_output.splitlines() if line}
         expected = set(entries)
-        if managed != expected:
+        missing = expected - managed
+        retained = retired & managed
+        if missing or retained:
             raise RuntimeError(
-                "managed leaf set differs from selected baseline packages: "
-                f"missing={sorted(expected - managed)}, extra={sorted(managed - expected)}"
+                "managed leaf set violates the retained baseline: "
+                f"missing={sorted(missing)}, retired_but_managed={sorted(retained)}"
             )
 
         chezmoi_semantic = semantic_manifest(chezmoi_home, entries)
@@ -336,7 +356,10 @@ def main() -> int:
             "baseline_revision": baseline_revision,
             "chezmoi_revision": chezmoi_revision,
             "packages": packages,
-            "managed_leaf_count": len(expected),
+            "managed_leaf_count": len(managed),
+            "retained_baseline_leaf_count": len(expected),
+            "retired_baseline_leaf_count": len(retired),
+            "post_baseline_leaf_count": len(managed - expected),
             "semantic_difference_count": len(mismatches),
             "expected_difference_count": len(expected_differences),
             "unexplained_difference_count": len(unexplained_differences),

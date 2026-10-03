@@ -34,9 +34,12 @@ permissions, templates, encryption, and atomic target updates. The physical
 manifests therefore require Stow's links to resolve into the frozen source and
 require zero links in chezmoi's managed file tree. Semantic manifests
 dereference those implementation links and require exact equality of every
-managed path, SHA-256 digest, size, and mode except the two installed usage
-documents in `migration/expected-differences.json`. That narrow allowlist names
-permitted fields and rationale; any other difference fails validation.
+retained baseline path, SHA-256 digest, size, and mode except the two installed
+usage documents in `migration/expected-differences.json`. Paths covered by a
+reviewed `.chezmoiremove` rule are verified as retired, while newly managed
+post-baseline paths are reported separately. The narrow content allowlist names
+permitted fields and rationale; any other retained-path difference fails
+validation.
 
 ## Incremental checkpoints
 
@@ -89,7 +92,7 @@ This review targets chezmoi 2.72.2 and links to the current official
 | [`run_`, `run_once_`, and `run_onchange_` scripts](https://www.chezmoi.io/user-guide/use-scripts-to-perform-actions/) | **Rejected for package installs and secret generation** | Official guidance says scripts break the declarative model and must remain idempotent. Making ordinary `apply` upgrade Homebrew, install runtimes, or request secrets would be surprising and unsafe in validation. `make setup` and `make update` keep these explicit. |
 | `create_` files | **Rejected for `.zshrc.local`** | Chezmoi would need to own initial contents while this file is intentionally optional, machine-local, and potentially secret. Documentation is sufficient and avoids creating an empty customization file everywhere. |
 | `modify_` files | **Rejected currently** | All tracked targets are wholly owned configuration. Partial mutation adds ordering and merge complexity with no present mixed-ownership target. The Pi credential merger remains an explicit application operation rather than pretending `auth.json` is managed state. |
-| [Removal declarations](https://www.chezmoi.io/user-guide/manage-different-types-of-file/) | **Use only for an explicit cleanup migration** | Automatically deleting files absent from source would differ from Stow and risks runtime state. There is currently no obsolete target that must be removed. |
+| [Removal declarations](https://www.chezmoi.io/user-guide/manage-different-types-of-file/) | **Use only for explicit cleanup migrations** | Automatically deleting files absent from source would differ from Stow and risks runtime state. `.chezmoiremove` is reserved for reviewed retirements, such as removing formerly global Cloudflare skills while keeping `.agents/skills` non-exact. |
 | Config template (`.chezmoi.toml.tmpl`) | **Not needed** | No custom data or non-default config is required. Commands pass `--source` when operating from this clone, and normal `chezmoi init` records its source directory. Avoiding an empty config template keeps bootstrap noninteractive. |
 | Automatic commit/push | **Rejected** | Explicit Git review is important for a configuration repository that includes agent code and security-sensitive references. `chezmoi re-add`, diff review, and normal Git commands are clearer. |
 | Package manager integrations | **Keep Brewfile and mise** | Chezmoi's mechanism is scripts; it does not provide a more declarative package schema. Existing Brewfile and mise config remain the respective tools' native manifests, invoked explicitly by Make. |
@@ -107,7 +110,8 @@ and [setup workflow](https://www.chezmoi.io/user-guide/setup/): inspect with
 - `make add TARGET=...` replaces Stow `--adopt` with an explicit chezmoi import.
 - There is intentionally no `unstow`: chezmoi manages desired content rather
   than links. Removal must be an explicit reviewed target operation, not a
-  broad source-and-destination destructive command.
+  broad source-and-destination destructive command. When a committed removal
+  must propagate to other machines, record its target path in `.chezmoiremove`.
 - `make setup` installs chezmoi through Brew before applying. The apply creates
   the target files and zgenom external before commands use installed scripts.
 - `make update` upgrades Brew/mise, reapplies source state (including eligible

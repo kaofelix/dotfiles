@@ -1,0 +1,14 @@
+# Retired global Cloudflare skills. Keep these removal rules so existing
+# installations converge even though .agents/skills remains non-exact.
+.agents/skills/agents-sdk
+.agents/skills/cloudflare
+.agents/skills/cloudflare-email-service
+.agents/skills/cloudflare-one
+.agents/skills/cloudflare-one-migrations
+.agents/skills/durable-objects
+.agents/skills/sandbox-migrate-to-next
+.agents/skills/sandbox-next
+.agents/skills/sandbox-stable
+.agents/skills/turnstile-spin
+.agents/skills/workers-best-practices
+.agents/skills/wrangler
