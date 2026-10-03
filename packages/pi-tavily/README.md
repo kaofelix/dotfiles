@@ -129,15 +129,23 @@ Markdown. Direct model calls receive readable text. Results expose:
 
 Requested raw content, image URLs and descriptions are included in model-facing
 text, not only rendering metadata. Text is limited to 50 KiB / 2,000 lines,
-including the truncation notice. Serialized structured output is limited to
-50 KiB. Rendering details use the same bounded structured data.
+including the truncation notice. Rendering details are independently limited to
+50 KiB. Codemode's serialized structured output has a separate 1 MiB budget,
+matching Pi's shell-tool policy, so scripts can filter more complete data before
+printing a small result. A shortened text or UI preview does not shorten a
+structured response that fits its own budget.
 
-If either representation is too large, full Markdown and JSON are written into
+If any representation is too large, full Markdown and JSON are written into
 a private `pi-tavily-*` temporary directory, with file permissions `0600`. JSON
-previews clip strings to 512 bytes / 20 lines; exceptionally large arrays return
+previews clip strings to 512 bytes / 20 lines only when that representation
+exceeds its budget; exceptionally large arrays return
 totals and artifact paths rather than invalid JSON fragments. Preview strings,
 including URLs, can be shortened: consult the full response before using them.
 The full JSON artifact stores the complete result envelope before truncation.
+In codemode, `truncated` describes the structured response itself; it may be false
+while model text or UI previews are shortened. Artifact paths can therefore be
+present even when structured `truncated` is false. Rendering details mark
+truncation when text or UI data is shortened.
 Artifacts are not auto-deleted, so follow normal temporary-file cleanup practices;
 they can contain sensitive queries or retrieved content. A reload keeps existing
 artifact paths usable until the OS or user removes the files.

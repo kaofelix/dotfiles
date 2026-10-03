@@ -31,8 +31,21 @@ test('codemode receives schema-valid structured results including credits, reque
   assert.deepEqual(data.autoParameters, {searchDepth: 'advanced'});
 });
 
+test('codemode retains complete data when only text and rendering previews exceed their budgets', async () => {
+  const body = 'source line\n'.repeat(5000);
+  const response = {...searchResponse, results: [{url: 'https://example.com', title: 'Guide', score: 1, id: 'source', publishedDate: '', content: 'snippet', rawContent: body}]};
+  const tool = tools(async () => response)[0];
+  const result = await tool.execute('id', {query: 'q'}, undefined, undefined, ctx);
+  const data = result.structuredContent as Record<string, any>;
+  assert.equal(data.results[0].rawContent, body);
+  assert.equal(data.truncated, false);
+  assert.ok(Buffer.byteLength(JSON.stringify(result.details)) <= 50 * 1024);
+  assert.ok((result.content[0] as {text: string}).text.includes('Full output:'));
+  assert.equal(JSON.parse(await readFile(data.fullResponsePath, 'utf8')).results[0].rawContent, body);
+});
+
 test('large output is bounded in both text and structured results with complete private artifacts', async () => {
-  const body = 'Unicode 文 😀 documentation\n'.repeat(5000);
+  const body = 'Unicode 文 😀 documentation\n'.repeat(20000);
   const response = {...searchResponse, answer: body, results: [{url: 'https://example.com', title: 'Guide', score: 1, id: 'source', publishedDate: '', content: 'snippet', rawContent: body}]};
   const tool = tools(async () => response)[0];
   const result = await tool.execute('id', {query: 'q', includeRawContent: 'markdown'}, undefined, undefined, ctx);
@@ -40,7 +53,8 @@ test('large output is bounded in both text and structured results with complete 
   const data = result.structuredContent as Record<string, any>;
   assert.ok(Buffer.byteLength(text) <= 50 * 1024);
   assert.ok(text.split('\n').length <= 2000);
-  assert.ok(Buffer.byteLength(JSON.stringify(data)) <= 50 * 1024);
+  assert.ok(Buffer.byteLength(JSON.stringify(data)) <= 1024 * 1024);
+  assert.ok(Buffer.byteLength(JSON.stringify(result.details)) <= 50 * 1024);
   assert.equal(data.truncated, true);
   assert.equal(Value.Check(tool.outputSchema!, data), true);
   assert.match(text, /Full output/);
@@ -142,7 +156,7 @@ test('snippet budgets work for basic, advanced and fast search, including the ba
 });
 
 test('oversized request errors retain complete evidence in private artifacts', async () => {
-  const message = 'Service failure detail\n'.repeat(5000);
+  const message = 'Service failure detail\n'.repeat(60000);
   const tool = tools(async () => {throw new Error(message);})[0];
   const result = await tool.execute('id', {query: 'q'}, undefined, undefined, ctx);
   const data = result.structuredContent as Record<string, any>;
@@ -155,7 +169,7 @@ test('oversized request errors retain complete evidence in private artifacts', a
 
 test('array-heavy responses preserve complete data through bounded artifact-backed summaries', async () => {
   const response = {...searchResponse, results: Array.from({length: 20}, (_, i) => ({id: `${i}`, title: 'Guide', url: `https://example.com/${i}`, score: 1, content: 'snippet', publishedDate: '',
-    images: Array.from({length: 100}, (_, j) => ({url: `https://example.com/${i}/${j}/${'a'.repeat(150)}.png`}))}))};
+    images: Array.from({length: 500}, (_, j) => ({url: `https://example.com/${i}/${j}/${'a'.repeat(150)}.png`}))}))};
   const tool = tools(async () => response)[0];
   const result = await tool.execute('id', {query: 'q'}, undefined, undefined, ctx);
   const data = result.structuredContent as Record<string, any>;
@@ -163,7 +177,8 @@ test('array-heavy responses preserve complete data through bounded artifact-back
   assert.equal(data.results.length, 0);
   assert.equal(data.truncated, true);
   assert.equal(Value.Check(tool.outputSchema!, data), true);
-  assert.ok(Buffer.byteLength(JSON.stringify(data)) <= 50 * 1024);
+  assert.ok(Buffer.byteLength(JSON.stringify(data)) <= 1024 * 1024);
+  assert.ok(Buffer.byteLength(JSON.stringify(result.details)) <= 50 * 1024);
   assert.equal(JSON.parse(await readFile(data.fullResponsePath, 'utf8')).results.length, 20);
 });
 

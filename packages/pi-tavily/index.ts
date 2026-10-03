@@ -10,7 +10,7 @@
  */
 
 import { SearchParams, ExtractParams, OutputSchema } from "./schemas.ts";
-import { toolResult, errorResult } from "./output.ts";
+import { toolResult, errorResult, outputLimitsDescription } from "./output.ts";
 import { searchOptions, extractOptions } from "./options.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { keyHint, type AgentToolResult } from "@earendil-works/pi-coding-agent";
@@ -123,7 +123,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 		namespace,
 		label: "Tavily Search",
 		description:
-			"Search the web for current information. Returns source snippets, optional cleaned full content, images and synthesized answers. Text and structured output are bounded to 50KB; text also to 2000 lines. Truncated responses include full-output file paths.",
+			"Search the web for current information. Returns source snippets, optional cleaned full content, images and synthesized answers. " + outputLimitsDescription,
 		annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
 		promptSnippet: "Search the web for current information",
 		promptGuidelines: [
@@ -207,7 +207,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 		namespace,
 		label: "Tavily Extract",
 		description:
-			"Read cleaned content from HTTP(S) URLs, optionally selecting relevant chunks with query. Text and structured output are bounded to 50KB; text also to 2000 lines. Truncated responses include full-output file paths.",
+			"Read cleaned content from HTTP(S) URLs, optionally selecting relevant chunks with query. " + outputLimitsDescription,
 		annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
 		promptSnippet: "Extract content from web URLs",
 		promptGuidelines: [

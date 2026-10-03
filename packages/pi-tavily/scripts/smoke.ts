@@ -52,7 +52,7 @@ try {
     assert.ok(data.resultCount > 0);
     assert.ok(data.requestId);
     assert.ok(data.results.some((source: {rawContent?: string}) => source.rawContent?.length));
-    if (!data.truncated) {
+    if (!(result.details as Record<string, any>).truncated) {
       const text = result.content.filter(part => part.type === 'text').map(part => part.text).join('\n');
       for (const source of data.results) if (source.rawContent) assert.ok(text.includes(source.rawContent));
       for (const image of data.images ?? []) assert.ok(text.includes(image.url));

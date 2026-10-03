@@ -5,7 +5,20 @@ import type { JsonValue } from '@earendil-works/pi-ai';
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateHead } from '@earendil-works/pi-coding-agent';
 import type { Response } from './transport.ts';
 
-const fits = (value: JsonValue) => Buffer.byteLength(JSON.stringify(value)) <= DEFAULT_MAX_BYTES;
+const STRUCTURED_MAX_BYTES = 1024 * 1024;
+export const outputLimitsDescription = `Text is bounded to ${DEFAULT_MAX_BYTES / 1024}KiB/${DEFAULT_MAX_LINES} lines; structured output to ${STRUCTURED_MAX_BYTES / (1024 * 1024)}MiB. Truncated responses include full-output file paths.`;
+const fits = (value: JsonValue, maxBytes: number) => Buffer.byteLength(JSON.stringify(value)) <= maxBytes;
+
+function boundedData(data: Record<string, JsonValue>, maxBytes: number): Record<string, JsonValue> {
+  if (fits(data, maxBytes)) return data;
+  const clipped: Record<string, JsonValue> = {...(preview(data) as Record<string, JsonValue>), truncated: true};
+  if (fits(clipped, maxBytes)) return clipped;
+  // Exceptionally large arrays retain totals and artifacts rather than invalid JSON slices.
+  const {operation, status, resultCount, successCount, failedCount, responseTime, requestId, usage, error, fullOutputPath, fullResponsePath} = clipped;
+  return JSON.parse(JSON.stringify({operation, status, resultCount, successCount, failedCount,
+    results: [], failedResults: [], truncated: true, fullOutputPath, fullResponsePath,
+    responseTime, requestId, usage, error})) as Record<string, JsonValue>;
+}
 
 /** Bound strings, including nested image descriptions, without mutating SDK data. */
 function preview(value: JsonValue): JsonValue {
@@ -20,34 +33,31 @@ function preview(value: JsonValue): JsonValue {
 
 async function boundedResult(data: object, fullText: string) {
   // Strip SDK optional undefined fields before codemode or persistence.
-  let details = JSON.parse(JSON.stringify(data)) as Record<string, JsonValue>;
+  const complete = JSON.parse(JSON.stringify(data)) as Record<string, JsonValue>;
+  let details = complete;
+  let structuredContent = complete;
   const clipped = truncateHead(fullText, {maxBytes: DEFAULT_MAX_BYTES, maxLines: DEFAULT_MAX_LINES});
   let text = fullText;
-  if (clipped.truncated || !fits(details)) {
+  if (clipped.truncated || !fits(complete, DEFAULT_MAX_BYTES)) {
     const directory = await mkdtemp(join(tmpdir(), 'pi-tavily-'));
     const fullOutputPath = join(directory, 'output.md');
     const fullResponsePath = join(directory, 'response.json');
     await Promise.all([
       writeFile(fullOutputPath, fullText, {mode: 0o600}),
-      writeFile(fullResponsePath, JSON.stringify(details, null, 2), {mode: 0o600}),
+      writeFile(fullResponsePath, JSON.stringify(complete, null, 2), {mode: 0o600}),
     ]);
-    details = preview(details) as Record<string, JsonValue>;
-    Object.assign(details, {truncated: true, fullOutputPath, fullResponsePath});
-    if (!fits(details)) {
-      // Exceptionally large arrays retain totals and artifacts rather than invalid JSON slices.
-      const {operation, status, resultCount, successCount, failedCount, responseTime, requestId, usage, error} = details;
-      details = JSON.parse(JSON.stringify({operation, status, resultCount, successCount, failedCount,
-        results: [], failedResults: [], truncated: true, fullOutputPath, fullResponsePath,
-        responseTime, requestId, usage, error})) as Record<string, JsonValue>;
-    }
+    const withPaths = {...complete, fullOutputPath, fullResponsePath};
+    structuredContent = boundedData(withPaths, STRUCTURED_MAX_BYTES);
+    details = boundedData(withPaths, DEFAULT_MAX_BYTES);
     const notice = `\n\n[Output truncated. Full output: ${fullOutputPath}\nFull structured response: ${fullResponsePath}]`;
     const noticeBytes = Buffer.byteLength(notice);
     const noticeLines = notice.split('\n').length - 1;
     if (noticeBytes >= DEFAULT_MAX_BYTES) throw new Error('Full-output file paths exceed the tool output budget');
     const head = truncateHead(fullText, {maxBytes: DEFAULT_MAX_BYTES - noticeBytes, maxLines: DEFAULT_MAX_LINES - noticeLines});
     text = head.content + notice;
+    details = {...details, truncated: true};
   }
-  return {content: [{type: 'text' as const, text}], details, structuredContent: details, isError: details.status === 'error'};
+  return {content: [{type: 'text' as const, text}], details, structuredContent, isError: complete.status === 'error'};
 }
 
 export function toolResult(operation: 'search' | 'extract', response: Response, text: string) {
