@@ -169,6 +169,14 @@ show returned credit usage (including zero), truncation and artifact paths;
 expanded views additionally show request identifiers and applied auto parameters.
 Tavily credits are **not** added to Pi's model-token usage accounting.
 
+Validated, authenticated requests emit a native pending update before calling
+Tavily: `Searching...` or `Extracting...`. These are request-state messages, not
+streamed source data or invented percentage progress; final results/errors replace
+them. Invalid, missing-key and already-cancelled calls do not announce API work.
+Updates belong to each tool call, so parallel requests do not share status state.
+Call/result renderers reuse Pi's previous `Text` component for their own slot and
+refresh its content for expansion, progress, errors and theme changes.
+
 ## Cancellation and attribution
 
 The SDK does not expose transport-level AbortSignal support. Each request runs
@@ -225,5 +233,6 @@ npm run smoke --prefix packages/pi-tavily
 This requires `TAVILY_API_KEY`, makes two searches and one extraction, and
 consumes API credits. It verifies schema-valid responses and actual codemode
 structured-result consumption, then prints an artifact directory containing
-response data and compact/expanded rendering snapshots. Its session is in-memory;
+response data and pending/compact/expanded snapshots from Pi's actual interactive
+tool component. Its session is in-memory;
 it does not change normal Pi settings, auth files or conversation history.

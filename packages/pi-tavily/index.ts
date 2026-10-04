@@ -13,7 +13,7 @@ import { SearchParams, ExtractParams, OutputSchema } from "./schemas.ts";
 import { toolResult, errorResult, outputLimitsDescription } from "./output.ts";
 import { searchOptions, extractOptions } from "./options.ts";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { keyHint, type AgentToolResult, type Theme } from "@earendil-works/pi-coding-agent";
+import { keyHint, type AgentToolResult, type Theme, type ToolDefinition, type ToolRenderResultOptions } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 
 import type { TavilySearchResponse, TavilyExtractResponse } from "@tavily/core";
@@ -23,6 +23,7 @@ type TavilySearchResult = TavilySearchResponse["results"][number];
 type TavilyImage = TavilySearchResponse["images"][number];
 type TavilyExtractResult = TavilyExtractResponse["results"][number];
 type TavilyExtractFailedResult = TavilyExtractResponse["failedResults"][number];
+type RenderContext = Parameters<NonNullable<ToolDefinition["renderCall"]>>[2];
 
 function getConfig(sessionId: string) {
 	const apiKey = process.env.TAVILY_API_KEY;
@@ -39,6 +40,10 @@ type RenderMetadata = {
 	fullResponsePath?: string;
 };
 
+function pendingResult(operation: "search" | "extract") {
+	return {content: [{type: "text" as const, text: operation === "search" ? "Searching..." : "Extracting..."}], details: {operation}};
+}
+
 function resultText(result: AgentToolResult<unknown>) {
 	return result.content.find(part => part.type === "text")?.text ?? "Unknown error";
 }
@@ -52,6 +57,20 @@ function renderMetadata(result: AgentToolResult<unknown>, expanded: boolean) {
 	if (data?.fullOutputPath) text += `\nFull output: ${data.fullOutputPath}`;
 	if (data?.fullResponsePath) text += `\nFull structured response: ${data.fullResponsePath}`;
 	return text;
+}
+
+function renderText(text: string, context: RenderContext) {
+	const component = context.lastComponent instanceof Text ? context.lastComponent : new Text("", 0, 0);
+	component.setText(text);
+	return component;
+}
+
+function renderStatus(result: AgentToolResult<unknown>, options: ToolRenderResultOptions, theme: Theme, context: RenderContext) {
+	if (context.isError) {
+		return renderText(theme.fg("error", `✗ ${resultText(result)}`) + theme.fg("muted", renderMetadata(result, options.expanded)), context);
+	}
+	if (options.isPartial) return renderText(theme.fg("muted", resultText(result)), context);
+	return undefined;
 }
 
 function renderArguments(args: object, theme: Theme, expanded: boolean) {
@@ -144,11 +163,14 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 		constrainedSampling,
 		outputSchema: OutputSchema,
 
-		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+		async execute(_toolCallId, params, signal, onUpdate, ctx) {
 			try {
 				const options = searchOptions(params);
+				const config = getConfig(ctx.sessionManager.getSessionId());
+				signal?.throwIfAborted();
+				onUpdate?.(pendingResult("search"));
 
-				const response = await run({ operation: "search", input: params.query, options }, getConfig(ctx.sessionManager.getSessionId()), signal) as TavilySearchResponse;
+				const response = await run({ operation: "search", input: params.query, options }, config, signal) as TavilySearchResponse;
 
 				const formatted = formatSearchResults(response.results, response.answer, response.images);
 
@@ -165,13 +187,13 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 				text += theme.fg("dim", ` [${args.topic}]`);
 			}
 			text += renderArguments(args, theme, context.expanded);
-			return new Text(text, 0, 0);
+			return renderText(text, context);
 		},
 
-		renderResult(result, { expanded }, theme, context) {
-			if (context.isError) {
-				return new Text(theme.fg("error", `✗ ${resultText(result)}`) + theme.fg("muted", renderMetadata(result, expanded)), 0, 0);
-			}
+		renderResult(result, options, theme, context) {
+			const {expanded} = options;
+			const status = renderStatus(result, options, theme, context);
+			if (status) return status;
 
 			const details = result.details as {
 				resultCount?: number;
@@ -204,7 +226,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 				text += `\n\n${theme.fg("muted", `... (${allResults.length - compactLimit} more results, ${keyHint("app.tools.expand", "to expand")})`)}`;
 			}
 
-			return new Text(text, 0, 0);
+			return renderText(text, context);
 		},
 	});
 
@@ -229,10 +251,13 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 		constrainedSampling,
 		outputSchema: OutputSchema,
 
-		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+		async execute(_toolCallId, params, signal, onUpdate, ctx) {
 			try {
 				const options = extractOptions(params);
-				const response = await run({ operation: "extract", input: params.urls, options }, getConfig(ctx.sessionManager.getSessionId()), signal) as TavilyExtractResponse;
+				const config = getConfig(ctx.sessionManager.getSessionId());
+				signal?.throwIfAborted();
+				onUpdate?.(pendingResult("extract"));
+				const response = await run({ operation: "extract", input: params.urls, options }, config, signal) as TavilyExtractResponse;
 
 				const formatted = formatExtractResults(response.results, response.failedResults);
 
@@ -253,13 +278,13 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 				text += theme.fg("muted", `${urls.length} URLs`);
 			}
 			text += renderArguments(args, theme, context.expanded);
-			return new Text(text, 0, 0);
+			return renderText(text, context);
 		},
 
-		renderResult(result, { expanded }, theme, context) {
-			if (context.isError) {
-				return new Text(theme.fg("error", `✗ ${resultText(result)}`) + theme.fg("muted", renderMetadata(result, expanded)), 0, 0);
-			}
+		renderResult(result, options, theme, context) {
+			const {expanded} = options;
+			const status = renderStatus(result, options, theme, context);
+			if (status) return status;
 
 			const details = result.details as {
 				successCount?: number;
@@ -329,7 +354,7 @@ export default function tavilyExtension(pi: ExtensionAPI, run: RequestRunner = r
 				}
 			}
 
-			return new Text(text, 0, 0);
+			return renderText(text, context);
 		},
 	});
 

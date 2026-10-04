@@ -135,6 +135,71 @@ test('expanded calls expose all supplied options while compact calls retain thei
   }
 });
 
+test('validated requests expose honest pending updates before API completion and then final results', async () => {
+  const updates: string[] = [];
+  const registered = tools(async request => {
+    assert.equal(updates.length, 1, 'Pending update must precede the API request');
+    return request.operation === 'search'
+      ? {...searchResponse, results: [{url: 'https://example.com', title: 'Guide', score: 1, id: 'source', publishedDate: '', content: 'snippet'}]}
+      : {results: [{url: 'https://example.com', title: 'Guide', rawContent: 'body'}], failedResults: [], responseTime: 0.1, requestId: 'r'};
+  });
+  for (const [index, args] of [[0, {query: 'q'}], [1, {urls: ['https://example.com']}]] as const) {
+    updates.length = 0;
+    const tool = registered[index];
+    const component = new ToolExecutionComponent(tool.name, 'id', args, {}, tool,
+      {requestRender() {}} as any, process.cwd());
+    const result = await tool.execute('id', args, undefined, update => {
+      component.updateResult({...update, isError: false}, true);
+      updates.push(component.render(100).join('\n'));
+    }, ctx);
+    assert.equal(updates.length, 1);
+    assert.match(updates[0], index === 0 ? /Searching/ : /Extracting/);
+    component.updateResult({...result, isError: result.isError === true}, false);
+    assert.match(component.render(100).join('\n'), index === 0 ? /1 result/ : /1 page/);
+  }
+});
+
+test('renderers reuse their slot components across expansion, pending, errors and theme changes', async () => {
+  const registered = tools(async request => request.operation === 'search' ? searchResponse
+    : {results: [], failedResults: [], responseTime: 0.1, requestId: 'r'});
+  const theme = {fg: (_color: string, text: string) => text, bold: (text: string) => text};
+  for (const [index, args] of [[0, {query: 'q'}], [1, {urls: ['https://example.com']}]] as const) {
+    const tool = registered[index];
+    const call = tool.renderCall!(args, theme as any, {expanded: false} as any);
+    assert.equal(tool.renderCall!(args, theme as any, {expanded: true, lastComponent: call} as any), call);
+    assert.match(call.render(100).join('\n'), index === 0 ? /query/ : /urls/);
+    const result = await tool.execute('id', args, undefined, undefined, ctx);
+    const options = {expanded: false, isPartial: false};
+    const view = tool.renderResult!(result, options, theme as any, {isError: false} as any);
+    const pending = {content: [{type: 'text' as const, text: 'Request pending'}], details: undefined};
+    assert.equal(tool.renderResult!(pending, {...options, isPartial: true}, theme as any, {lastComponent: view} as any), view);
+    assert.match(view.render(100).join('\n'), /Request pending/);
+    const error = {content: [{type: 'text' as const, text: 'Network unavailable'}], details: undefined};
+    assert.equal(tool.renderResult!(error, options, theme as any, {isError: true, lastComponent: view} as any), view);
+    assert.match(view.render(100).join('\n'), /Network unavailable/);
+    const changedTheme = {...theme, fg: (_color: string, text: string) => `New theme: ${text}`};
+    assert.equal(tool.renderResult!(result, options, changedTheme as any, {isError: false, lastComponent: view} as any), view);
+    assert.match(view.render(100).join('\n'), /New theme/);
+  }
+});
+
+test('invalid and already-cancelled requests do not announce API work or make a request', async () => {
+  let calls = 0;
+  let updates = 0;
+  const registered = tools(async () => {calls++; return searchResponse;});
+  for (const [index, args, signal] of [
+    [0, {query: 'q', days: 2}, undefined],
+    [1, {urls: ['https://example.com'], chunksPerSource: 2}, undefined],
+    [0, {query: 'q'}, AbortSignal.abort()],
+    [1, {urls: ['https://example.com']}, AbortSignal.abort()],
+  ] as const) {
+    const result = await registered[index].execute('id', args, signal, () => {updates++;}, ctx);
+    assert.equal(result.isError, true);
+  }
+  assert.equal(calls, 0);
+  assert.equal(updates, 0);
+});
+
 test('expanded search exposes every source up to the supported result count', async () => {
   const response = {...searchResponse, results: Array.from({length: 20}, (_, i) => ({id: `${i}`, title: `Source ${i + 1}`, url: `https://example.com/${i}`, score: 1, content: 'snippet', publishedDate: ''}))};
   const tool = tools(async () => response)[0];

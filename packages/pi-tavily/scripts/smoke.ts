@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Value } from 'typebox/value';
-import { createAgentSession, createCodemodeExtension, DefaultResourceLoader, SettingsManager, SessionManager, initTheme } from '@earendil-works/pi-coding-agent';
+import { createAgentSession, createCodemodeExtension, DefaultResourceLoader, SettingsManager, SessionManager, initTheme, ToolExecutionComponent } from '@earendil-works/pi-coding-agent';
 
 if (!process.env.TAVILY_API_KEY) throw new Error('Live smoke checks require TAVILY_API_KEY and consume API credits');
 const directory = await mkdtemp(join(tmpdir(), 'pi-tavily-smoke-'));
@@ -36,7 +36,6 @@ const {session} = await createAgentSession({cwd: directory, agentDir: directory,
 try {
   await session.bindExtensions({});
   initTheme('dark', false);
-  const theme = {fg: (_color: string, text: string) => text, bold: (text: string) => text};
   const summary = [];
   for (const [name, params] of [
     ['tavily_search', {query: 'Tavily JavaScript SDK documentation', maxResults: 2, searchDepth: 'fast', includeRawContent: 'markdown', includeImages: true, includeImageDescriptions: true, timeout: 60}],
@@ -45,7 +44,15 @@ try {
     const tool = registered.get(name)!.definition;
     const executable = session.agent.state.tools.find(tool => tool.name === name)!;
     assert.ok(executable);
-    const result = await executable.execute(name, params);
+    const component = new ToolExecutionComponent(name, name, params, {}, tool,
+      {requestRender() {}} as any, directory);
+    const pendingViews: string[] = [];
+    const result = await executable.execute(name, params, undefined, update => {
+      component.updateResult({...update, isError: false}, true);
+      pendingViews.push(component.render(100).join('\n'));
+    });
+    assert.equal(pendingViews.length, 1);
+    assert.match(pendingViews[0], name === 'tavily_search' ? /Searching/ : /Extracting/);
     assert.notEqual(result.isError, true, JSON.stringify(result.content));
     assert.equal(Value.Check(tool.outputSchema!, result.structuredContent), true);
     const data = result.structuredContent as Record<string, any>;
@@ -57,14 +64,13 @@ try {
       for (const source of data.results) if (source.rawContent) assert.ok(text.includes(source.rawContent));
       for (const image of data.images ?? []) assert.ok(text.includes(image.url));
     }
+    component.updateResult({...result, isError: result.isError === true}, false);
     const views = [false, true].map(expanded => {
-      const context = {args: params, expanded, isError: result.isError === true};
-      return [tool.renderCall!(params, theme as any, context as any),
-        tool.renderResult!(result, {expanded, isPartial: false}, theme as any, context as any)]
-        .map(view => view.render(100).join('\n')).join('\n');
+      component.setExpanded(expanded);
+      return component.render(100).join('\n');
     });
     await writeFile(join(directory, `${name}-result.json`), JSON.stringify(data, null, 2), {mode: 0o600});
-    await writeFile(join(directory, `${name}-render.txt`), views.join('\n\n--- EXPANDED ---\n\n'), {mode: 0o600});
+    await writeFile(join(directory, `${name}-render.txt`), pendingViews.join('\n') + '\n\n--- COMPACT ---\n\n' + views.join('\n\n--- EXPANDED ---\n\n'), {mode: 0o600});
     summary.push({tool: name, results: data.resultCount, credits: data.usage?.credits, requestId: data.requestId, truncated: data.truncated});
   }
   const codemode = session.agent.state.tools.find(tool => tool.name === 'codemode')!;
