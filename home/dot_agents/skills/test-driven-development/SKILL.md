@@ -1,151 +1,115 @@
 ---
 name: test-driven-development
-description: Test-drive meaningful application-owned behavior when adding or changing domain rules, interactions, state transitions, authorization, calculations, persistence, API contracts, or fixing bugs—even when the user does not request TDD. Route behavior-preserving structural work to safe-refactoring. Styling, declarative metadata or configuration, generated code, dependency upgrades, mechanical wiring, and test-only maintenance fall outside this TDD process.
+description: Test-drive application-owned rules, interactions, state transitions, authorization, calculations, persistence, API contracts, and bug fixes—even when the user does not request TDD. Route behavior-preserving structural work to safe-refactoring. Ordinary styling, declarative configuration, generated code, dependency changes, mechanical wiring, and test-only maintenance use targeted verification instead.
 ---
 
 # Test-Driven Development
 
-Drive one meaningful behavior at a time through:
-
 ```text
-DISCUSS OR IDENTIFY BEHAVIOR → RED → GREEN → REFACTOR → REPEAT
+LIST BEHAVIORAL VARIANTS → SELECT ONE → RED → GREEN → REFACTOR → REPEAT
 ```
 
-## 1. Qualify the Behavior
+## 1. Qualify and Route the Change
 
-Use TDD when all are true:
+Classify every requested outcome. Use TDD for meaningful application-owned behavior: what a user or caller can do, receive, access, navigate to, persist, or observe.
 
-1. The change affects a meaningful product, domain, interaction, or API contract.
-2. Application code owns or controls the behavior.
-3. A stable test can express the contract without restating implementation or configuration.
-4. The test protects against a plausible regression instead of retesting a framework.
+Route other work to its appropriate verification:
 
-Route other work out of this TDD cycle:
+- Behavior-preserving structural change → `safe-refactoring`.
+- Ordinary styling → direct implementation and required visual review.
+- Declarative metadata or configuration → schema, framework, type, or lint checks.
+- Generated code or dependencies → generator, build, and integration checks.
+- Mechanical wiring or test-only maintenance → targeted existing checks.
 
-- Pure structural change → `safe-refactoring`
-- Styling or visual change → implementation outside this TDD process
-- Declarative metadata or configuration → schema, framework, type, or lint validation
-- Generated code or dependency change → generator, build, and integration checks
-- Mechanical wiring or test-only maintenance → targeted existing checks
+A GraphQL deprecation declaration, for example, usually needs schema inspection rather than an assertion repeating the declaration.
 
-A GraphQL deprecation declaration, for example, usually needs schema inspection rather than a test that repeats the declaration.
+For mixed structural and behavioral work, establish a green baseline, move existing responsibilities through `safe-refactoring`, then begin RED for the new or corrected promise. Existing behavior needs preservation, not an artificial failure.
 
-For work that mixes responsibility movement with new behavior:
+### UI Contracts
 
-1. Establish GREEN for the behavior that already exists.
-2. Move or reorganize it through `safe-refactoring` steps.
-3. Begin RED only for the genuinely new or corrected contract.
+Separate capabilities from presentation. Test interactions, accessibility roles/names/states, navigation, and information access. Implement ordinary typography, color, spacing, and layout using design inputs and established components; visual parity belongs to visual verification, not the TDD cycle.
 
-Do not force an existing responsibility move to fail merely because the overall task also contains new behavior.
+Geometry, timing, and rendered output qualify when they are explicit behavioral promises: an effective accessible touch target, a response-time budget, or a shader lighting the requested region. Observe that outcome rather than freezing incidental classes, props, DOM nesting, or pixels.
 
-### Semantic Behavior or Visual Presentation
+Ordinary copy is presentation. Update an interaction test's accessible-name selector when the control is renamed. Give exact wording dedicated coverage only when it is a contract, such as legal or safety text, a required API error, or a domain distinction affecting a decision.
 
-Classify each requested outcome before choosing a process.
+When the user is exploring, inspect the code and clarify the behavior before editing. Treat a direct implementation or bug-fix request as agreement without redundant confirmation. Briefly explain routing when the absence of a behavioral test would be surprising.
 
-A semantic behavior changes what a user or system can do, receive, access, navigate to, persist, or observe through a stable semantic interface. A visual presentation change alters how the same content and capabilities are drawn.
+**Complete when:** every outcome is assigned to TDD or another verification process, and the requested direction is understood.
 
-Visual presentation includes typography, color, spacing, dimensions, alignment, grouping, density, borders, shadows, icon geometry, animation timing, and responsive arrangement. Treat design files, established components, and codebase conventions as implementation inputs. Visual parity and deeper visual review are separate follow-up work rather than TDD completion criteria.
+## 2. List Variants and Select One
 
-A stable semantic test expresses the contract without asserting class names, style values, utility tokens, element dimensions, incidental DOM nesting, or screenshot pixels. Accessibility roles, names, states, and hidden content are semantic behavior even when their implementation affects presentation.
+List the basic case, meaningful boundaries, failures or repeated actions, and existing promises at risk. Scale the list to the change; one item may suffice. Describe outcomes in product or domain vocabulary, leaving internal design for implementation and refactoring.
 
-For mixed UI work, separate the behavioral seam from the visual shell:
+For stateful or durable work, distinguish interruption before and after relevant commits and the consequences for retry, recovery, and later actions. A status label alone does not identify a failure window.
 
-- Test-drive interactions, state changes, accessibility, navigation, and information access.
-- Implement the visual shell directly as a best-effort application of the design and existing conventions.
-- Run nearby existing tests to detect regressions without adding a styling contract.
+Select one example by asking:
 
-Ordinary copy is presentation. Update an existing interaction test when it identifies a real control by its accessible name. Give exact wording dedicated coverage when the wording is itself a product contract, such as legal or safety text, a required API error, or a domain distinction that drives a user decision. When a test fails solely because incidental copy or presentation was removed, delete that assertion rather than inverting it into an absence expectation; update it only when it still proves retained semantic behavior.
+- What outcome does the software promise under these circumstances?
+- What plausible application regression would this test catch?
+- What alternative correct implementation should still pass it?
 
-Once an outcome is classified as visual presentation, exclude it from the RED → GREEN cycle and from TDD completion criteria.
+Choose a stable test expressing this promise. Derive expected results independently from requirements or domain rules, rather than copying computed output. An excessive withdrawal should be rejected regardless of the internal balance representation. Testing that rejection protects our rule; repeating a framework's implementation does not.
 
-**Complete when:** every requested outcome is classified, and each semantic behavior either qualifies for TDD with a stable test or is routed to another process.
+Add discovered examples to the list as work proceeds. Make only the selected item executable before implementing it; keep the rest as scenarios rather than a batch of speculative tests.
 
-When the user is exploring requirements, inspect the relevant code and clarify the behavior before editing. When the user directly requests implementation or a bug fix, treat the requested behavior as agreed and proceed without asking for redundant confirmation.
+**Complete when:** the list exists and one example identifies a promise, expected failure, and freedom to change the implementation.
 
-Identify one observable behavior in product or domain vocabulary and the failure expected from its absence. For example: a withdrawn amount larger than the balance is rejected, and the expected failure before implementation is that the withdrawal succeeds instead of returning the overdraft error.
+## 3. Choose the Production Boundary
 
-The behavior and expected failure must be clear before the test is written, but they do not require a fixed announcement format.
+Trace the owning path: entrypoint, responsible logic, persistence where relevant, and observable result. Exercise that path or a stable production interface beneath it. When architecture changes, migrate tests to its new seams rather than retaining obsolete branches or inventing a competing test-only application.
 
-### Own the Production Path
+Prefer assertions on outputs, visible state, contract-level events, errors, and persisted effects. Use real collaborators where practical; substitute dependencies that are slow, nondeterministic, unavailable, destructive, or external.
 
-Before choosing the focused test, trace the production path that owns the requested behavior: its entrypoint, route or controller, responsible logic, persistence boundary when relevant, and observable result.
+Distinguish what each test proves. A fake, prop assertion, or direct adapter call may check wiring without establishing the native, host, network, or rendered outcome. Name the narrower subject honestly and identify proportionate boundary evidence for important unverified assumptions.
 
-The test must exercise that owning path or a stable production interface beneath it. RED is irrelevant when it targets a deferred endpoint, bypasses the composition being changed, or proves a parallel test-only path. When architecture changes, migrate tests to the new production seams instead of retaining old production branches or creating a duplicate application harness solely for test convenience.
+Balance fast, specific feedback with production confidence. Broader checks earn their cost when they establish a promise the focused test cannot.
 
-**Complete when:** the expected failure is attached to the production path named by the requirement, and the proposed test does not preserve or invent a competing path.
+**Complete when:** the selected test targets the owning path, and any necessary boundary evidence is identified.
 
-### Present-Tense Contracts
+## 4. Run the Small Cycle
 
-Tests describe the system's current contract, not the history of how the change was developed.
+### RED
 
-An absence deserves lasting coverage when the absence is itself a meaningful product or domain rule and protects against a plausible regression. Authorization rejection, an overdraft prohibition, and suppression of a dangerous side effect are contracts. A removed field, abandoned UI element, deferred feature, or deleted integration usually is not.
+Add or update the selected focused test and run the smallest relevant command. Valid RED exercises the intended behavior and fails for the expected application defect.
 
-A negative test may temporarily drive removal. Once the removed behavior and its production code are gone, delete that test unless the resulting absence remains an independently meaningful contract.
+Repair syntax, dependency, command, fixture, or harness failures, then rerun against unchanged production before entering GREEN. Those failures do not establish behavioral RED.
 
-**Complete when:** TDD qualifies, one observable present-tense behavior is understood, and its expected failure is clear. Otherwise, follow the routed process and briefly explain the choice when the absence of a behavioral test would be surprising.
+If the test passes immediately, determine whether the promise already holds or the assertion misses the distinction. Retain useful already-passing regression or characterization coverage, but label it separately from RED. Revise an insufficient assertion only to express the real contract; select a genuinely missing behavior before production changes.
 
-## 2. Observe RED
+**Complete when:** the focused test fails for the stated behavioral reason.
 
-Add or update exactly one focused test through the owning production path or a stable production interface beneath it. Prefer assertions over inputs, outputs, visible state, contract-level events, observable errors, or persisted effects.
+### GREEN
 
-Use real objects where practical. Reach for a fake, stub, mock, or spy only as the dependency becomes slower, nondeterministic, unavailable, destructive, or external to the process.
+Make the smallest direct production change satisfying the example. Defer broader design work. Keep the valid behavioral expectation intact and rerun the same test and relevant existing tests.
 
-Run the smallest relevant test command. Valid RED means:
+**Complete when:** the example and relevant prior tests pass because the missing behavior now exists.
 
-- the intended behavior was exercised,
-- the focused test failed,
-- the observed failure matches the expected failure,
-- missing or incorrect application behavior caused it.
+### REFACTOR
 
-A syntax error, missing dependency, incorrect command, broken fixture, or test-harness failure is an environment problem. Repair it and rerun. A new test that passes immediately needs a genuinely missing behavior or a revised assertion before production changes begin.
+While green, remove duplicated knowledge, clarify names, and improve responsibilities without adding behavior. Verify after each meaningful cleanup, then select the next item from the list.
 
-**Complete when:** one focused test has failed for the stated behavioral reason.
-
-## 3. Reach GREEN
-
-Make the smallest direct production change that satisfies the focused test. Keep the change local to the behavior and defer broader design work.
-
-Run the focused test again. Correct production code while the behavioral expectation remains valid.
-
-**Complete when:** the same focused test passes because the missing behavior now exists.
-
-## 4. Refactor While Green
-
-Remove duplicated logic or knowledge, clarify names, and improve responsibilities without adding behavior. Verify after each meaningful cleanup.
-
-When another required behavior appears, begin a new RED cycle for it. Several tests written before any implementation form a batch; preserve the one-behavior rhythm instead.
-
-**Complete when:** relevant tests remain green and the cycle introduced no untested behavior.
+**Complete when:** relevant tests remain green and cleanup preserved behavior.
 
 ## 5. Reconcile Scope Changes
 
-When a requirement is withdrawn or deferred during a cycle:
+Apply this branch whenever requirements are withdrawn or deferred, including removed UI or copy. Tests describe present-tense contracts, not development history.
 
-1. Restate the retained present-tense behavior.
-2. Remove the withdrawn item from the test list.
-3. Delete tests whose only subject is the withdrawn behavior rather than translating them into `does not` expectations.
-4. Remove the corresponding production code.
-5. Run the smallest relevant suite and inspect each failure:
-   - Delete a failing test when its contract disappeared with the removed behavior.
-   - Update the test or production code when it still protects retained behavior.
+1. Restate retained behavior and update the list.
+2. Remove withdrawn production behavior and its tests.
+3. Run the smallest relevant suite and classify failures by the contract they protect.
+4. Update tests or production for retained contracts; delete assertions whose contract disappeared.
 
-**Complete when:** every remaining test describes retained system behavior, and no test mentions the withdrawn feature merely to record its absence.
+Keep absence coverage when absence is independently meaningful: authorization rejection, overdraft prohibition, or suppression of a dangerous side effect. A temporary test may drive removal, but retire it afterward unless that absence remains a promise. Avoid translating deleted features or incidental copy into permanent `does not` assertions.
 
-## 6. Verify the Change
+**Complete when:** remaining tests protect retained promises, and changed assertions are justified by contract changes rather than used to conceal regressions.
 
-Run nearby tests when the change can affect them. Use a broader test only when the behavior crosses components or the risk lives at a boundary. A bug fix is complete only when its first focused test reproduced the reported behavior before the fix.
+## 6. Verify and Report
 
-Check every retained behavior introduced in the change against the completed RED → GREEN evidence.
+Reconcile every retained item on the behavioral list with RED → GREEN evidence or explicitly identified already-passing coverage. For a bug fix, confirm that its focused test reproduced the reported behavior before the fix.
 
-**Complete when:** focused and broader relevant checks pass, every retained behavior introduced by the change is protected, and every changed or removed test is accounted for by a changed or removed contract rather than used to conceal a regression.
+Run nearby regression checks and the necessary boundary checks selected in step 3. Confirm the scenario actually executed: a green recovery flow that skipped interruption is not recovery evidence.
 
-## Finish TDD-Qualified Work
+**Complete when:** every retained behavior is protected, test edits reflect contract or boundary changes, relevant checks pass, and the intended boundary scenarios ran. If verification is blocked, report the unverified promise; a passing proxy does not close that gap.
 
-At completion, mention:
-- the behavior added or corrected,
-- the focused test and the failure it demonstrated before implementation,
-- the production change,
-- the relevant verification performed,
-- any remaining test or confidence gap.
-
-Adapt the detail to the size and risk of the change. When tests cannot run, make that gap clear; confidence follows the evidence produced. Routed work follows its own completion and reporting process outside this skill.
+Report the behavior, production change, focused failure/pass evidence, other verification, and remaining confidence gaps. Adapt detail to the change's risk. Routed work uses its own verification and reporting process.
