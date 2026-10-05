@@ -135,6 +135,11 @@ _ask() {
 }
 alias ask='noglob _ask'
 
+# Pit replaces Pi's tool surface with a single `typescript` tool. Load it per
+# session with -e so it never enters the main Pi settings; -xt codemode disables
+# the native codemode tool, which Pit only hides.
+alias pit='pi -e git:github.com/cv/pit -xt codemode'
+
 if [ -f "$HOME/.zshrc.local" ]; then
     source "$HOME/.zshrc.local"
 fi
