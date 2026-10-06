@@ -5,6 +5,10 @@ fi
 {{ end -}}
 typeset -U path PATH fpath FPATH
 path=("$HOME/.local/bin" $path)
+{{- if eq .chezmoi.os "darwin" }}
+# Make Docker Desktop completions visible to Oh My Zsh's initial compinit.
+fpath=("$HOME/.docker/completions" $fpath)
+{{- end }}
 
 COMPLETION_WAITING_DOTS="true"
 DISABLE_AUTO_TITLE="true"
@@ -145,13 +149,6 @@ if [ -f "$HOME/.zshrc.local" ]; then
 fi
 
 eval "$(mise activate zsh)"
-{{- if eq .chezmoi.os "darwin" }}
-
-# Docker Desktop CLI completions.
-fpath=("$HOME/.docker/completions" $fpath)
-autoload -Uz compinit
-(( ${+_comps[docker]} )) || compinit
-{{- end }}
 
 # Worktrunk shell integration: lets `wt switch` change the current directory.
 if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
