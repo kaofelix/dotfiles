@@ -149,13 +149,18 @@ fi
 
 eval "$(mise activate zsh)"
 
-# Carapace supplies completions for many commands that ship none of their own
-# and bridges to native completions for others. Sourced after mise activation
-# so the binary is on PATH.
+# Carapace supplies completions for many commands that ship none of their own.
+# It registers itself for a broad command list, so snapshot the completions
+# compinit already loaded and restore them afterwards: native completions win
+# and carapace only fills the gaps.
 if command -v carapace >/dev/null 2>&1; then
     export CARAPACE_BRIDGES='zsh,fish,bash,inshellisense'
     zstyle ':completion:*' format $'\e[2;37mCompleting %d\e[m'
+    typeset -A _carapace_saved_native
+    _carapace_saved_native=(${(kv)_comps})
     source <(carapace _carapace)
+    _comps+=(${(kv)_carapace_saved_native})
+    unset _carapace_saved_native
 fi
 
 # Worktrunk shell integration: lets `wt switch` change the current directory.
