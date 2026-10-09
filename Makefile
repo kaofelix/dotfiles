@@ -39,7 +39,7 @@ homebrew:
 	./scripts/install-homebrew
 
 shell-completions:
-	./scripts/run-with-homebrew mise exec -- "$(TARGET_DIR)/.local/bin/update-zsh-completions"
+	./scripts/run-with-homebrew mise exec -- misecompsync
 
 pifind-deps:
 	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(SOURCE_DIR)/packages/pifind"

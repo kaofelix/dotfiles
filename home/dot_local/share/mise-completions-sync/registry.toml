@@ -1,0 +1,14 @@
+# Extends mise-completions-sync's built-in registry for tools it does not
+# know about. Keys are mise tool names; commands run inside the tool's own
+# mise environment. See https://mise-completions.alltuner.com/how-it-works/
+schema_version = 1
+
+[tools]
+# Tool name matches the executable, so the built-in "standard" pattern applies.
+gob = "standard"
+gum = "standard"
+herdr = "standard"
+
+# Executable differs from the mise tool name.
+opentofu = { completion_name = "tofu", zsh = "tofu completion zsh", bash = "tofu completion bash", fish = "tofu completion fish" }
+beads = { completion_name = "bd", zsh = "bd completion zsh", bash = "bd completion bash", fish = "bd completion fish" }

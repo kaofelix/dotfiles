@@ -4,15 +4,17 @@ experimental = true
 minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
 
 [hooks]
-postinstall = 'if [ -x "$HOME/.local/bin/update-zsh-completions" ]; then "$HOME/.local/bin/update-zsh-completions"; else echo "Skipping shell completions: helper not installed yet; run make shell-completions after applying dotfiles"; fi'
+postinstall = 'if command -v misecompsync >/dev/null 2>&1; then misecompsync; else echo "Skipping shell completions: misecompsync not installed yet; run make shell-completions after applying dotfiles"; fi'
 
 [tools]
 ast-grep = "latest"
 bat = "latest"
 bun = "latest"
+carapace = "latest"
 crush = "latest"
 fd = "latest"
 gh = "latest"
+"github:alltuner/mise-completions-sync" = "latest"
 "github:can1357/oh-my-pi" = "latest"
 "github:juanibiapina/gob" = "latest"
 glow = "latest"

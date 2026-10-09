@@ -43,7 +43,7 @@ if ! zgenom saved; then
     zgenom load "${HOMEBREW_PREFIX}/share/zsh/site-functions" --completion
 {{ if eq .chezmoi.os "darwin" }}    zgenom load "${HOME}/.zfunc" --completion
 {{ end }}    zgenom load zsh-users/zsh-completions
-    zgenom load "${HOME}/.local/share/zsh/site-functions" --completion
+    zgenom load "${HOME}/.local/share/mise-completions/zsh" --completion
 
     # Syntax highlighting should be loaded last
     zgenom load zdharma-continuum/fast-syntax-highlighting
@@ -148,6 +148,15 @@ if [ -f "$HOME/.zshrc.local" ]; then
 fi
 
 eval "$(mise activate zsh)"
+
+# Carapace supplies completions for many commands that ship none of their own
+# and bridges to native completions for others. Sourced after mise activation
+# so the binary is on PATH.
+if command -v carapace >/dev/null 2>&1; then
+    export CARAPACE_BRIDGES='zsh,fish,bash,inshellisense'
+    zstyle ':completion:*' format $'\e[2;37mCompleting %d\e[m'
+    source <(carapace _carapace)
+fi
 
 # Worktrunk shell integration: lets `wt switch` change the current directory.
 if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
