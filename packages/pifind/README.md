@@ -22,10 +22,11 @@ pifind "where did I debug the OAuth callback?"
 - `fzf`
 - The `pi-sessions-duckdb` skill at `~/.agents/skills/pi-sessions-duckdb`
 
-Install JavaScript dependencies from the dotfiles repository:
+Install this package's locked JavaScript dependencies from the dotfiles repository
+(or run `make sync` to reconcile the entire environment):
 
 ```bash
-make pifind-deps
+npm ci --prefix packages/pifind
 ```
 
 Override the DuckDB skill location when necessary:

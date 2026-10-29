@@ -1,79 +1,77 @@
-CHEZMOI ?= $(shell command -v chezmoi 2>/dev/null || printf './scripts/run-with-homebrew chezmoi')
 SOURCE_DIR := $(CURDIR)
-TARGET_DIR ?= $(HOME)
-CHEZMOI_ARGS = --source=$(SOURCE_DIR) --destination=$(TARGET_DIR)
+LOCAL_PACKAGES := pifind pi-footer pi-tavily
+NPM ?= npm
+BREW_ENV := ./scripts/run-with-homebrew
+CHEZMOI := $(BREW_ENV) chezmoi --source="$(SOURCE_DIR)" --destination="$(HOME)"
 
-.PHONY: apply diff verify add setup update gh-config pi-auth pifind-deps pi-extension-deps shell-completions test homebrew
+.PHONY: help setup sync upgrade pi-auth test _host _apply _finish _deps
 
-apply:
-	@mkdir -p "$(TARGET_DIR)"
-	$(CHEZMOI) $(CHEZMOI_ARGS) apply
+help:
+	@printf '%s\n' \
+	  'Files: use chezmoi diff, apply, verify, add, or re-add.' \
+	  'make setup   Bootstrap Homebrew/chezmoi, sync, configure gh, and resolve Pi credentials.' \
+	  'make sync    Apply files and reconcile dependencies without requesting upgrades.' \
+	  'make upgrade Apply files and upgrade declared Homebrew and active mise tools.' \
+	  'make pi-auth Resolve Pi credentials explicitly (requires 1Password).' \
+	  'make test    Run isolated workflow/rendering and application tests.'
 
-# Preview and verify the generated target state without changing it.
-diff:
-	$(CHEZMOI) $(CHEZMOI_ARGS) diff
-
-verify:
-	$(CHEZMOI) $(CHEZMOI_ARGS) verify
-
-# Import one explicit target into chezmoi's source state.
-add:
-	@test -n "$(TARGET)" || (echo "Usage: make add TARGET=$(HOME)/path" >&2; exit 2)
-	$(CHEZMOI) --source=$(SOURCE_DIR) add "$(TARGET)"
-
-setup: homebrew
-	./scripts/run-with-homebrew brew bundle install
-	$(MAKE) apply
-	./scripts/run-with-homebrew mise install
-	$(MAKE) pifind-deps
-	$(MAKE) pi-extension-deps
-	$(MAKE) shell-completions
-	$(MAKE) gh-config
+setup: _host
+	./scripts/install-homebrew
+	$(BREW_ENV) sh -c 'command -v chezmoi >/dev/null 2>&1 || brew install chezmoi'
+	$(MAKE) sync
+	$(BREW_ENV) mise exec -- gh config set git_protocol ssh --host github.com
 	@if [ "$${NONINTERACTIVE:-}" = 1 ]; then \
 		echo "Skipping Pi credential resolution in non-interactive setup; run make pi-auth later"; \
 	else \
 		$(MAKE) pi-auth; \
 	fi
 
-homebrew:
-	./scripts/install-homebrew
+sync: _apply
+	$(BREW_ENV) brew bundle install --no-upgrade --file="$(SOURCE_DIR)/Brewfile"
+	$(BREW_ENV) mise install
+	$(MAKE) _finish
 
-shell-completions:
-	./scripts/run-with-homebrew mise exec -- misecompsync
+upgrade: _apply
+	$(BREW_ENV) brew update
+	$(BREW_ENV) brew bundle install --upgrade --file="$(SOURCE_DIR)/Brewfile"
+	$(BREW_ENV) mise upgrade
+	$(MAKE) _finish
 
-pifind-deps:
-	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(SOURCE_DIR)/packages/pifind"
+pi-auth: _host
+	$(BREW_ENV) mise exec -- "$(HOME)/.local/bin/pi-auth-setup"
 
-pi-extension-deps:
-	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(SOURCE_DIR)/packages/pi-footer"
-	./scripts/run-with-homebrew mise exec -- npm ci --prefix "$(SOURCE_DIR)/packages/pi-tavily"
+# Provisioning always targets this host. Alternate destinations are a chezmoi concern.
+_host:
+	@test -z "$(TARGET_DIR)" || { \
+		printf '%s\n' 'TARGET_DIR is not supported for provisioning; use chezmoi --destination for file rendering.' >&2; \
+		exit 2; \
+	}
 
-gh-config:
-	./scripts/run-with-homebrew mise exec -- gh config set git_protocol ssh --host github.com
+_apply: _host
+	$(CHEZMOI) apply
 
-pi-auth:
-	"$(TARGET_DIR)/.local/bin/pi-auth-setup"
+# A final completion pass is required even when mise installed no new tools.
+_finish: _host
+	$(MAKE) _deps NPM='$(BREW_ENV) mise exec -- npm'
+	$(BREW_ENV) mise exec -- misecompsync
+	$(CHEZMOI) verify
 
-update:
-	./scripts/run-with-homebrew brew update
-	./scripts/run-with-homebrew brew upgrade
-	./scripts/run-with-homebrew mise upgrade
-	$(MAKE) apply
-	$(MAKE) pifind-deps
-	$(MAKE) pi-extension-deps
-	$(MAKE) shell-completions
+# Checkout-local dependencies only; shared by provisioning and tests.
+_deps:
+	@set -e; for package in $(LOCAL_PACKAGES); do \
+		$(NPM) ci --prefix "$(SOURCE_DIR)/packages/$$package"; \
+	done
 
-# Application tests do not touch HOME.
+# Tests do not apply live dotfiles, install host tools, or resolve credentials.
 test:
+	python3 tests/workflow.test.py
 	./tests/platform-rendering.test.sh
 	bun test tests/python-env.test.ts
 	./tests/pi-auth-setup.test.sh
 	./tests/pi-auth-setup-generation.test.sh
-	npm ci --prefix packages/pifind
-	npm test --prefix packages/pifind
-	npm ci --prefix packages/pi-footer
-	npm test --prefix packages/pi-footer
-	npm ci --prefix packages/pi-tavily
-	npm test --prefix packages/pi-tavily
+	$(MAKE) _deps
+	@set -e; for package in $(LOCAL_PACKAGES); do \
+		npm test --prefix "packages/$$package"; \
+	done
 	npm run typecheck --prefix packages/pi-tavily
 	cd home/dot_pi/agent/extensions/pi-herdr && bun install --no-save && bun test

@@ -8,10 +8,12 @@ feedback, or keyless tools are enabled.
 
 1. Obtain an API key at <https://app.tavily.com> and set `TAVILY_API_KEY` in your
    shell environment. Keep the key out of tracked files.
-2. Run `make pi-extension-deps` from the dotfiles checkout.
-3. Preview `make diff`, apply the intended dotfiles state with `make apply`, and
-   run `make verify`. Pi loads this local package directly from the checkout;
-   package files themselves are outside chezmoi's `home/` source state.
+2. Preview `chezmoi --source="$PWD" diff` from the dotfiles checkout.
+3. Run `make sync` to apply files and reconcile the environment, including this
+   package's locked dependencies. For package-only dependency installation, use
+   `npm ci --prefix packages/pi-tavily`. Pi loads this local package directly
+   from the checkout; package files themselves are outside chezmoi's `home/`
+   source state.
 4. Reload Pi with `/reload` or restart it. Do not load a legacy copied Tavily
    extension alongside this package: both register the same tool names.
 

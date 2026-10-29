@@ -3,32 +3,29 @@ idiomatic_version_file_enable_tools = ["node", "ruby", "rust"]
 experimental = true
 minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
 
+# Refresh completions for ad hoc mise installs. setup/sync/upgrade also run a
+# final pass after all tools are ready, including when no installation occurred.
 [hooks]
-postinstall = 'if command -v misecompsync >/dev/null 2>&1; then misecompsync; else echo "Skipping shell completions: misecompsync not installed yet; run make shell-completions after applying dotfiles"; fi'
+postinstall = 'if command -v misecompsync >/dev/null 2>&1; then misecompsync; else echo "Skipping shell completions: misecompsync not installed yet; run mise exec -- misecompsync after installing tools"; fi'
 
 [tools]
 ast-grep = "latest"
 bat = "latest"
 bun = "latest"
 carapace = "latest"
-crush = "latest"
 fd = "latest"
 gh = "latest"
 "github:alltuner/mise-completions-sync" = "latest"
-"github:can1357/oh-my-pi" = "latest"
 "github:juanibiapina/gob" = "latest"
 glow = "latest"
 gum = "latest"
 herdr = "latest"
 jq = "latest"
-maestro = "latest"
 node = "lts"
 opentofu = "latest"
 "npm:@earendil-works/pi-coding-agent" = "latest"
 "npm:@juanibiapina/browse-cli" = { version = "latest", allow_low_downloads = true }
 "npm:glimpseui" = { version = "latest", allow_builds = ["glimpseui"] }
-"npm:@metabase/cli" = "latest"
-"npm:@posthog/cli" = "latest"
 "npm:hunkdiff" = "latest"
 prek = "latest"
 ripgrep = "latest"

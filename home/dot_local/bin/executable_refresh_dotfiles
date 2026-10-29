@@ -3,21 +3,31 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: refresh_dotfiles
+Usage: refresh_dotfiles [--sync]
 
 Fast-forward the configured dotfiles checkout from its upstream branch, then
-apply the latest chezmoi state to this machine.
+apply the latest chezmoi state to this machine. By default this changes files
+only; local application dependencies may still need reconciliation.
 
 The checkout must be clean. Commit or stash local source changes before running
-this command. It does not install or upgrade packages.
+this command. Neither mode requests software upgrades or removes unused tools.
 
 Options:
-  -h, --help  Show this help.
+  --sync     Run make sync after pulling: apply files, install declared tools
+             and locked local dependencies, generate completions, and verify.
+  -h, --help Show this help.
 EOF
 }
 
+if (( $# > 1 )); then
+    usage >&2
+    exit 2
+fi
+
+sync=false
 case "${1:-}" in
     "") ;;
+    --sync) sync=true ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
 esac
@@ -32,7 +42,7 @@ if ! command -v git >/dev/null 2>&1; then
     exit 1
 fi
 
-if ! command -v make >/dev/null 2>&1; then
+if [[ "$sync" == true ]] && ! command -v make >/dev/null 2>&1; then
     printf 'error: make is required\n' >&2
     exit 1
 fi
@@ -47,4 +57,8 @@ if [[ -n $(git -C "$repo_dir" status --porcelain) ]]; then
 fi
 
 git -C "$repo_dir" pull --ff-only
-make -C "$repo_dir" apply TARGET_DIR="$HOME"
+if [[ "$sync" == true ]]; then
+    make -C "$repo_dir" sync
+else
+    chezmoi --source="$repo_dir" --destination="$HOME" apply
+fi

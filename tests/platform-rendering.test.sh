@@ -18,15 +18,17 @@ render() {
         "$destination/.pi/agent/extensions/footer/node_modules/example/file" \
         "$destination/.pi/agent/extensions/tavily/node_modules/example/file"
     : > "$tmp/$platform-config.toml"
-    "$repo_root/scripts/run-with-homebrew" chezmoi \
-        --source "$repo_root" \
-        --destination "$destination" \
-        --config "$tmp/$platform-config.toml" \
-        --cache "$tmp/$platform-cache" \
-        --persistent-state "$tmp/$platform-state.boltdb" \
-        --override-data "{\"chezmoi\":{\"os\":\"$platform\"}}" \
-        --exclude=externals \
-        apply
+    chezmoi_args=(
+        --source "$repo_root"
+        --destination "$destination"
+        --config "$tmp/$platform-config.toml"
+        --cache "$tmp/$platform-cache"
+        --persistent-state "$tmp/$platform-state.boltdb"
+        --override-data "{\"chezmoi\":{\"os\":\"$platform\"}}"
+        --exclude=externals
+    )
+    "$repo_root/scripts/run-with-homebrew" chezmoi "${chezmoi_args[@]}" apply
+    "$repo_root/scripts/run-with-homebrew" chezmoi "${chezmoi_args[@]}" verify
 }
 
 render darwin
@@ -58,7 +60,10 @@ grep -Fq "copy-command 'pbcopy'" "$mac/.tmux.conf"
 assert_not_contains 'pbcopy' "$linux/.tmux.conf"
 grep -Fq '/home/linuxbrew/.linuxbrew/bin/brew shellenv' "$linux/.zshrc"
 assert_not_contains '/home/linuxbrew/.linuxbrew/bin/brew shellenv' "$mac/.zshrc"
+# Match the literal zsh expression, not this test process's environment.
+# shellcheck disable=SC2016
 grep -Fq 'path=("$HOME/.local/bin" $path)' "$mac/.zshrc"
+# shellcheck disable=SC2016
 grep -Fq 'path=("$HOME/.local/bin" $path)' "$linux/.zshrc"
 grep -Fq '"dash"' "$mac/.pi/agent/mcp.json"
 assert_not_contains '"dash"' "$linux/.pi/agent/mcp.json"
@@ -74,6 +79,8 @@ for target_home in "$mac" "$linux"; do
     [[ ! -e "$target_home/.pi/agent/extensions/footer" ]]
     [[ ! -e "$target_home/.pi/agent/extensions/tavily" ]]
     [[ ! -e "$target_home/.local/lib/pifind" ]]
+    [[ -x "$target_home/.local/bin/refresh_dotfiles" ]]
+    "$target_home/.local/bin/refresh_dotfiles" --help | grep -Fq -- '--sync'
 done
 
 # The wrapper must adopt Homebrew's shell environment before running a command.

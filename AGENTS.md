@@ -6,11 +6,18 @@ applied to `$HOME`.
 
 ## Workflow
 
-- Preview target changes with `make diff`.
-- Apply with `make apply`; verify with `make verify`.
-- Run application tests with `make test`.
-- Import an intentional target-side file with `make add TARGET="$HOME/path"` or
-  `chezmoi re-add "$HOME/path"`; inspect the source diff before committing.
+- Use native chezmoi commands for files: `chezmoi --source="$PWD" diff`,
+  `apply`, and `verify` from this checkout. The source flag avoids another clone.
+- Use `make sync` to apply files, reconcile tools and locked local dependencies,
+  generate completions, and verify files. Use `make upgrade` for explicit upgrades.
+- Use `refresh_dotfiles --sync` for clean-tree, fast-forward pull plus sync;
+  plain `refresh_dotfiles` only pulls/applies files and may leave dependencies stale.
+- Run `make test` before completion; it must not provision the host or use live
+  credentials. Provisioning targets reject alternate `TARGET_DIR` destinations.
+- Import intentional target-side files with `chezmoi add "$HOME/path"` or
+  `chezmoi re-add "$HOME/path"` (select this source when needed); inspect the diff.
+- Read README.md's Everyday workflow before changing orchestration or its safety
+  boundaries; it defines sync/upgrade/removal semantics and isolated rendering.
 
 Chezmoi source names encode target attributes. Leading `dot_` creates a dotfile,
 `executable_` sets executable bits, `empty_` preserves an empty file, and
@@ -36,6 +43,7 @@ executable source attributes; then apply and verify the installed target.
 `Brewfile` owns cross-platform packages and guards macOS-only applications with
 `OS.mac?`. Chezmoi templates and `.chezmoiignore` own target differences; keep
 macOS output stable when adding Linux branches. Mise owns language runtimes and
-standalone development tools. `make setup` bootstraps Homebrew, applies both
-manifests, and generates dependencies and completions. With `NONINTERACTIVE=1`,
-it leaves Pi credential resolution for an explicit later `make pi-auth`.
+standalone development tools. `make setup` bootstraps Homebrew/chezmoi, runs sync,
+configures GitHub CLI, and resolves Pi credentials. With `NONINTERACTIVE=1`, it
+leaves Pi credential resolution for an explicit later `make pi-auth`. Keep auth and package
+cleanup explicit; ordinary chezmoi apply remains file-only (apart from externals).
