@@ -2,7 +2,7 @@
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
-  "lastChangelogVersion": "1.0.1",
+  "lastChangelogVersion": "1.4.0",
   "hideThinkingBlock": false,
   "collapseChangelog": true,
   "doubleEscapeAction": "tree",
@@ -27,6 +27,12 @@
       ]
     },
     {
+      "source": "git:github.com/anthropics/skills",
+      "skills": [
+        "skills/pdf"
+      ]
+    },
+    {
       "source": "git:github.com/mattpocock/skills",
       "skills": [
         "skills/productivity/teach",
@@ -37,8 +43,7 @@
     "npm:pi-autoresearch",
     "npm:pi-codex-goal",
     "npm:glimpseui",
-    "npm:@crazygit/pi-codex-image-gen@0.2.2",
-    "git:github.com/kaofelix/pi-openrouter-scoped-models"
+    "npm:@crazygit/pi-codex-image-gen@0.2.2"
   ],
   "extensions": [
     "~/.pi/agent/npm/node_modules/glimpseui/examples/companion/index.ts"
@@ -53,5 +58,6 @@
   ],
   "theme": "dark",
   "transport": "auto",
-  "quietStartup": false
+  "quietStartup": false,
+  "deviceId": "4d8b7207-fea2-4153-a6e9-af7a994d80b8"
 }
