@@ -41,7 +41,7 @@ When replacing a goal, session, or orchestrator, preserve the contract verbatim,
 
 Retained conversations are inspection history, not required context. Do not assign a retained agent a new queue item. Put essential decisions in code, commits, issue text, project documents, or the next prompt.
 
-For checkpointed human handoff, record the agent name and pane ID before handing control to the user. Resume orchestration only after explicit handback, then inspect actual repository state rather than assuming the conversation describes every change.
+For checkpointed human handoff, record the terminal name and address before handing control to the user. Resume orchestration only after explicit handback, then inspect actual repository state rather than assuming the conversation describes every change.
 
 ## Broad product specifications
 
@@ -60,7 +60,7 @@ For a continuous queue:
 For a checkpointed queue:
 
 - retain the accepted item's locations;
-- record their names, pane IDs, purpose, and state;
+- record their names, addresses, purpose, and state;
 - pause for inspection or direct follow-up;
 - before the next item, confirm whether retained locations should remain or close.
 

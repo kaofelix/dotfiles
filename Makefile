@@ -76,4 +76,3 @@ test:
 		npm test --prefix "packages/$$package"; \
 	done
 	npm run typecheck --prefix packages/pi-tavily
-	cd home/dot_pi/agent/extensions/pi-herdr && bun install --no-save && bun test

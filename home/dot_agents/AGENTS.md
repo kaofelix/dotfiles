@@ -1,0 +1,1 @@
+- Use `hc --skill` when asked to use Herdr, `hc`, or to delegate to child terminals

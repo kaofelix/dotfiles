@@ -10,7 +10,7 @@ Assign one coherent change. Apply the briefing principle from the main skill and
 - preserves unrelated and pre-existing work;
 - leaves the change uncommitted unless finalization is explicitly delegated later;
 - reports readiness, changed files, focused verification, risks, and explicit remaining native or broad evidence gaps;
-- does not create reviewers or alter Herdr topology unless granted orchestration authority.
+- does not create reviewers or alter topology unless granted orchestration authority.
 
 Writer-ready means the implementation is settled and reviewable, not that every final acceptance gate has run. Final native evidence or a broad suite may remain lead-owned after review when the contract assigns them there. When workflow status exists, keep it in progress until lead acceptance. Assign verification ownership so writer, reviewer, and lead do not repeat the same broad suite without a requirement-driven reason.
 
