@@ -6,5 +6,9 @@
   "minimum_contrast": 1,
   "font": "SF Mono",
   "font_size": 13,
-  "appearance": "dark"
+  "appearance": "dark",
+  "theme": {
+    "light": "paper",
+    "dark": "nord"
+  }
 }
