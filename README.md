@@ -200,6 +200,8 @@ applying them. They extend native Emacs bindings with Option as Meta:
 They apply only to applications using the native macOS text-binding system.
 Caps Lock can be mapped to Control separately in System Settings.
 
+Install [Herdr.app](https://herdr.dev/docs/install/) manually.
+
 Clone the Emacs configuration separately because it has its own lifecycle:
 
 ```sh
