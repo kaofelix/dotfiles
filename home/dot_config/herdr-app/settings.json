@@ -1,0 +1,10 @@
+{
+  "zoom": 1,
+  "sounds": {
+    "enabled": true
+  },
+  "minimum_contrast": 1,
+  "font": "SF Mono",
+  "font_size": 13,
+  "appearance": "dark"
+}
