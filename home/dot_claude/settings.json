@@ -26,5 +26,6 @@
   },
   "awaySummaryEnabled": false,
   "theme": "auto",
-  "autoCompactEnabled": true
+  "autoCompactEnabled": true,
+  "tui": "fullscreen"
 }
