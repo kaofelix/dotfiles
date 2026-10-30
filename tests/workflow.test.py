@@ -25,6 +25,9 @@ class WorkflowFixture(unittest.TestCase):
         self.repo.mkdir()
         shutil.copy2(ROOT / "Makefile", self.repo)
         shutil.copytree(ROOT / "scripts", self.repo / "scripts")
+        # Covered by tests/chezmoi-source.test.sh; keep command logs focused here.
+        hook = self.repo / "scripts/configure-chezmoi-source"
+        hook.write_text("#!/bin/sh\nexit 0\n")
         self.home = self.base / "home"
         self.home.mkdir()
         self.bin = self.base / "bin"

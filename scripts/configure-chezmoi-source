@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == --help ]]; then
+  echo 'Usage: scripts/configure-chezmoi-source REPO CHEZMOI [ARGS...]'
+  echo 'Persist the repository root as sourceDir in the chezmoi config,'
+  echo 'preserving existing TOML settings.'
+  exit 0
+fi
+repo=$(cd "${1:?repository path required}" && pwd -P)
+shift
+[[ $# -gt 0 ]] || { echo 'chezmoi command required' >&2; exit 1; }
+chezmoi=("$@")
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi"
+mkdir -p "$config_dir"
+for alternate in chezmoi.json chezmoi.jsonc chezmoi.yaml chezmoi.yml; do
+  if [[ -e "$config_dir/$alternate" ]]; then
+    source_path=$("${chezmoi[@]}" --config "$config_dir/$alternate" source-path)
+    if [[ -d "$source_path" ]] && [[ "$(git -C "$source_path" rev-parse --show-toplevel 2>/dev/null)" == "$repo" ]]; then exit 0; fi
+    printf 'error: preserve %s; set its sourceDir to %s before applying\n' "$config_dir/$alternate" "$repo" >&2
+    exit 1
+  fi
+done
+config="$config_dir/chezmoi.toml"
+[[ ! -L "$config" ]] || { echo 'error: refusing to overwrite a symlinked chezmoi config' >&2; exit 1; }
+if [[ -f "$config" ]]; then "${chezmoi[@]}" --config "$config" source-path >/dev/null; fi
+# .chezmoi.sourceDir is the effective home/ source state when .chezmoiroot is
+# present. workingTree is the actual repository root and must be persisted.
+literal=$("${chezmoi[@]}" --source "$repo" execute-template '{{ .chezmoi.workingTree | toJson }}')
+temporary=$(mktemp "$config_dir/chezmoi.toml.XXXXXX")
+trap 'rm -f "$temporary"' EXIT
+if [[ -f "$config" ]]; then
+  DOTFILES_SOURCE_LITERAL="$literal" awk '
+    BEGIN { print "sourceDir = " ENVIRON["DOTFILES_SOURCE_LITERAL"]; root=1 }
+    /^[[:space:]]*\[/ { root=0 }
+    root && /^[[:space:]]*sourceDir[[:space:]]*=/ { next }
+    { print }
+  ' "$config" >"$temporary"
+else
+  printf 'sourceDir = %s\n' "$literal" >"$temporary"
+fi
+# Parsing the generated file also catches unusual multiline sourceDir values;
+# leave the existing config unchanged if this surgical update cannot parse it.
+"${chezmoi[@]}" --config "$temporary" --config-format toml source-path >/dev/null
+chmod 600 "$temporary"
+if [[ ! -f "$config" ]] || ! cmp -s "$temporary" "$config"; then mv "$temporary" "$config"; fi

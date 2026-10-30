@@ -47,8 +47,14 @@ if [[ "$sync" == true ]] && ! command -v make >/dev/null 2>&1; then
     exit 1
 fi
 
-source_dir=$(chezmoi source-path)
-repo_dir=$(git -C "$source_dir" rev-parse --show-toplevel)
+if ! source_dir=$(chezmoi source-path) || [[ ! -d "$source_dir" ]]; then
+    printf 'error: dotfiles source is not configured; run make sync from your dotfiles checkout first\n' >&2
+    exit 1
+fi
+if ! repo_dir=$(git -C "$source_dir" rev-parse --show-toplevel 2>/dev/null); then
+    printf 'error: configured dotfiles source is not a Git checkout: %s\n' "$source_dir" >&2
+    exit 1
+fi
 
 if [[ -n $(git -C "$repo_dir" status --porcelain) ]]; then
     printf 'error: dotfiles checkout has local changes; commit or stash them first\n' >&2

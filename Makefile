@@ -48,6 +48,7 @@ _host:
 	}
 
 _apply: _host
+	./scripts/configure-chezmoi-source "$(SOURCE_DIR)" $(BREW_ENV) chezmoi
 	$(CHEZMOI) apply
 
 # A final completion pass is required even when mise installed no new tools.
@@ -65,6 +66,7 @@ _deps:
 # Tests do not apply live dotfiles, install host tools, or resolve credentials.
 test:
 	python3 tests/workflow.test.py
+	bash ./tests/chezmoi-source.test.sh
 	./tests/platform-rendering.test.sh
 	bun test tests/python-env.test.ts
 	./tests/pi-auth-setup.test.sh
