@@ -60,7 +60,11 @@
     "ctrl-alt-[": "space.prev",
     "ctrl-alt-]": "space.next",
     "alt-[": "tab.prev",
-    "alt-]": "tab.next"
+    "alt-]": "tab.next",
+    "cmd-{": "tab.prev",
+    "cmd-}": "tab.next",
+    "cmd-shift-{": "tab.prev",
+    "cmd-shift-}": "tab.next"
   },
   "terminal": {
     "cmd-c": "terminal.copy",
