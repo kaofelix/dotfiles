@@ -1,7 +1,7 @@
 [settings]
 idiomatic_version_file_enable_tools = ["node", "ruby", "rust"]
 experimental = true
-minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
+minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent", "herdr"]
 
 # Refresh completions for ad hoc mise installs. setup/sync/upgrade also run a
 # final pass after all tools are ready, including when no installation occurred.
