@@ -68,7 +68,7 @@ test:
 	python3 tests/workflow.test.py
 	bash ./tests/chezmoi-source.test.sh
 	./tests/platform-rendering.test.sh
-	bun test tests/python-env.test.ts
+	bun test tests/python-env.test.ts tests/herdr-projects.test.ts
 	./tests/pi-auth-setup.test.sh
 	./tests/pi-auth-setup-generation.test.sh
 	$(MAKE) _deps
