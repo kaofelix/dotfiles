@@ -1,1 +1,2 @@
 - Use `hc --skill` when asked to use Herdr, `hc`, or to delegate to child terminals
+- Never run `find`, `grep -r`, `rg`, `fd`, `du` or `mdfind` from `/` or `~`; they trigger macOS Downloads/Desktop/Music permission prompts and can hang the machine. Search the repo, `~/.cargo`, `~/.local/share/mise`, or another known directory instead
