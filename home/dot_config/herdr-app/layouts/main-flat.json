@@ -2,7 +2,7 @@
   "id": "root",
   "cloned_from": {
     "name": "main",
-    "version": "0.1.10"
+    "version": "0.1.11"
   },
   "type": "row",
   "children": [
@@ -79,10 +79,10 @@
           "id": "tabs",
           "type": "block",
           "content": {
-            "mod": "tabs"
+            "mod": "tabs-flat"
           },
           "size": {
-            "px": 42
+            "px": 32
           },
           "window_drag": true
         },
