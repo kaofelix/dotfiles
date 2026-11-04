@@ -220,8 +220,9 @@ Tests cover workflow ordering and failure propagation with fake package-manager
 boundaries, real local Git refresh safety, isolated macOS/Linux chezmoi rendering
 and verification, and the application suites/type checks. They install checkout-local
 test dependencies but do not apply live dotfiles, install host tools, or access
-real credentials. Run them with the existing Node.js, Bun, Python 3, jq, and
-chezmoi tools available; `make test` does not run setup or sync for you.
+real credentials. Run them with the existing Node.js, Bun, Python 3, jq,
+chezmoi, and DuckDB (with table-function `WITH ORDINALITY` support) tools
+available; `make test` does not run setup or sync for you.
 
 Preview and validate managed target state separately with `chezmoi diff` and
 `chezmoi verify` (add `--source="$PWD"` to select this checkout explicitly).
