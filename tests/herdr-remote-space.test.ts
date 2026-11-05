@@ -3,34 +3,39 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileS
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  CLONE_SCRIPT, cloneArgv, cloneCommand, detectForge, forgeFromHost, parseRemote, repoPath, sameRepo,
+  CLONE_SCRIPT, cliFor, cloneArgv, cloneCommand, detectForge, forgeFromHost, gitUrl, parseRemote, repoPath, sameRepo,
 } from "../home/dot_config/herdr-app/mods/space-from-remote/model.js";
 
 describe("remote URL parsing", () => {
-  test("reads https, ssh and scp-style remotes", () => {
-    const expected = { host: "github.com", segments: ["owner", "repo.git"] };
-    expect(parseRemote("https://github.com/owner/repo.git")).toEqual(expected);
-    expect(parseRemote("ssh://git@github.com:22/owner/repo.git")).toEqual(expected);
-    expect(parseRemote("git@github.com:owner/repo.git")).toEqual(expected);
-    expect(parseRemote("  github.com/owner/repo.git  ")).toEqual(expected);
+  test("reads https, ssh and scp-style remotes and remembers the protocol", () => {
+    expect(parseRemote("https://github.com/owner/repo.git"))
+      .toEqual({ host: "github.com", segments: ["owner", "repo.git"], protocol: "https", user: undefined, port: undefined });
+    expect(parseRemote("ssh://git@github.com:22/owner/repo.git"))
+      .toEqual({ host: "github.com", segments: ["owner", "repo.git"], protocol: "ssh", user: "git", port: "22" });
+    expect(parseRemote("git@github.com:owner/repo.git"))
+      .toEqual({ host: "github.com", segments: ["owner", "repo.git"], protocol: "ssh", user: "git", port: undefined });
+    expect(parseRemote("  github.com/owner/repo.git  ")?.protocol).toBe("https");
   });
 
-  test("drops web-only parts, queries and fragments", () => {
+  test("drops web-only parts, queries, fragments and embedded passwords", () => {
     expect(parseRemote("https://github.com/owner/repo/tree/main?tab=x#top")?.segments)
       .toEqual(["owner", "repo", "tree", "main"]);
     expect(parseRemote("https://gitlab.example.com/group/sub/repo/-/tree/main")?.segments)
       .toEqual(["group", "sub", "repo"]);
+    expect(parseRemote("https://user:secret@gitlab.example.com/g/r")).toEqual(
+      { host: "gitlab.example.com", segments: ["g", "r"], protocol: "https", user: "user", port: undefined });
   });
 
   test("lowercases the host and keeps nested GitLab groups", () => {
-    expect(parseRemote("https://GitLab.Example.COM/group/sub/repo")).toEqual({
-      host: "gitlab.example.com", segments: ["group", "sub", "repo"],
-    });
+    expect(parseRemote("https://GitLab.Example.COM/group/sub/repo")?.host).toBe("gitlab.example.com");
+    expect(parseRemote("https://gitlab.example.com/group/sub/repo")?.segments).toEqual(["group", "sub", "repo"]);
   });
 
   test("rejects anything that is not a plain host and project path", () => {
     for (const bad of ["", "owner/repo", "https://github.com/owner", "https://github.com/owner/repo;rm -rf x",
-      "https://github.com/owner/$(id)", "https://bad host/owner/repo", "not a url", "https:///owner/repo"]) {
+      "https://github.com/owner/$(id)", "https://bad host/owner/repo", "not a url", "https:///owner/repo",
+      "file:///etc/passwd/x/y", "ftp://github.com/owner/repo", "ext::sh -c id", "https://-bad.example.com/o/r",
+      "evil user@github.com:owner/repo"]) {
       expect(parseRemote(bad)).toBeNull();
     }
   });
@@ -100,18 +105,34 @@ describe("forge detection", () => {
 });
 
 describe("clone command", () => {
+  const https = parseRemote("https://gitlab.example.com/g/sub/r")!;
+  const ssh = parseRemote("git@gitlab.example.com:g/sub/r.git")!;
+
   test("logged-in CLIs resolve the project themselves; glab without login gets a URL", () => {
-    expect(cloneCommand({ forge: "github", host: "github.com", path: "owner/repo", authed: false }))
-      .toEqual({ cli: "gh", env: "GH_HOST", repo: "owner/repo" });
-    expect(cloneCommand({ forge: "gitlab", host: "gitlab.example.com", path: "g/sub/r", authed: true }))
-      .toEqual({ cli: "glab", env: "GITLAB_HOST", repo: "g/sub/r" });
-    expect(cloneCommand({ forge: "gitlab", host: "gitlab.example.com", path: "g/sub/r", authed: false }))
-      .toEqual({ cli: "glab", env: "", repo: "https://gitlab.example.com/g/sub/r" });
+    expect(cloneCommand({ forge: "github", host: "github.com", path: "owner/repo", authed: false, parsed: https }))
+      .toEqual({ env: "GH_HOST", words: ["gh", "repo", "clone", "owner/repo"] });
+    expect(cloneCommand({ forge: "gitlab", host: "gitlab.example.com", path: "g/sub/r", authed: true, parsed: https }))
+      .toEqual({ env: "GITLAB_HOST", words: ["glab", "repo", "clone", "g/sub/r"] });
+    expect(cloneCommand({ forge: "gitlab", host: "gitlab.example.com", path: "g/sub/r", authed: false, parsed: https }))
+      .toEqual({ env: "", words: ["glab", "repo", "clone", "https://gitlab.example.com/g/sub/r"] });
+    expect(cliFor("github")).toBe("gh");
+    expect(cliFor("gitlab")).toBe("glab");
   });
 
-  const run = (cli: string, env: string, dir: string, extra: Record<string, string> = {}) => {
+  test("a machine without the CLI falls back to git on the pasted protocol", () => {
+    const base = { forge: "gitlab", host: "gitlab.example.com", path: "g/sub/r", authed: false, installed: false };
+    expect(cloneCommand({ ...base, parsed: https }))
+      .toEqual({ env: "", words: ["git", "clone", "https://gitlab.example.com/g/sub/r.git"] });
+    expect(cloneCommand({ ...base, parsed: ssh }))
+      .toEqual({ env: "", words: ["git", "clone", "ssh://git@gitlab.example.com/g/sub/r.git"] });
+    expect(gitUrl(parseRemote("ssh://deploy@git.example.com:2222/o/r")!, "o/r"))
+      .toBe("ssh://deploy@git.example.com:2222/o/r.git");
+    expect(gitUrl(parseRemote("https://git.example.com:8443/o/r")!, "o/r")).toBe("https://git.example.com:8443/o/r.git");
+  });
+
+  const run = (words: string[], env: string, dir: string, extra: Record<string, string> = {}) => {
     const dest = join(dir, "dest dir");
-    const argv = cloneArgv({ cli, env, repo: "g/r" }, "git.example.com", dest);
+    const argv = cloneArgv({ env, words }, "git.example.com", dest);
     const result = Bun.spawnSync(argv, { env: { ...process.env, SHELL: "/usr/bin/true", ...extra }, cwd: dir });
     return { dest, text: result.stdout.toString() + result.stderr.toString(), code: result.exitCode };
   };
@@ -123,27 +144,27 @@ describe("clone command", () => {
     return path;
   };
 
-  test("the script exports the host, passes the arguments through and ends in the new checkout", () => {
+  test("the script exports the host, appends the destination and ends in the new checkout", () => {
     const dir = mkdtempSync(join(tmpdir(), "remote-space-"));
-    const cli = fakeCli(dir, `printf '%s|%s|%s|%s|%s\\n' "$FAKE_HOST" "$1" "$2" "$3" "$4" >> "${dir}/log"\nmkdir -p "$4"`);
-    const { dest, code } = run(cli, "FAKE_HOST", dir);
+    const cli = fakeCli(dir, `printf '%s|%s|%s|%s\\n' "$FAKE_HOST" "$1" "$2" "$3" >> "${dir}/log"\nmkdir -p "$3"`);
+    const { dest, code } = run([cli, "repo", "g/r"], "FAKE_HOST", dir);
     expect(code).toBe(0);
     expect(existsSync(dest)).toBe(true);
-    expect(readFileSync(join(dir, "log"), "utf8").trim()).toBe(`git.example.com|repo|clone|g/r|${dest}`);
+    expect(readFileSync(join(dir, "log"), "utf8").trim()).toBe(`git.example.com|repo|g/r|${dest}`);
   });
 
   test("a failed clone explains how to retry and still leaves a shell", () => {
     const dir = mkdtempSync(join(tmpdir(), "remote-space-"));
     mkdirSync(dir, { recursive: true });
     const cli = fakeCli(dir, "exit 3");
-    const { text, code } = run(cli, "", dir);
+    const { text, code } = run([cli, "repo", "clone", "g/r"], "", dir);
     expect(code).toBe(0);
     expect(text).toContain("Clone failed");
     expect(text).toContain("repo clone g/r");
   });
 
   test("the script text is shell-safe: user input only ever arrives as arguments", () => {
-    expect(CLONE_SCRIPT).not.toMatch(/\$\{?[6-9]/);
-    expect(CLONE_SCRIPT).toContain('"$4"');
+    expect(CLONE_SCRIPT).not.toMatch(/\$\{?[4-9]/);
+    expect(CLONE_SCRIPT).toContain('"$@" "$dest"');
   });
 });

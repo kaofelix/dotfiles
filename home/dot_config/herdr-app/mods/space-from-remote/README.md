@@ -9,6 +9,19 @@ progress, credential prompts and errors are visible; a failed clone leaves the
 terminal open with the command to retry. If `~/Code/<name>` already holds that
 repository, the mod switches to its space (or opens one) instead of cloning.
 
+## Machine
+
+The dropdown beside the input chooses where the space lives: this computer or another
+machine from `hc machine ls` (offline ones are disabled). It starts on the machine
+of the space you are looking at; click the dropdown (↑ ↓ Enter inside its list) or press **Ctrl+N / Ctrl+P** to change
+it. Everything then runs on that machine: the host and CLI checks, the `~/Code`
+folder (its own home, created if missing), and the clone itself, in a terminal of
+the new space there.
+
+A machine without the `gh`/`glab` CLI that the URL needs falls back to plain
+`git clone`, using the pasted protocol (https or ssh) and a URL rebuilt from the
+validated host and path.
+
 ## Which CLI
 
 The host name is never hard-coded. For each host the mod asks, in order:

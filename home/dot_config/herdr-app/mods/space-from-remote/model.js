@@ -1,22 +1,33 @@
 const HOST = /^[A-Za-z0-9][A-Za-z0-9.-]*$/;
 const SEGMENT = /^[A-Za-z0-9._-]+$/;
 
-// Accepts https://, ssh:// and scp-style (git@host:path) remotes, or host/path.
+// Accepts http(s)://, ssh:// and scp-style (git@host:path) remotes, or host/path.
 // Returns null for anything that is not a plain, shell-safe host and path.
 export function parseRemote(input) {
   const text = String(input ?? "").trim();
   if (!text) return null;
-  const match = text.match(/^[a-z][a-z0-9+.-]*:\/\/(?:[^/@]*@)?([^/:]+)(?::\d+)?\/([^?#]*)/i)
-    ?? text.match(/^(?:[^/@\s]+@)?([^/:\s]+):(?!\/)([^?#]+)$/)
-    ?? text.match(/^([^/\s]+\.[^/\s]+)\/([^?#]+)$/);
-  if (!match) return null;
-  const [, host, path] = match;
+  let protocol = "https", user, host, port, path;
+  const url = text.match(/^([a-z][a-z0-9+.-]*):\/\/(?:([^/@:]*)(?::[^/@]*)?@)?([^/:@]+)(?::(\d+))?\/([^?#]*)/i);
+  const scp = text.match(/^(?:([^/@\s]+)@)?([^/:\s]+):(?!\/)([^?#]+)$/);
+  const bare = text.match(/^([^/\s]+\.[^/\s]+)\/([^?#]+)$/);
+  if (url) {
+    const scheme = url[1].toLowerCase();
+    if (!["http", "https", "ssh"].includes(scheme)) return null;
+    protocol = scheme === "ssh" ? "ssh" : "https";
+    [, , user, host, port, path] = url;
+  } else if (scp) {
+    protocol = "ssh";
+    [, user, host, path] = scp;
+  } else if (bare) {
+    [, host, path] = bare;
+  } else return null;
   let segments = path.split("/").filter(Boolean);
   // GitLab puts web-only pages after "/-/".
   const dash = segments.indexOf("-");
   if (dash >= 0) segments = segments.slice(0, dash);
   if (!HOST.test(host) || segments.length < 2 || !segments.every(part => SEGMENT.test(part))) return null;
-  return { host: host.toLowerCase(), segments };
+  if (user && !SEGMENT.test(user)) return null;
+  return { host: host.toLowerCase(), segments, protocol, user: user || undefined, port };
 }
 
 // GitHub projects are owner/repo, so extra segments are web pages (tree/main).
@@ -86,23 +97,37 @@ export async function detectForge(host, { exec }) {
 
 // A logged-in CLI resolves group/project itself and honours the configured git
 // protocol (host through the environment). Without a login, glab needs a URL.
-export function cloneCommand({ forge, host, path, authed }) {
-  if (forge === "github") return { cli: CLI.github, env: "GH_HOST", repo: path };
+// A machine without the CLI falls back to plain git on the pasted protocol.
+export function cloneCommand({ forge, host, path, authed, installed = true, parsed }) {
+  if (!installed) return { env: "", words: ["git", "clone", gitUrl(parsed, path)] };
+  if (forge === "github") return { env: "GH_HOST", words: [CLI.github, "repo", "clone", path] };
   return authed
-    ? { cli: CLI.gitlab, env: "GITLAB_HOST", repo: path }
-    : { cli: CLI.gitlab, env: "", repo: `https://${host}/${path}` };
+    ? { env: "GITLAB_HOST", words: [CLI.gitlab, "repo", "clone", path] }
+    : { env: "", words: [CLI.gitlab, "repo", "clone", `https://${host}/${path}`] };
+}
+
+export function cliFor(forge) {
+  return CLI[forge];
+}
+
+// Rebuilt from validated parts, never from the pasted text.
+export function gitUrl({ host, protocol, user, port }, path) {
+  const where = `${host}${port ? `:${port}` : ""}/${path}.git`;
+  return protocol === "ssh" ? `ssh://${user ?? "git"}@${where}` : `https://${where}`;
 }
 
 // Runs in the new space's terminal, so a long clone shows progress and can
 // prompt for credentials. A failure leaves a shell open with the error visible.
-// Arguments: $1 host variable, $2 host, $3 CLI, $4 repository, $5 destination.
+// Arguments: $1 host variable, $2 host, $3 destination, then the clone command.
 export const CLONE_SCRIPT = `
 if [ -n "$1" ]; then export "$1=$2"; fi
-if "$3" repo clone "$4" "$5"; then cd "$5" && exec "\${SHELL:-sh}"; fi
-printf '\\nClone failed. Fix the problem and run it again:\\n  %s repo clone %s %s\\n\\n' "$3" "$4" "$5"
+dest=$3
+shift 3
+if "$@" "$dest"; then cd "$dest" && exec "\${SHELL:-sh}"; fi
+printf '\\nClone failed. Fix the problem and run it again:\\n  %s %s\\n\\n' "$*" "$dest"
 exec "\${SHELL:-sh}"
 `;
 
 export function cloneArgv(clone, host, dest) {
-  return ["sh", "-c", CLONE_SCRIPT, "sh", clone.env, host, clone.cli, clone.repo, dest];
+  return ["sh", "-c", CLONE_SCRIPT, "sh", clone.env, host, dest, ...clone.words];
 }
