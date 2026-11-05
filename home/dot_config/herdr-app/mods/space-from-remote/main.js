@@ -89,7 +89,7 @@ export default class SpaceFromRemote extends View {
     cx.notify();
     cx.spawn(async (cx) => {
       try {
-        await this.open(parsed);
+        await this.cloneRemote(parsed);
       } catch (error) {
         this.error = error.message ?? String(error);
       }
@@ -98,7 +98,7 @@ export default class SpaceFromRemote extends View {
     });
   }
 
-  async open(parsed) {
+  async cloneRemote(parsed) {
     const on = this.machine;
     const where = on ?? "this computer";
     // Everything runs on the chosen machine: its CLIs, logins, network and folders.
