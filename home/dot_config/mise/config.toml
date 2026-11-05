@@ -1,7 +1,7 @@
 [settings]
 idiomatic_version_file_enable_tools = ["node", "ruby", "rust"]
 experimental = true
-minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent", "herdr"]
+minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
 
 # Refresh completions for ad hoc mise installs. setup/sync/upgrade also run a
 # final pass after all tools are ready, including when no installation occurred.
@@ -19,7 +19,6 @@ gh = "latest"
 "github:juanibiapina/gob" = "latest"
 glow = "latest"
 gum = "latest"
-herdr = "latest"
 jq = "latest"
 node = "lts"
 opentofu = "latest"
