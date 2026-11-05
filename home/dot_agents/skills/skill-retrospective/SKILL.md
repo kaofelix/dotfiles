@@ -7,7 +7,7 @@ description: Improve or evaluate an agent skill from real Pi execution traces. U
 
 Treat skill improvement as a **trace-driven retrospective**, not a prose review. Preserve what worked, attribute failures carefully, and change the smallest instruction or affordance that addresses repeated evidence.
 
-Load and follow both `pi-sessions-duckdb` and `writing-for-agents`. Read the target skill in full. When its capability depends on a changing external tool or API, consult current authoritative documentation as a separate evidence source.
+Load and follow `session-history-duckdb` (its Pi adapter) and `writing-for-agents`. Read the target skill in full. When its capability depends on a changing external tool or API, consult current authoritative documentation as a separate evidence source.
 
 ## 1. Frame the retrospective
 
@@ -26,7 +26,7 @@ See [session selection](references/session-selection.md) for version-aware corpu
 
 ## 2. Build a bounded corpus
 
-Use the `pi-sessions-duckdb` funnel:
+Use the `session-history-duckdb` analytics funnel with its Pi adapter:
 
 1. Aggregate sessions that loaded the fingerprinted version.
 2. Exclude the current retrospective session.

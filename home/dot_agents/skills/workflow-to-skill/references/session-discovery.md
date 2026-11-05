@@ -1,6 +1,6 @@
 # Session discovery for workflow archaeology
 
-Run queries through the schema-loaded wrapper from `pi-sessions-duckdb`. Funnel from metadata to candidate sessions before loading complete transcripts.
+Run these recipes through `bash "$HOME/.agents/skills/session-history-duckdb/adapters/pi/scripts/query.sh"` without changing the project's working directory. If inferred Pi views fail on scalar system content, use the explicit-JSON fallback in that skill's Pi query reference. Funnel from metadata to candidate sessions before loading complete transcripts.
 
 ## Inventory a broad scope
 

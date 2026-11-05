@@ -12,7 +12,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class ClaudeSessionsTest(unittest.TestCase):
+class SessionHistoryTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory(prefix="claude-duckdb-")
@@ -27,13 +27,13 @@ class ClaudeSessionsTest(unittest.TestCase):
             f"--config={config}", f"--cache={cls.base / 'cache'}",
             f"--persistent-state={cls.base / 'state.boltdb'}", "--exclude=externals",
         ]
-        cls.skill = cls.home / ".agents/skills/claude-sessions-duckdb"
+        cls.skill = cls.home / ".agents/skills/session-history-duckdb"
         cls.skill.parent.mkdir(parents=True)
         rendered = subprocess.run([*cls.chezmoi, "apply", str(cls.skill)],
                                   capture_output=True, text=True)
         if rendered.returncode:
             raise RuntimeError(rendered.stderr)
-        cls.scripts = cls.skill / "scripts"
+        cls.scripts = cls.skill / "adapters/claude/scripts"
 
     def setUp(self):
         self.case = Path(tempfile.mkdtemp(dir=self.base))
@@ -204,6 +204,70 @@ class ClaudeSessionsTest(unittest.TestCase):
             SELECT session_id, agent_id FROM claude_sessions ORDER BY filename
         """), [{"session_id": "parent", "agent_id": None},
                {"session_id": "parent", "agent_id": "child"}])
+
+    def test_codex_adapter_preserves_transcript_tools_and_usage(self):
+        self.scripts = self.skill / "adapters/codex/scripts"
+        def event(ordinal, payload, type="response_item"):
+            return {"timestamp": "2026-01-01T00:00:00Z", "ordinal": ordinal,
+                    "type": type, "payload": payload}
+        self.write_log([
+            event(1, {"type": "message", "role": "user", "content": [
+                {"type": "input_text", "text": "# AGENTS.md instructions for /example"}]}),
+            event(2, {"type": "message", "role": "user", "content": [
+                {"type": "input_text", "text": "Inspect this."}]}),
+            event(3, {"type": "function_call", "name": "read", "call_id": "call-1",
+                      "arguments": '{"path":"/example"}'}),
+            event(4, {"type": "function_call_output", "call_id": "call-1", "output": "ok"}),
+            event(5, {"type": "message", "role": "assistant", "phase": "final",
+                      "content": [{"type": "output_text", "text": "Done"}]}),
+            event(6, {"response_id": "response-1", "usage": {"output_tokens": 4}},
+                  type="token_usage_record"),
+        ])
+        self.env["CODEX_SESSION_GLOB"] = str(self.log)
+        result = self.run_script("conversation-text.sh", str(self.log))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([r["text"] for r in csv.DictReader(io.StringIO(result.stdout))],
+                         ["Inspect this.", "Done"])
+        self.assertEqual(self.query("SELECT tool_name, result_text FROM codex_tool_executions"),
+                         [{"tool_name": "read", "result_text": "ok"}])
+        self.assertEqual(self.query("SELECT output_tokens::BIGINT AS output_tokens FROM codex_token_usage"),
+                         [{"output_tokens": 4}])
+
+    def test_pi_adapter_and_pifind_default_location_survive_move(self):
+        self.scripts = self.skill / "adapters/pi/scripts"
+        session = self.home / ".pi/agent/sessions/project/2026-01-01_aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.jsonl"
+        self.write_log([
+            {"type": "session", "id": "session-1", "timestamp": "2026-01-01T00:00:00Z",
+             "cwd": "/example"},
+            {"type": "session_info", "id": "info", "name": "Example",
+             "timestamp": "2026-01-01T00:00:01Z"},
+            {"type": "message", "id": "u1", "timestamp": "2026-01-01T00:00:02Z",
+             "message": {"role": "user", "timestamp": 1767225602000, "content": [
+                 {"type": "text", "text": '<skill name="demo">body</skill> Inspect this.'}]}},
+            {"type": "message", "id": "a1", "timestamp": "2026-01-01T00:00:03Z",
+             "message": {"role": "assistant", "content": [
+                 {"type": "toolCall", "id": "call-1", "name": "read",
+                  "arguments": {"path": "/example"}}, {"type": "text", "text": "Checking"}]}},
+            {"type": "message", "id": "r1", "timestamp": "2026-01-01T00:00:04Z",
+             "message": {"role": "toolResult", "toolCallId": "call-1", "toolName": "read",
+                         "isError": False, "content": [{"type": "text", "text": "ok"}]}},
+        ], session)
+        result = self.run_script("conversation-text.sh", str(session))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([r["text"] for r in csv.DictReader(io.StringIO(result.stdout))],
+                         ["[skill demo omitted] Inspect this.", "Checking"])
+        self.assertEqual(self.query("SELECT tool_name, result_text FROM pi_tool_executions"),
+                         [{"tool_name": "read", "result_text": "ok"}])
+        env = {**self.env}
+        env.pop("PI_SESSIONS_DUCKDB_SKILL_DIR", None)
+        module = (ROOT / "packages/pifind/duckdb.js").as_uri()
+        code = (f"import {{ DuckDbSessionStore }} from {json.dumps(module)}; "
+                "console.log(JSON.stringify(await new DuckDbSessionStore().query("
+                "'SELECT count(*) AS n FROM pi_conversation')));")
+        result = subprocess.run(["node", "--input-type=module", "-e", code], env=env,
+                                capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), [{"n": 2}])
 
 
 if __name__ == "__main__":

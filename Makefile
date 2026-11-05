@@ -66,7 +66,7 @@ _deps:
 # Tests do not apply live dotfiles, install host tools, or resolve credentials.
 test:
 	python3 tests/workflow.test.py
-	python3 tests/claude-sessions-duckdb.test.py
+	python3 tests/session-history-duckdb.test.py
 	bash ./tests/chezmoi-source.test.sh
 	./tests/platform-rendering.test.sh
 	bun test tests/python-env.test.ts tests/herdr-projects.test.ts tests/herdr-remote-space.test.ts

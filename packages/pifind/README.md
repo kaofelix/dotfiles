@@ -9,7 +9,7 @@ pifind "where did I debug the OAuth callback?"
 ## How it works
 
 1. A Pi SDK session runs in memory with extensions, skills, context files, and mutating tools disabled.
-2. The agent searches compact user/assistant conversation text through the `pi-sessions-duckdb` skill's read-only DuckDB views.
+2. The agent searches compact user/assistant conversation text through the `session-history-duckdb` skill's Pi adapter and read-only DuckDB views.
 3. A terminating tool captures and validates up to eight ranked candidates.
 4. `fzf` displays each candidate's confidence, explanation, and evidence.
 5. The selected JSONL path is validated beneath `~/.pi/agent/sessions` before launching Pi.
@@ -20,7 +20,7 @@ pifind "where did I debug the OAuth callback?"
 - Node.js 22.19 or newer
 - DuckDB
 - `fzf`
-- The `pi-sessions-duckdb` skill at `~/.agents/skills/pi-sessions-duckdb`
+- The `session-history-duckdb` skill at `~/.agents/skills/session-history-duckdb`
 
 Install this package's locked JavaScript dependencies from the dotfiles repository
 (or run `make sync` to reconcile the entire environment):
@@ -29,10 +29,11 @@ Install this package's locked JavaScript dependencies from the dotfiles reposito
 npm ci --prefix packages/pifind
 ```
 
-Override the DuckDB skill location when necessary:
+Override the Pi adapter location when necessary (the existing environment
+variable still accepts a directory containing `scripts/query.sh`):
 
 ```bash
-PI_SESSIONS_DUCKDB_SKILL_DIR=/path/to/pi-sessions-duckdb pifind "query"
+PI_SESSIONS_DUCKDB_SKILL_DIR=/path/to/session-history-duckdb/adapters/pi pifind "query"
 ```
 
 ## Development

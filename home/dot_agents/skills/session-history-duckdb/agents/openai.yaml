@@ -1,0 +1,4 @@
+interface:
+  display_name: "Session History + DuckDB"
+  short_description: "Inspect Claude Code, Codex, and Pi session logs"
+  default_prompt: "Use $session-history-duckdb to inspect this conversation or analyze my agent session history."

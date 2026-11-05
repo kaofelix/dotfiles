@@ -3,6 +3,11 @@
 .pi/agent/extensions/footer
 .pi/agent/extensions/tavily
 
+# Replaced by session-history-duckdb; retain removal rules for existing installs.
+.agents/skills/claude-sessions-duckdb
+.agents/skills/codex-sessions-duckdb
+.agents/skills/pi-sessions-duckdb
+
 # Retired global Cloudflare skills. Keep these removal rules so existing
 # installations converge even though .agents/skills remains non-exact.
 .agents/skills/agents-sdk

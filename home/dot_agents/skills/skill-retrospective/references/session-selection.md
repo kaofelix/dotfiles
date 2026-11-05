@@ -1,6 +1,6 @@
 # Version-aware session selection
 
-Use these recipes through the schema-loaded wrapper from `pi-sessions-duckdb`.
+Run these recipes through `bash "$HOME/.agents/skills/session-history-duckdb/adapters/pi/scripts/query.sh"` without changing the project's working directory. If inferred Pi views fail on scalar system content, use the explicit-JSON fallback in that skill's Pi query reference.
 
 ## Find sessions that loaded the intended version
 

@@ -7,7 +7,7 @@ description: Discover or extract reusable agent workflows from Pi sessions. Use 
 
 Practice **workflow archaeology**: recover how work actually happens across sessions, separate durable practice from incidental behavior, and package only what deserves reuse.
 
-Load and follow both `pi-sessions-duckdb` and `writing-for-agents`. Use session evidence to discover the workflow and writing principles to package it. Keep **observed practice**, **user-desired behavior**, and **agent inference** distinguishable throughout.
+Load and follow `session-history-duckdb` (its Pi adapter) and `writing-for-agents`. Use session evidence to discover the workflow and writing principles to package it. Keep **observed practice**, **user-desired behavior**, and **agent inference** distinguishable throughout.
 
 ## 1. Choose the discovery branch
 

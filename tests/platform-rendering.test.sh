@@ -13,6 +13,12 @@ render() {
         "$destination/.pi/agent/extensions/footer/node_modules/example" \
         "$destination/.pi/agent/extensions/tavily/node_modules/example" \
         "$tmp/$platform-cache"
+    for agent in claude codex pi; do
+        mkdir -p "$destination/.agents/skills/$agent-sessions-duckdb"
+        printf 'retired skill\n' > "$destination/.agents/skills/$agent-sessions-duckdb/SKILL.md"
+    done
+    mkdir -p "$destination/.agents/skills/local-unmanaged"
+    touch "$destination/.agents/skills/local-unmanaged/keep"
     touch \
         "$destination/.local/lib/pifind/node_modules/example/file" \
         "$destination/.pi/agent/extensions/footer/node_modules/example/file" \
@@ -79,6 +85,12 @@ for target_home in "$mac" "$linux"; do
     [[ ! -e "$target_home/.pi/agent/extensions/footer" ]]
     [[ ! -e "$target_home/.pi/agent/extensions/tavily" ]]
     [[ ! -e "$target_home/.local/lib/pifind" ]]
+    for agent in claude codex pi; do
+        [[ ! -e "$target_home/.agents/skills/$agent-sessions-duckdb" ]]
+        [[ -x "$target_home/.agents/skills/session-history-duckdb/adapters/$agent/scripts/query.sh" ]]
+    done
+    [[ -f "$target_home/.agents/skills/local-unmanaged/keep" ]]
+    [[ -f "$target_home/.agents/skills/session-history-duckdb/SKILL.md" ]]
     [[ -x "$target_home/.local/bin/refresh_dotfiles" ]]
     "$target_home/.local/bin/refresh_dotfiles" --help | grep -Fq -- '--sync'
 done
