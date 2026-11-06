@@ -185,7 +185,11 @@ export OP_ACCOUNT="<account ID or shorthand>"
 ## Other configuration
 
 Agent skills are installed at the cross-agent standard location
-`~/.agents/skills/`.
+`~/.agents/skills/`. Claude Code reads `~/.claude/skills/`, so each tracked
+skill also has a `home/dot_claude/skills/symlink_<name>.tmpl` pointing at its
+`~/.agents/skills/<name>` directory. Add one when you add a skill. The
+directory is not symlinked as a whole because it also holds skills installed
+by other tools.
 
 Native macOS text bindings are installed at
 `~/Library/KeyBindings/DefaultKeyBinding.dict`. Restart applications after

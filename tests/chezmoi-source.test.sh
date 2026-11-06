@@ -28,4 +28,13 @@ if FAKE_SOURCE="$temporary/missing" PATH="$temporary/bin:$PATH" bash "$root/home
 grep -Fq 'run make sync' "$temporary/refresh-error"
 if FAKE_SOURCE="$destination" PATH="$temporary/bin:$PATH" bash "$root/home/dot_local/bin/executable_refresh_dotfiles" >"$temporary/refresh-error" 2>&1; then exit 1; fi
 grep -Fq 'not a Git checkout' "$temporary/refresh-error"
+
+# Claude Code reads ~/.claude/skills, so every tracked skill needs a symlink there.
+for skill in "$root"/home/dot_agents/skills/*/; do
+    name=$(basename "$skill")
+    link="$root/home/dot_claude/skills/symlink_$name.tmpl"
+    [[ -f "$link" ]] || { echo "missing Claude skill symlink for $name: $link" >&2; exit 1; }
+    [[ "$(cat "$link")" == "{{ .chezmoi.homeDir }}/.agents/skills/$name" ]] \
+        || { echo "wrong Claude skill symlink target for $name" >&2; exit 1; }
+done
 echo 'chezmoi source configuration tests passed'
