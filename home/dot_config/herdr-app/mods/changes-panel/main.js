@@ -171,14 +171,20 @@ export default class ChangesPanel extends View {
     }
   }
 
-  async load(source, cx) {
+  // `quiet`: a reload of what is already shown (the branch moved): no loading state, and on
+  // failure the last diff stays.
+  async load(source, cx, { quiet = false } = {}) {
     const rev = ++this.rev;
     const started = Date.now();
     this.source = source;
-    this.loading = true;
-    this.error = null;
-    cx.notify();
+    if (!quiet) {
+      this.loading = true;
+      this.error = null;
+      cx.notify();
+    }
     try {
+      // Before the diff: a commit that lands while it is read is then seen as a move next tick.
+      const tips = await git.tips(source);
       const [{ text, skipped }, commits] = await Promise.all([git.diff(source), git.commits(source.repo, source.base, source.head)]);
       if (rev !== this.rev) return;
       const key = reviewKey(source);
@@ -199,10 +205,11 @@ export default class ChangesPanel extends View {
       this.shownSince = source.since ?? null;
       if (newReview || !this.files.some((f) => f.id === this.only)) this.only = null;
       this.commits = commits;
+      this.tips = tips;
       this.ms = Date.now() - started;
       if (sameReview) this.noticeAddressed(before);
     } catch (e) {
-      if (rev !== this.rev) return;
+      if (rev !== this.rev || quiet) return;
       this.files = [];
       this.error = String(e.message ?? e);
     }
@@ -242,7 +249,8 @@ export default class ChangesPanel extends View {
 
   refresh(cx) {
     const source = this.source;
-    if (!source || source.head || source.commit || this.loading || this.busy) return;
+    if (!source || source.commit || this.loading || this.busy) return;
+    if (source.head) return this.refreshBranch(source, cx);
     this.busy = true;
     cx.spawn(async (cx) => {
       try {
@@ -259,6 +267,24 @@ export default class ChangesPanel extends View {
         cx.notify();
         // Files that changed lost their opened text: read it again.
         if (this.prefs.wholeFiles) this.loadWholeFiles(cx);
+      } catch {
+        // Keep the last good diff; the next tick tries again.
+      } finally {
+        this.busy = false;
+      }
+    });
+  }
+
+  // A branch under review (base...head) changes only when a ref moves, and one rev-parse tells:
+  // new commits, or a base that was fetched or rebased, then show up without a manual reload.
+  refreshBranch(source, cx) {
+    this.busy = true;
+    cx.spawn(async (cx) => {
+      try {
+        const tips = await git.tips(source);
+        if (source !== this.source || !tips || tips === this.tips) return;
+        this.refs = await git.refs(source.repo);
+        await this.load(source, cx, { quiet: true });
       } catch {
         // Keep the last good diff; the next tick tries again.
       } finally {

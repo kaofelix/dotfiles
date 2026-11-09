@@ -47,6 +47,16 @@ export async function defaultBase(repo) {
 
 export const isDirty = async (repo) => Boolean(await line(repo, ["status", "--porcelain", "--untracked-files=normal"]));
 
+// Where base and head point right now, as one string: what a branch under review is compared
+// by, to see that it moved. Null for a working tree or a commit, and when a ref can't be
+// resolved (a deleted branch): the caller then keeps what it shows.
+export async function tips({ repo, base, head }) {
+  if (!head || isOption(base) || isOption(head)) return null;
+  // The trailing "--" says these are revisions, so a file named like the branch is no clash.
+  const out = await git(repo, ["rev-parse", ...(base === EMPTY_TREE ? [] : [base]), head, "--"]).catch(() => null);
+  return out?.trim() || null;
+}
+
 // Branches, remote branches and tags, most recently committed first.
 export async function refs(repo) {
   const out = await git(repo, ["for-each-ref", "--sort=-committerdate", "--format=%(refname)", "refs/heads", "refs/remotes", "refs/tags"]).catch(() => "");

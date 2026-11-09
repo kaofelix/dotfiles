@@ -157,3 +157,161 @@ describe("opened separators and the files that stay the same", () => {
     expect(wrong(rows, edited)).toEqual([]);
   });
 });
+
+describe("a branch under review gets new commits", () => {
+  async function branchRepo() {
+    const { repo, git, file } = await makeRepo();
+    await git("checkout", "-q", "-b", "feature");
+    await writeFile(file, text(lines(80).map((l, i) => (i === 9 ? "line 10 first" : l))));
+    await git("commit", "-q", "-am", "first");
+    return { repo, git, file };
+  }
+  const names = (view: any) => view.files.map((f: any) => f.name).join();
+  const rangeSource = (repo: string) => ({ repo, base: "main", head: "feature", commit: null });
+  // The git subcommand of each exec, past git's global options (-C <dir>, -c <k=v>, --flags).
+  const subcommand = (args: string[]) => { for (let i = 0; i < args.length; i++) { if (args[i] === "-C" || args[i] === "-c") i++; else if (!args[i].startsWith("-")) return args[i]; } return ""; };
+  const execs = () => { const seen: string[] = []; const was = stub.exec; stub.exec = (cmd: string, args: string[], options: any) => { seen.push(cmd === "git" ? `git ${subcommand(args)}` : cmd); return was(cmd, args, options); }; return { seen, stop: () => { stub.exec = was; } }; };
+
+  test("a refresh tick shows a commit made after the panel loaded", async () => {
+    const { repo, git } = await branchRepo();
+    const { view, cx, settle } = panel(repo, rangeSource(repo));
+    await view.load(view.source, cx);
+    expect(names(view)).toBe("big.js");
+    expect(view.commits).toHaveLength(1);
+
+    await writeFile(join(repo, "b.js"), "new\n");
+    await git("add", ".");
+    await git("commit", "-q", "-m", "second");
+    view.refresh(cx);
+    await settle();
+    expect(names(view)).toBe("b.js,big.js");
+    expect(view.commits).toHaveLength(2);
+  });
+
+  test("polls one cheap command while the branch has not moved, and does not reload", async () => {
+    const { repo } = await branchRepo();
+    const { view, cx, settle } = panel(repo, rangeSource(repo));
+    await view.load(view.source, cx);
+    const files = view.files;
+    const spy = execs();
+    try {
+      for (let i = 0; i < 3; i++) { view.refresh(cx); await settle(); }
+    } finally { spy.stop(); }
+    expect(spy.seen).toEqual(["git rev-parse", "git rev-parse", "git rev-parse"]);
+    expect(view.files).toBe(files);
+  });
+
+  test("reloads without the loading state, and keeps viewed marks and the scroll", async () => {
+    const { repo, git } = await branchRepo();
+    const { view, cx, settle } = panel(repo, rangeSource(repo));
+    await view.load(view.source, cx);
+    const [big] = view.files;
+    view.review = { viewed: { [big.id]: big.signature }, comments: [] };
+    let loadingSeen = false;
+    let flag = view.loading;
+    Object.defineProperty(view, "loading", { get: () => flag, set: (v) => { loadingSeen ||= v === true; flag = v; } });
+    let scrolled = 0;
+    view.scroll = { scroll_to_item() { scrolled++; } };
+
+    await writeFile(join(repo, "b.js"), "new\n");
+    await git("add", ".");
+    await git("commit", "-q", "-m", "second");
+    view.refresh(cx);
+    await settle();
+    expect(names(view)).toBe("b.js,big.js");
+    expect(loadingSeen).toBe(false);
+    expect(view.review.viewed[big.id]).toBe(big.signature);
+    expect(scrolled).toBe(0);
+  });
+
+  test("a commit that lands while the panel is loading is picked up on the next tick", async () => {
+    const { repo, git } = await branchRepo();
+    const { view, cx, settle } = panel(repo, rangeSource(repo));
+    // The commit lands just after the diff has been read, before anything else is.
+    const was = stub.exec;
+    let diffs = 0;
+    stub.exec = async (cmd: string, args: string[], options: any) => {
+      const result = await was(cmd, args, options);
+      if (cmd === "git" && subcommand(args) === "diff" && ++diffs === 2) {
+        stub.exec = was;
+        await writeFile(join(repo, "b.js"), "landed mid-load\n");
+        await git("add", ".");
+        await git("commit", "-q", "-m", "mid-load");
+      }
+      return result;
+    };
+    await view.load(view.source, cx);
+    expect(names(view)).toBe("big.js"); // the diff was read before the commit
+    view.refresh(cx);
+    await settle();
+    expect(names(view)).toBe("b.js,big.js");
+  });
+
+  test("notices when the base moves too", async () => {
+    const { repo, git } = await branchRepo();
+    const { view, cx, settle } = panel(repo, rangeSource(repo));
+    await view.load(view.source, cx);
+    await git("checkout", "-q", "main");
+    await writeFile(join(repo, "m.js"), "on main\n");
+    await git("add", ".");
+    await git("commit", "-q", "-m", "main moves");
+    await git("checkout", "-q", "feature");
+    const before = view.text;
+    view.refresh(cx);
+    await settle();
+    expect(view.tips).toBeDefined();
+    // main moved: the three-dot diff is unchanged, but it was looked at again without error.
+    expect(view.text).toBe(before);
+    expect(view.error).toBeNull();
+  });
+
+  test("keeps the diff when reading the new commits fails, and tries again next tick", async () => {
+    const { repo, git } = await branchRepo();
+    const { view, cx, settle } = panel(repo, rangeSource(repo));
+    await view.load(view.source, cx);
+    const files = view.files;
+    await writeFile(join(repo, "b.js"), "new\n");
+    await git("add", ".");
+    await git("commit", "-q", "-m", "second");
+
+    const was = stub.exec;
+    stub.exec = (cmd: string, args: string[], options: any) =>
+      cmd === "git" && subcommand(args) === "diff" ? { code: 128, stdout: "", stderr: "fatal: bad object" } : was(cmd, args, options);
+    try {
+      view.refresh(cx);
+      await settle();
+    } finally { stub.exec = was; }
+    expect(view.files).toBe(files);
+    expect(view.error).toBeNull();
+    expect(view.loading).toBe(false);
+
+    view.refresh(cx);
+    await settle();
+    expect(names(view)).toBe("b.js,big.js");
+  });
+
+  test("keeps the last diff when the branch can no longer be read", async () => {
+    const { repo, git } = await branchRepo();
+    const { view, cx, settle } = panel(repo, rangeSource(repo));
+    await view.load(view.source, cx);
+    const files = view.files;
+    await git("checkout", "-q", "main");
+    await git("branch", "-q", "-D", "feature");
+    view.refresh(cx);
+    await settle();
+    expect(view.files).toBe(files);
+    expect(view.error).toBeNull();
+  });
+
+  test("never polls a working tree or a single commit for tips", async () => {
+    const { repo, git } = await branchRepo();
+    const sha = (await git("rev-parse", "HEAD")).stdout.trim();
+    for (const source of [{ repo, base: "main", head: "", commit: null }, { repo, base: "main", head: "", commit: sha }]) {
+      const { view, cx, settle } = panel(repo, source);
+      await view.load(source, cx);
+      const spy = execs();
+      try { view.refresh(cx); await settle(); } finally { spy.stop(); }
+      expect(spy.seen.some((cmd) => cmd === "git rev-parse")).toBe(false);
+    }
+  });
+});
