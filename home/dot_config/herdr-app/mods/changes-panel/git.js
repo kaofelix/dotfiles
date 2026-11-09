@@ -92,9 +92,9 @@ export async function diff({ repo, base, head, commit, since, ignoreWhitespace }
   const excludes = skipped.map((f) => `:(exclude,literal)${f.path}`);
   const [text, untracked] = await Promise.all([
     git(repo, [...command, ...DIFF, "--", ...(excludes.length ? [".", ...excludes] : [])]),
-    head || commit ? [] : untrackedFiles(repo),
+    head || commit ? "" : untrackedPatchOf(repo),
   ]);
-  return { text: text + untrackedPatch(untracked), skipped };
+  return { text: text + untracked, skipped };
 }
 
 // `--numstat -z`: "add\tdel\tpath\0", or for a rename "add\tdel\t\0from\0to\0".
@@ -110,14 +110,63 @@ function numstat(out) {
   return files;
 }
 
-async function untrackedFiles(repo) {
+// A cheap stand-in for "this file changed": its mtime to the nanosecond and its size, from one
+// `stat` for all the paths. Tries the BSD form, then GNU's, and remembers which answered.
+// Null when neither gives one clean line per path (a missing file, a newline in a name, no
+// stat): the caller then reads everything, as if there were no fingerprints.
+export function fingerprinter(run) {
+  const forms = [["-L", "-f", "%Fm:%z"], ["-L", "-c", "%.9Y:%s"]];
+  const clean = /^\d+(?:\.\d+)?:\d+$/;
+  let known = 0;
+  return async (cwd, paths) => {
+    if (!paths.length) return [];
+    for (let k = 0; k < forms.length; k++) {
+      const form = (known + k) % forms.length;
+      let result = null;
+      try {
+        result = await run("stat", [...forms[form], "--", ...paths], { cwd });
+      } catch { /* no stat: try the other form, then give up */ }
+      const lines = result?.code === 0 ? result.stdout.split("\n").filter(Boolean) : [];
+      if (lines.length === paths.length && lines.every((line) => clean.test(line))) {
+        known = form;
+        return lines;
+      }
+    }
+    return null;
+  };
+}
+
+const fingerprint = fingerprinter((command, args, options) => exec(command, args, options));
+
+// The last repository's untracked files, each as its patch and the fingerprint it was read at.
+// The tick that polls a working tree would otherwise read every untracked file again: up to
+// 200 files of 1 MiB, however little changed. One repository, so it can't grow.
+let seen = { repo: null, files: new Map() };
+
+// Untracked files, as a patch adding them: only those whose fingerprint changed are read.
+async function untrackedPatchOf(repo) {
   const list = await git(repo, ["ls-files", "--others", "--exclude-standard", "-z"]).catch(() => "");
   const paths = list.split("\0").filter(Boolean).slice(0, MAX_UNTRACKED_FILES);
-  return Promise.all(paths.map(async (path) => {
+  const prints = await fingerprint(repo, paths);
+  const before = seen.repo === repo ? seen.files : new Map();
+  const files = new Map();
+  const patches = await Promise.all(paths.map(async (path, i) => {
+    const print = prints?.[i];
+    const hit = print ? before.get(path) : null;
+    if (hit && hit.print === print) {
+      files.set(path, hit);
+      return hit.patch;
+    }
     const text = await readTextFile(`${repo}/${path}`).catch(() => null);
     const binary = text == null || text.length > MAX_UNTRACKED_BYTES || text.slice(0, 8000).includes("\0");
-    return { path, text: binary ? null : text };
+    const patch = untrackedPatch([{ path, text: binary ? null : text }]);
+    // The print was taken before the read: a file written in between has a newer one next
+    // tick and is read again, never served stale.
+    if (print) files.set(path, { print, patch });
+    return patch;
   }));
+  seen = { repo, files };
+  return patches.join("");
 }
 
 // Pull requests, through the GitHub CLI. Null when gh is missing, signed out, or there is none.

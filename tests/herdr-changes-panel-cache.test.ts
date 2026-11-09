@@ -1,13 +1,7 @@
-import { beforeAll, describe, expect, mock, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
+import { installHerdrStubs } from "./support/herdr-changes-panel-stub";
 
-// main.js needs Herdr's modules; only rowsFor and parsePatch are exercised here.
-const none = () => undefined;
-mock.module("herdr", () => ({
-  agents: () => [], appHome: () => "/tmp/changes-panel-test", exec: none, focused: none, hc: none, notify: none,
-  panes: () => [], props: () => ({}), readTextFile: none, settings: () => ({}), theme: () => ({}),
-}));
-mock.module("gpui-kit", () => ({ View: class {}, div: () => ({}), svg: () => ({}) }));
-mock.module("gpui-base", () => ({ InputState: {}, Input: {}, Scrollbar: {}, VirtualListScrollHandle: {}, v_virtual_list: () => ({}), v_flex: () => ({}), h_flex: () => ({}) }));
+installHerdrStubs();
 
 const DIR = "../home/dot_config/herdr-app/mods/changes-panel";
 let Panel: any, parsePatch: any;
