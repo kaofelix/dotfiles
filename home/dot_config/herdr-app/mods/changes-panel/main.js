@@ -94,7 +94,7 @@ export default class ChangesPanel extends View {
     this.scroll = VirtualListScrollHandle.new();
     this.treeScroll = VirtualListScrollHandle.new();
     this.only = null; // a file opened from go-to or search, shown alone
-    this.expanded = new Map(); // file id -> { lines, gaps }: separators opened to their lines
+    this.expanded = new Map(); // file id -> { lines, gaps, sig }: separators opened to their lines, for the file version `sig`
     this.moves = findMoves([]);
     this.filterInput = this.input("Filter files, or is:tests", (value) => { this.filter = value; });
     // Typing goes to the filter only while it has the keyboard.
@@ -217,9 +217,9 @@ export default class ChangesPanel extends View {
   loadWholeFiles(cx) {
     const worktree = !this.source.head && !this.source.commit;
     const wanted = this.files.filter((f) => !f.binary && !f.tooLarge && !f.large && f.hunks.length && f.type !== "new" && f.type !== "deleted")
-      .filter((f) => !this.expanded.get(f.id)?.lines);
-    const openAll = (f, lines) => this.expanded.set(f.id, { lines, gaps: new Set(f.hunks.map((_, i) => i).concat(f.hunks.length)) });
-    for (const f of this.files) { const known = this.expanded.get(f.id); if (known?.lines) openAll(f, known.lines); }
+      .filter((f) => !(this.expanded.get(f.id)?.lines && this.expanded.get(f.id).sig === f.signature));
+    const openAll = (f, lines) => this.expanded.set(f.id, { lines, gaps: new Set(f.hunks.map((_, i) => i).concat(f.hunks.length)), sig: f.signature });
+    for (const f of this.files) { const known = this.expanded.get(f.id); if (known?.lines && known.sig === f.signature) openAll(f, known.lines); }
     cx.spawn(async (cx) => {
       for (let i = 0; i < wanted.length; i += 8) {
         await Promise.all(wanted.slice(i, i + 8).map(async (f) => {
@@ -257,6 +257,8 @@ export default class ChangesPanel extends View {
         this.noticeAddressed(before);
         this.rebuild();
         cx.notify();
+        // Files that changed lost their opened text: read it again.
+        if (this.prefs.wholeFiles) this.loadWholeFiles(cx);
       } catch {
         // Keep the last good diff; the next tick tries again.
       } finally {
@@ -304,6 +306,14 @@ export default class ChangesPanel extends View {
     return this.rowsCache.get(key);
   }
 
+  // Opened separators hold the file's text as it was when read. Once the file is a different
+  // version (an edit, a new commit, another base or commit) or has left the diff, that text no
+  // longer matches the hunks' line numbers: drop it, and the separators close.
+  pruneExpanded() {
+    const current = new Map(this.files.map((f) => [f.id, f.signature]));
+    for (const [id, open] of this.expanded) if (current.get(id) !== open.sig) this.expanded.delete(id);
+  }
+
   // Rows are cached per file revision, so every edit makes a new key. After a rebuild only the
   // rows it drew are kept: collapsed files, files that left the diff, and old revisions go.
   pruneRows() {
@@ -313,7 +323,7 @@ export default class ChangesPanel extends View {
   // Opens a separator: loads the file's text once, then shows the lines it hid.
   expandGap(file, hunk, cx) {
     const open = this.expanded.get(file.id);
-    if (open?.lines) {
+    if (open?.lines && open.sig === file.signature) {
       this.expanded.set(file.id, { ...open, gaps: new Set([...open.gaps, hunk]) });
       this.rebuild();
       return cx.notify();
@@ -324,7 +334,8 @@ export default class ChangesPanel extends View {
         notify({ title: "Couldn't load the hidden lines", body: file.name, level: "warning", timeout: 2500 });
         return;
       }
-      this.expanded.set(file.id, { lines: text.replaceAll("\t", "    ").split("\n"), gaps: new Set([hunk]) });
+      // Tied to the version read: if the file changes meanwhile, rebuild() drops this.
+      this.expanded.set(file.id, { lines: text.replaceAll("\t", "    ").split("\n"), gaps: new Set([hunk]), sig: file.signature });
       this.rebuild();
       cx.notify();
     });
@@ -332,6 +343,7 @@ export default class ChangesPanel extends View {
 
   rebuild() {
     this.comments = withStatus(this.review.comments, this.files);
+    this.pruneExpanded();
     const m = this.metrics();
     const commentCols = Math.max(20, Math.floor((m.width - 120) / 7));
     const items = [];
