@@ -299,8 +299,15 @@ export default class ChangesPanel extends View {
   rowsFor(file) {
     const open = this.expanded.get(file.id);
     const key = `${file.id}|${file.rev}|${this.prefs.diffStyle}|${open ? [...open.gaps].join(",") : ""}`;
+    this.rowsUsed?.add(key);
     if (!this.rowsCache.has(key)) this.rowsCache.set(key, fileRows(file, this.prefs.diffStyle, languageOf(file.name), open));
     return this.rowsCache.get(key);
+  }
+
+  // Rows are cached per file revision, so every edit makes a new key. After a rebuild only the
+  // rows it drew are kept: collapsed files, files that left the diff, and old revisions go.
+  pruneRows() {
+    for (const key of this.rowsCache.keys()) if (!this.rowsUsed.has(key)) this.rowsCache.delete(key);
   }
 
   // Opens a separator: loads the file's text once, then shows the lines it hid.
@@ -332,6 +339,7 @@ export default class ChangesPanel extends View {
     const push = (item, size) => { items.push(item); sizes.push(size); };
     this.fileStarts = [];
     this.headerIndex = new Map();
+    this.rowsUsed = new Set();
     for (const f of this.only ? this.files.filter((file) => file.id === this.only) : this.files) {
       this.fileStarts.push(items.length);
       this.headerIndex.set(f.id, items.length);
@@ -357,6 +365,7 @@ export default class ChangesPanel extends View {
         }
       }
     }
+    this.pruneRows();
     this.items = items;
     this.sizes = sizes;
   }
