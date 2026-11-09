@@ -1,6 +1,6 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
+import { spaces, panes, focused, run, openOverlay, nextCommand, theme, window, shared, layout, settings } from "herdr";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -12,13 +12,30 @@ function find(node, id) {
 }
 
 export default class Tabs extends View {
-  init() {
+  init(_props, cx) {
     this.pressed = null;
+    // `tabs-flat.changes` from a key toggles the Changes pane.
+    cx.spawn(async () => {
+      for (;;) {
+        const command = await nextCommand();
+        // One failed toggle must not end the loop and leave the key dead.
+        try { if (command === "changes") this.toggleDiff(); } catch (e) { console.warn(`tabs-flat: ${command}: ${e?.message ?? e}`); }
+      }
+    });
     this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}");
   }
 
   // The side panel is remembered per space: switching shows that space's choice
   // (closed if it never had one), and opening or closing it records it.
+  // Changes: a changes-panel pane split beside the focused terminal; again closes it.
+  toggleDiff() {
+    const f = focused();
+    if (!f) return;
+    const open = panes().find(p => p.tab === f.tab && p.mod === "changes-panel");
+    if (open) return run("pane.close", { pane: open.pane });
+    run("pane.split", { direction: "right", mod: "changes-panel", props: f.cwd ? { repo: f.cwd } : {} });
+  }
+
   syncPanel(space, panel, body, enabled) {
     if (!space || !panel) return;
     const now = panel.hidden ? null : body?.active ?? null;
@@ -78,13 +95,18 @@ export default class Tabs extends View {
       : 0;
     const panel = find(root, "panel"), body = find(root, "panel-body");
     const enabled = shared("workspace.panels") ?? ["files", "changes"];
-    this.syncPanel(space, panel, body, enabled);
-    const panelButton = (id, label, icon) => {
-      const on = panel && !panel.hidden && body?.active === id;
+    // Changes is the snappy-diff dialog, not a panel: only Files lives in the side panel.
+    this.syncPanel(space, panel, body, enabled.filter(id => id !== "changes"));
+    const panelButton = (id, label, icon, open) => {
+      const f = focused();
+      // Changes is a pane, not the side panel: active while one is open in this tab.
+      const on = open ? panes().some(p => p.tab === f?.tab && p.mod === "changes-panel")
+        : panel && !panel.hidden && body?.active === id;
       return h_flex().id(`panel-${id}`).h_full().px(10).gap(5).flex_none().items_center()
         .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
         .hover(s => s.bg(t.hover)).on_mouse_down("left", stop)
         .on_click(() => {
+          if (open) return open();
           if (on) run("layout.hide", { id: "panel" });
           else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
         }).child(svg(icon).size(14)).child(label);
@@ -95,7 +117,7 @@ export default class Tabs extends View {
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(0).overflow_x_scrollbar().children(shown.map(item)))
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
-      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
+      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg", () => this.toggleDiff())))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs-flat/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs-flat/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
         .child(button("close-window", w.platform === "windows" ? svg("mods/tabs-flat/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));

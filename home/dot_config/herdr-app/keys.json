@@ -66,7 +66,8 @@
     "cmd-}": "tab.next",
     "cmd-shift-{": "tab.prev",
     "cmd-shift-}": "tab.next",
-    "cmd-shift-n": "mod.open:space-from-remote"
+    "cmd-shift-n": "mod.open:space-from-remote",
+    "cmd-shift-g": "tabs-flat.changes"
   },
   "terminal": {
     "cmd-c": "terminal.copy",
