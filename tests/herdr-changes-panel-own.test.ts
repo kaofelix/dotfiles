@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { findMoves, isMoved } from "../home/dot_config/herdr-app/mods/changes-panel/moved.js";
 import { areas, reviewOrder } from "../home/dot_config/herdr-app/mods/changes-panel/insights.js";
 import { parsePatch } from "../home/dot_config/herdr-app/mods/changes-panel/patch.js";
+import { treeOrder, treeRows } from "../home/dot_config/herdr-app/mods/changes-panel/tree.js";
 import { headerPart, rowAt } from "../home/dot_config/herdr-app/mods/changes-panel/pointer.js";
 
 const diff = (path: string, lines: string[], hunk = "@@ -1,3 +1,3 @@") =>
@@ -118,5 +119,32 @@ describe("areas", () => {
   test("drills into a folder and skips files outside it", () => {
     const rows = areas([f("src/lib/a.js", 3, 0), f("src/b.js", 1, 0), f("docs/x.md", 9, 0)], "src/", () => false);
     expect(rows.map((r: any) => r.path)).toEqual(["src/lib/", "src/b.js"]);
+  });
+});
+
+describe("diff order follows the file tree", () => {
+  const file = (name: string) => ({ id: name, name, add: 1, del: 0, type: "change" });
+  // git lists paths bytewise, with files and folders interleaved; untracked files come last.
+  const gitOrder = ["Makefile", "README.md", "a/b.js", "a/sub/c.js", "a/z.js", "src/lib/x.js", "src/app.js", "zed.txt", "new/untracked.js"].map(file);
+
+  test("folders come before the files beside them, depth first, like the tree", () => {
+    expect(treeOrder(gitOrder).map((f: any) => f.name)).toEqual([
+      "a/sub/c.js", "a/b.js", "a/z.js", "new/untracked.js", "src/lib/x.js", "src/app.js", "Makefile", "README.md", "zed.txt",
+    ]);
+  });
+
+  test("matches the order of the file rows in the tree, for the same files", () => {
+    const names = ["b/x.js", "b.js", "a/b/c/d.js", "a/b/e.js", "a.js", "a/f.js", "B/y.js", "z/z/z.js", "z/a.js", "m.md", "docs/readme.md", "docs/img/a.png"];
+    const files = names.map(file);
+    const fromTree = treeRows(files).filter((row: any) => row.kind === "file").map((row: any) => row.id);
+    expect(treeOrder(files).map((f: any) => f.id)).toEqual(fromTree);
+    expect(treeOrder([...files].reverse()).map((f: any) => f.id)).toEqual(fromTree);
+  });
+
+  test("does not change the list it is given, and keeps equal names in order", () => {
+    const input = ["b.js", "a.js"].map(file);
+    treeOrder(input);
+    expect(input.map((f: any) => f.name)).toEqual(["b.js", "a.js"]);
+    expect(treeOrder([])).toEqual([]);
   });
 });

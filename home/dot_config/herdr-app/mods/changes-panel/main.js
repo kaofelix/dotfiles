@@ -7,7 +7,7 @@ import * as git from "./git.js";
 import { parsePatch, skippedFiles, firstChange } from "./patch.js";
 import { languageOf } from "./syntax.js";
 import { fileRows, wrapCount, wrapLines, segments } from "./rows.js";
-import { treeRows, fileMatches, breakdown } from "./tree.js";
+import { treeRows, treeOrder, fileMatches, breakdown } from "./tree.js";
 import { findMoves, isMoved } from "./moved.js";
 import { areas, effort, hints, reviewOrder } from "./insights.js";
 import { rowAt, headerPart as headerPartAt } from "./pointer.js";
@@ -194,7 +194,7 @@ export default class ChangesPanel extends View {
       }
       const before = this.openCommentIds();
       this.text = text;
-      this.files = [...parsePatch(text, rev), ...skippedFiles(skipped, rev)];
+      this.files = treeOrder([...parsePatch(text, rev), ...skippedFiles(skipped, rev)]);
       this.moves = findMoves(this.files);
       this.shownSince = source.since ?? null;
       if (newReview || !this.files.some((f) => f.id === this.only)) this.only = null;
@@ -251,7 +251,7 @@ export default class ChangesPanel extends View {
         const before = this.openCommentIds();
         this.text = text;
         const rev = ++this.rev;
-        this.files = [...parsePatch(text, rev, this.files), ...skippedFiles(skipped, rev)];
+        this.files = treeOrder([...parsePatch(text, rev, this.files), ...skippedFiles(skipped, rev)]);
         this.moves = findMoves(this.files);
         if (!this.files.some((f) => f.id === this.only)) this.only = null;
         this.noticeAddressed(before);

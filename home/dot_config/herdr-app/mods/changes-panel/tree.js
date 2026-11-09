@@ -44,6 +44,25 @@ export function treeRows(files, closed = new Set()) {
   return rows;
 }
 
+// The files in the order the tree lists them: at each level folders first, then files, each by
+// name. git lists paths bytewise, files and folders mixed, and untracked files after the rest;
+// the diff shows files in this order instead, so scrolling it reads down the tree.
+export function treeOrder(files) {
+  const split = files.map((file) => ({ file, parts: file.name.split("/") }));
+  split.sort((a, b) => {
+    const n = Math.min(a.parts.length, b.parts.length);
+    for (let i = 0; i < n; i++) {
+      if (a.parts[i] === b.parts[i]) continue;
+      const aDir = i < a.parts.length - 1;
+      const bDir = i < b.parts.length - 1;
+      if (aDir !== bDir) return aDir ? -1 : 1;
+      return a.parts[i].localeCompare(b.parts[i]);
+    }
+    return a.parts.length - b.parts.length;
+  });
+  return split.map(({ file }) => file);
+}
+
 const BOXES = 5;
 
 // How many squares of a size bar to fill green, red and grey, like GitHub's diffstat. Size
