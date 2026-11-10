@@ -105,3 +105,26 @@ describe("which file's header is pinned", () => {
     expect(pinned(2)).toBeNull();
   });
 });
+
+describe("pressing a file header", () => {
+  const file = { id: "a", name: "a.js", type: "change", add: 3, del: 1 };
+  const deleted = { ...file, id: "b", type: "deleted" };
+  const view = () => Object.assign(Object.create(Panel.prototype), { files: [file, deleted] });
+
+  test("lands on the parts the header draws, found from its own list", () => {
+    const v = view();
+    const [viewed, stats, editor] = v.headerParts(file);
+    expect(v.headerPart(file, 14 + viewed.width / 2)).toBe("viewed");
+    const editorMid = 14 + viewed.width + 8 + stats.width + 8 + editor.width / 2;
+    expect(v.headerPart(file, editorMid)).toBe("editor");
+    expect(v.headerPart(file, 14 + viewed.width + 8 + stats.width / 2)).toBe("header");
+  });
+
+  test("a deleted file has no editor part, so a press there is the header's", () => {
+    const v = view();
+    expect(v.headerParts(deleted).map((p: any) => p.id)).toEqual(["viewed", "stats"]);
+    const [viewed, stats] = v.headerParts(deleted);
+    expect(v.headerPart(deleted, 14 + viewed.width + 8 + stats.width + 8 + 12)).toBe("header");
+  });
+});
+

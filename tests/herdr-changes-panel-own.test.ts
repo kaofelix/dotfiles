@@ -3,7 +3,7 @@ import { findMoves, isMoved } from "../home/dot_config/herdr-app/mods/changes-pa
 import { areas, reviewOrder } from "../home/dot_config/herdr-app/mods/changes-panel/insights.js";
 import { parsePatch } from "../home/dot_config/herdr-app/mods/changes-panel/patch.js";
 import { abbreviatePath, treeOrder, treeRows } from "../home/dot_config/herdr-app/mods/changes-panel/tree.js";
-import { headerPart, rowAt } from "../home/dot_config/herdr-app/mods/changes-panel/pointer.js";
+import { partAt, partsWidth, rowAt } from "../home/dot_config/herdr-app/mods/changes-panel/pointer.js";
 
 const diff = (path: string, lines: string[], hunk = "@@ -1,3 +1,3 @@") =>
   `diff --git a/${path} b/${path}\nindex 1111111..2222222 100644\n--- a/${path}\n+++ b/${path}\n${hunk}\n${lines.join("\n")}\n`;
@@ -32,22 +32,40 @@ describe("pointer", () => {
     expect(rowAt(sizes, 0, 79, 3)).toBe(2);
   });
 
-  const parts = { viewed: 24, stats: 60, editor: 24 };
-  // From the right: Viewed 0-24 (+8 gap), stats to 92, 8 gap, editor 100-124.
-  test("headerPart tells Viewed, the editor and the rest of the header apart", () => {
-    const at = (x: number) => headerPart(x + 14, parts, 14, 8);
-    expect(at(0)).toBe("viewed");
-    expect(at(31)).toBe("viewed"); // the gap belongs to Viewed
-    expect(at(32)).toBe("header"); // the stats
-    expect(at(99)).toBe("header");
-    expect(at(100)).toBe("editor");
-    expect(at(123)).toBe("editor");
-    expect(at(124)).toBe("header");
-    expect(at(600)).toBe("header");
+  const parts = [
+    { id: "viewed", width: 24, click: true },
+    { id: "stats", width: 60, click: false },
+    { id: "editor", width: 24, click: true },
+  ];
+  // From the right edge: 14 padding, Viewed 14-38, gap, stats 46-106, gap, editor 114-138.
+  const at = (x: number) => partAt(x, parts, 14, 8);
+
+  test("partAt finds the clickable part a press landed on", () => {
+    expect(at(20)).toBe("viewed");
+    expect(at(120)).toBe("editor");
   });
 
-  test("headerPart counts the right padding as Viewed", () => {
-    expect(headerPart(13, parts, 14, 8)).toBe("viewed");
+  test("partAt gives the right padding to the rightmost part and splits gaps between neighbours", () => {
+    expect(at(0)).toBe("viewed");
+    expect(at(41)).toBe("viewed"); // first half of the gap
+    expect(at(42)).toBeNull(); // second half: the stats'
+    expect(at(110)).toBe("editor"); // the editor's half of the gap
+    expect(at(141)).toBe("editor");
+    expect(at(142)).toBeNull();
+  });
+
+  test("partAt reports a part that isn't clickable, and anything past the parts, as nothing", () => {
+    expect(at(80)).toBeNull();
+    expect(at(600)).toBeNull();
+  });
+
+  test("partAt follows the list: without the editor its place is the rest of the row", () => {
+    expect(partAt(120, parts.slice(0, 2), 14, 8)).toBeNull();
+  });
+
+  test("partsWidth counts each part and the gap beside it", () => {
+    expect(partsWidth(parts, 8)).toBe(24 + 60 + 24 + 3 * 8);
+    expect(partsWidth([], 8)).toBe(0);
   });
 });
 

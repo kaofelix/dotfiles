@@ -10,7 +10,7 @@ import { fileRows, wrapCount, wrapLines, segments } from "./rows.js";
 import { abbreviatePath, treeRows, treeOrder, fileMatches, breakdown } from "./tree.js";
 import { findMoves, isMoved } from "./moved.js";
 import { areas, effort, hints, reviewOrder } from "./insights.js";
-import { rowAt, headerPart as headerPartAt } from "./pointer.js";
+import { rowAt, partAt, partsWidth } from "./pointer.js";
 import { reviewKey, rangeKey, sinceReview, emptyReview, isViewed, changedSinceViewed, toggleViewed, linesText, withStatus, reviewPrompt, reviewPayload } from "./review.js";
 import { DEFAULT_PREFS, readPrefs, writePrefs, readReview, writeReview, readLastReviewed, writeLastReviewed } from "./store.js";
 
@@ -30,7 +30,7 @@ const EDITOR_H = 96;
 const REFRESH_MS = 2000; // uncommitted changes move under our feet
 // Fixed-width parts of a file header, from the right edge, so a click can tell them apart.
 // Only viewed and editor are clicked, so only they need a fixed width; stats and comments take what they show.
-const HEADER_PARTS = { viewed: 24, editor: 24 }; // stats is added per diff: see statsWidth()
+const HEADER_BUTTON_W = 24;
 const HEADER_CHAR_W = 7; // a 13px proportional character, a little generous so a path never clips
 const HEADER_PAD = 14;
 const HEADER_GAP = 8;
@@ -966,9 +966,22 @@ export default class ChangesPanel extends View {
 
   // Clicks on diff rows: one handler for the list, told apart by where the press landed.
 
+  // The parts at a file header's right edge, from the right: what renderHeader draws there and
+  // what a press is matched against, so the two can't drift apart. To add one, add it here and
+  // give it a drawing in renderHeader. Things that come and go sit to the left (editor), so
+  // the ones always there (stats, Viewed) keep their places.
+  headerParts(file) {
+    return [
+      { id: "viewed", width: HEADER_BUTTON_W, click: true },
+      { id: "stats", width: this.statsWidth(), click: false },
+      // Nothing on disk to open for a deleted file, and no space held for it either.
+      ...(file.type === "deleted" ? [] : [{ id: "editor", width: HEADER_BUTTON_W, click: true }]),
+    ];
+  }
+
   // Which part of a file header a press `fromRight` px from its right edge landed on.
-  headerPart(fromRight) {
-    return headerPartAt(fromRight, { ...HEADER_PARTS, stats: this.statsWidth() }, HEADER_PAD, HEADER_GAP);
+  headerPart(file, fromRight) {
+    return partAt(fromRight, this.headerParts(file), HEADER_PAD, HEADER_GAP) ?? "header";
   }
 
   // One width for every file's −n +m, from the longest, so the column lines up and the
@@ -984,8 +997,7 @@ export default class ChangesPanel extends View {
 
   pressHeader(file, part, cx) {
     if (part === "viewed") return this.toggleViewed(file, cx);
-    // A deleted file draws no button, so a press where it would be is just the header's.
-    if (part === "editor" && file.type !== "deleted") return this.openInEditor(file, cx);
+    if (part === "editor") return this.openInEditor(file, cx);
     return this.toggleCollapsed(file, cx);
   }
 
@@ -996,7 +1008,7 @@ export default class ChangesPanel extends View {
     const m = this.metrics();
     const fromRight = this.mainW - press.x;
     const f = item.f;
-    if (item.t === "file") return this.pressHeader(f, this.headerPart(fromRight), cx);
+    if (item.t === "file") return this.pressHeader(f, this.headerPart(f, fromRight), cx);
     if (item.t === "hunk") return this.expandGap(f, item.hunk, cx);
     // Comment cards: 16px row padding, a 1px border and 10px card padding before the buttons,
     // which are fixed-width and right-aligned (renderComment, renderEditor).
@@ -1343,15 +1355,22 @@ export default class ChangesPanel extends View {
     const viewed = isViewed(this.review, f);
     const count = this.comments.filter((c) => c.file === f.id && !c.outdated).length;
     const moved = this.moves.perFile.get(f.id) ?? 0;
-    const room = this.mainW - SCROLLBAR_W - 2 * HEADER_PAD - 14 - 26 - HEADER_PARTS.viewed - this.statsWidth() - (f.type === "deleted" ? 0 : HEADER_PARTS.editor) - (count ? 44 : 0)
-      - (moved ? 70 : 0) - (f.generated || f.large ? 60 : 0) - (changedSinceViewed(this.review, f) ? 140 : 0) - (f.prevName ? f.prevName.length * HEADER_CHAR_W + 30 : 0) - 8 * 7;
+    const parts = this.headerParts(f);
+    const room = this.mainW - SCROLLBAR_W - 2 * HEADER_PAD - 14 - 26 - partsWidth(parts, HEADER_GAP) - (count ? 44 : 0)
+      - (moved ? 70 : 0) - (f.generated || f.large ? 60 : 0) - (changedSinceViewed(this.review, f) ? 140 : 0) - (f.prevName ? f.prevName.length * HEADER_CHAR_W + 30 : 0) - 8 * 4;
     const name = this.mainW ? abbreviatePath(f.name, Math.floor(room / HEADER_CHAR_W)) : f.name;
     const slash = name.lastIndexOf("/");
     const label = f.generated ? "generated" : f.large ? "large" : null;
     const tag = (text, outline) => div().ml(2).px(6).py(1).rounded(4).text_size(11).text_color(t.muted)
       .when(outline, (el) => el.border_1().border_color(t.border)).when(!outline, (el) => el.bg(t.raised)).child(text);
-    const part = (width) => h_flex().w(width).h_full().flex_none().items_center().justify_center();
-    const header = h_flex().h(HEADER_H).w_full().pl(14).pr(14).gap(8).items_center().bg(t.background).text_size(13)
+    const draw = {
+      viewed: () => div().size(14).rounded(3).border_1().border_color(viewed ? t.accent : t.input).when(viewed, (el) => el.bg(t.accent))
+        .flex().items_center().justify_center().text_color(t.accent_foreground).when(viewed, (el) => el.child(icon("check", 10))),
+      stats: () => h_flex().w_full().justify_end().gap(6).text_size(12)
+        .child(div().text_color(t.ansi1).child(`−${f.del}`)).child(div().text_color(t.ansi2).child(`+${f.add}`)),
+      editor: () => div().text_color(t.dim).child(icon("editor", 13)),
+    };
+    const header = h_flex().h(HEADER_H).w_full().pl(HEADER_PAD).pr(HEADER_PAD).gap(HEADER_GAP).items_center().bg(t.background).text_size(13)
       .when(index > 0 || pinned, (el) => el.border_t_1()).when(pinned || !collapsed, (el) => el.border_b_1()).border_color(t.border)
       .when(pinned, (el) => el.shadow_md())
       .child(div().text_color(t.muted).child(icon(collapsed ? "chevron-right" : "chevron-down", 14)))
@@ -1364,19 +1383,13 @@ export default class ChangesPanel extends View {
       .when(changedSinceViewed(this.review, f), (el) => el.child(tag("changed since viewed", true)))
       .when(moved > 0, (el) => el.child(div().ml(2).flex_none().text_size(11.5).text_color(t.dim).child(`${moved} moved`)))
       .when(count > 0, (el) => el.child(h_flex().flex_none().gap(4).items_center().text_size(12).text_color(t.muted).child(icon("comment", 13)).child(String(count))))
-      // Only when there is a file on disk to open; its slot is not held back for deleted files.
-      .when(f.type !== "deleted", (el) => el.child(part(HEADER_PARTS.editor).text_color(t.dim).child(icon("editor", 13))))
-      .child(h_flex().w(this.statsWidth()).flex_none().justify_end().gap(6).items_center().text_size(12)
-        .child(div().text_color(t.ansi1).child(`−${f.del}`)).child(div().text_color(t.ansi2).child(`+${f.add}`)))
-      // Always there, last, at the right edge.
-      .child(part(HEADER_PARTS.viewed)
-        .child(div().size(14).rounded(3).border_1().border_color(viewed ? t.accent : t.input).when(viewed, (el) => el.bg(t.accent))
-          .flex().items_center().justify_center().text_color(t.accent_foreground).when(viewed, (el) => el.child(icon("check", 10)))));
+      // Each part in a box of exactly its width, so a press lands where headerPart expects it.
+      .children([...parts].reverse().map((p) => h_flex().w(p.width).h_full().flex_none().items_center().justify_center().child(draw[p.id]())));
     if (!pinned) return header;
     // The pinned copy sits outside the list, so it can have handlers of its own.
     return header.id("pinned").cursor_pointer().on_mouse_down("left", (e, cx) => {
       cx.stop_propagation();
-      if (e.bounds) this.pressHeader(f, this.headerPart(e.bounds.x + e.bounds.width - e.position.x), cx);
+      if (e.bounds) this.pressHeader(f, this.headerPart(f, e.bounds.x + e.bounds.width - e.position.x), cx);
     });
   }
 

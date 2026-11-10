@@ -11,13 +11,23 @@ export function rowAt(sizes, top, y, count = sizes.length) {
   return null;
 }
 
-// Which part of a file header a press `fromRight` px from its right edge landed on. Parts
-// are laid out from the right as: Viewed, gap, stats, gap, editor; `pad` is the header's right
-// padding. The stats column is fixed-width so the editor button sits at a known place.
-export function headerPart(fromRight, { viewed, stats, editor }, pad, gap) {
-  const x = fromRight - pad;
-  if (x < viewed + gap) return "viewed"; // the gap belongs to Viewed
-  const editorAt = viewed + gap + stats + gap;
-  if (x >= editorAt && x < editorAt + editor) return "editor";
-  return "header";
+// The fixed-width parts at a row's right edge, listed from the right as { id, width, click }.
+// A row in the diff list can't have handlers of its own, so a press is told apart by where it
+// landed: the row draws these parts at exactly these widths (see renderHeader) and this walks
+// the same list. Each part also claims half the gap on either side, and the rightmost part the
+// row's right padding. Returns the id of a clickable part, or null for the rest of the row.
+export function partAt(fromRight, parts, pad, gap) {
+  let edge = pad;
+  for (const [i, part] of parts.entries()) {
+    const start = i === 0 ? 0 : edge - gap / 2;
+    const end = edge + part.width + gap / 2;
+    if (fromRight >= start && fromRight < end) return part.click ? part.id : null;
+    edge += part.width + gap;
+  }
+  return null;
+}
+
+// How much of a row the parts take, gaps included: what the rest of the row has left.
+export function partsWidth(parts, gap) {
+  return parts.reduce((sum, part) => sum + part.width + gap, 0);
 }
