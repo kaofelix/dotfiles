@@ -468,11 +468,40 @@ export default class ChangesPanel extends View {
     if (!file) return;
     if (this.isCollapsed(file)) this.open.set(id, true);
     this.rebuild();
-    const index = this.headerIndex.get(id);
-    this.topIndex = index;
-    this.scroll.scroll_to_item(index, "top");
+    this.scrollToTop(this.headerIndex.get(id), cx);
     this.followTree(id);
     cx.notify();
+  }
+
+  // Puts row `index` at the top of the list, or as high as it goes near the end.
+  // `scroll_to_item(i, "top")` scrolls only as far as it must: a row below the screen lands
+  // at the bottom edge and a visible one doesn't move. Coming from below it does reach the
+  // top, so a row further down is approached from the end of the list, a frame apart.
+  // `topIndex` is set to the target at each step, so the pinned header never shows a file
+  // the list only passed through on the way (see renderMain).
+  scrollToTop(index, cx) {
+    const from = this.topIndex;
+    this.topIndex = index;
+    const jump = (this.jump = (this.jump ?? 0) + 1);
+    if (index <= from) {
+      this.scroll.scroll_to_item(index, "top");
+      return this.catchUp(cx);
+    }
+    this.scroll.scroll_to_item(this.items.length - 1, "top");
+    cx.timer.after(16, (cx) => {
+      if (jump !== this.jump) return; // a later jump took over
+      this.topIndex = index;
+      this.scroll.scroll_to_item(index, "top");
+      cx.notify();
+      this.catchUp(cx);
+    });
+  }
+
+  // The pinned header is chosen in render() from `topIndex`, but the list only reports its
+  // first row afterwards, while laying out, where asking for another render is refused. So
+  // after anything that scrolls, render once more a little later, from where it really landed.
+  catchUp(cx) {
+    cx.timer.after(32, (cx) => cx.notify());
   }
 
   jumpToLine(id, side, n, cx) {
@@ -1180,6 +1209,7 @@ export default class ChangesPanel extends View {
 
   renderMain(t, code, active) {
     const pinned = this.pinnedFile();
+    this.pinnedAt = this.topIndex;
     return v_flex().id("main").flex_1().min_w(0).h_full().relative()
       .on_size_change((size, cx) => { if (Math.abs(size.width - this.mainW) > 1) { this.mainW = size.width; this.rebuild(); cx.notify(); } })
       .when(!this.files.length, (el) => el.child(this.renderEmpty(t)))
@@ -1197,7 +1227,12 @@ export default class ChangesPanel extends View {
             if (!this.editing) this.handle.focus();
           })
           .on_scroll_wheel((_e, cx) => { cx.notify(); cx.timer.after(60, (cx) => cx.notify()); })
-          .on_mouse_move((e) => { if (e.local_position) this.hoverY = e.local_position.y; })
+          // Dragging the scrollbar sends no wheel events: redraw when the first row has moved
+          // since the pinned header was chosen.
+          .on_mouse_move((e, cx) => {
+            if (e.local_position) this.hoverY = e.local_position.y;
+            if (this.topIndex !== this.pinnedAt) cx.notify();
+          })
           .on_hover((hovered) => { if (!hovered) this.hoverY = null; })
           .child(v_virtual_list("diff", this.items.length, this.sizes, (i) => String(i), (range) => {
             this.topIndex = range.start;
@@ -1208,9 +1243,14 @@ export default class ChangesPanel extends View {
             .child(this.renderHeader(t, pinned, true))))));
   }
 
+  // The file whose header is copied over the top of the list: the one the first row belongs to.
+  // Not when that row is a header itself, and not on its last row: the next header is then
+  // the second row, about to reach the top, and an opaque copy would cover it. The list gives
+  // no scroll offset, so the copy can't be pushed up by it as a sticky header would be.
   pinnedFile() {
     const item = this.items[this.topIndex];
     if (!item || item.t === "file") return null;
+    if (this.items[this.topIndex + 1]?.t === "file") return null;
     return item.f;
   }
 
