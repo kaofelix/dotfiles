@@ -984,15 +984,30 @@ export default class ChangesPanel extends View {
     return partAt(fromRight, this.headerParts(file), HEADER_PAD, HEADER_GAP) ?? "header";
   }
 
-  // One width for every file's −n +m, from the longest, so the column lines up and the
-  // buttons to its left stay where a click expects them.
+  // One width for every file's −n +m, so the column lines up and the buttons to its left stay
+  // where a click expects them: the width of the longest, as drawn by a hidden probe (render),
+  // or estimated from its length until the probe has reported.
   statsWidth() {
-    if (this.statsFor !== this.files) {
-      this.statsFor = this.files;
-      const chars = Math.max(2, ...this.files.map((f) => `−${f.del}`.length + `+${f.add}`.length));
-      this.statsW = Math.ceil(chars * HEADER_CHAR_W) + 6;
+    const widest = this.widestStats();
+    const key = `−${widest.del}+${widest.add}`;
+    if (this.statsMeasured?.key === key) return this.statsMeasured.width;
+    return Math.ceil(key.length * HEADER_CHAR_W) + 6;
+  }
+
+  // The file whose −n +m has the most characters: the one the probe draws.
+  widestStats() {
+    if (this.widestFor !== this.files) {
+      this.widestFor = this.files;
+      const chars = (f) => String(f.del).length + String(f.add).length;
+      this.widest = this.files.reduce((a, f) => (chars(f) > chars(a) ? f : a), { del: 0, add: 0 });
     }
-    return this.statsW;
+    return this.widest;
+  }
+
+  // −n +m, as the header draws it and the probe measures it.
+  statsLabel(t, f) {
+    return h_flex().flex_none().gap(6).text_size(12).whitespace_nowrap()
+      .child(div().text_color(t.ansi1).child(`−${f.del}`)).child(div().text_color(t.ansi2).child(`+${f.add}`));
   }
 
   pressHeader(file, part, cx) {
@@ -1050,6 +1065,8 @@ export default class ChangesPanel extends View {
       .when(Boolean(this.menu) && Boolean(this.source), (el) => el.child(this.renderMenu(t)))
       .when(this.overview, (el) => el.child(this.renderOverview(t)))
       .when(Boolean(this.palette), (el) => el.child(this.renderPalette(t)))
+      // Measures the widest −n +m, which the header's stats column is sized to.
+      .child(this.renderStatsProbe(t))
       // Measures the code font's character width, which wrapping is computed from.
       .child(div().id("probe").absolute().top(-100).left(0).opacity(0).whitespace_nowrap().text_size(CODE_SIZE)
         .when(Boolean(code), (el) => el.font_family(code))
@@ -1266,6 +1283,21 @@ export default class ChangesPanel extends View {
     return item.f;
   }
 
+  renderStatsProbe(t) {
+    const widest = this.widestStats();
+    const key = `−${widest.del}+${widest.add}`;
+    // Keyed by what it shows, so a new widest is a new element and reports its size afresh.
+    return div().id(`stats-probe-${key}`).absolute().top(-100).left(0).opacity(0)
+      .on_size_change((size, cx) => {
+        const width = Math.ceil(size.width) + 1;
+        if (size.width > 0 && (this.statsMeasured?.key !== key || this.statsMeasured.width !== width)) {
+          this.statsMeasured = { key, width };
+          cx.notify();
+        }
+      })
+      .child(this.statsLabel(t, widest));
+  }
+
   renderEmpty(t) {
     const s = this.source;
     const message = this.error ?? (this.loading ? this.loadingMessage ?? "Loading…"
@@ -1366,8 +1398,7 @@ export default class ChangesPanel extends View {
     const draw = {
       viewed: () => div().size(14).rounded(3).border_1().border_color(viewed ? t.accent : t.input).when(viewed, (el) => el.bg(t.accent))
         .flex().items_center().justify_center().text_color(t.accent_foreground).when(viewed, (el) => el.child(icon("check", 10))),
-      stats: () => h_flex().w_full().justify_end().gap(6).text_size(12)
-        .child(div().text_color(t.ansi1).child(`−${f.del}`)).child(div().text_color(t.ansi2).child(`+${f.add}`)),
+      stats: () => h_flex().w_full().justify_end().child(this.statsLabel(t, f)),
       editor: () => div().text_color(t.dim).child(icon("editor", 13)),
     };
     const header = h_flex().h(HEADER_H).w_full().pl(HEADER_PAD).pr(HEADER_PAD).gap(HEADER_GAP).items_center().bg(t.background).text_size(13)

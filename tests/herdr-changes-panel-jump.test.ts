@@ -128,3 +128,27 @@ describe("pressing a file header", () => {
   });
 });
 
+describe("the stats column width", () => {
+  const files = [{ del: 1, add: 3 }, { del: 120, add: 4500 }, { del: 7, add: 80 }];
+  const view = (fs: any[] = files) => Object.assign(Object.create(Panel.prototype), { files: fs });
+
+  test("is sized for the file with the longest −n +m", () => {
+    expect(view().widestStats()).toBe(files[1]);
+  });
+
+  test("uses the probe's measured width once it has reported for that file", () => {
+    const v = view();
+    const estimate = v.statsWidth();
+    v.statsMeasured = { key: "−120+4500", width: 61 };
+    expect(v.statsWidth()).toBe(61);
+    expect(estimate).not.toBe(61);
+  });
+
+  test("falls back to the estimate when a new widest has not been measured yet", () => {
+    const v = view();
+    v.statsMeasured = { key: "−120+4500", width: 61 };
+    v.files = [...files, { del: 10000, add: 10000 }];
+    expect(v.statsWidth()).not.toBe(61);
+    expect(v.statsWidth()).toBeGreaterThan(61);
+  });
+});
