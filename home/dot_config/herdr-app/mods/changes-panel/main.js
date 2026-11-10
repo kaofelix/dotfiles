@@ -7,7 +7,7 @@ import * as git from "./git.js";
 import { parsePatch, skippedFiles, firstChange } from "./patch.js";
 import { languageOf } from "./syntax.js";
 import { fileRows, wrapCount, wrapLines, segments } from "./rows.js";
-import { treeRows, treeOrder, fileMatches, breakdown } from "./tree.js";
+import { abbreviatePath, treeRows, treeOrder, fileMatches, breakdown } from "./tree.js";
 import { findMoves, isMoved } from "./moved.js";
 import { areas, effort, hints, reviewOrder } from "./insights.js";
 import { rowAt, headerPart as headerPartAt } from "./pointer.js";
@@ -29,7 +29,9 @@ const MENU_LIST_H = 320;
 const EDITOR_H = 96;
 const REFRESH_MS = 2000; // uncommitted changes move under our feet
 // Fixed-width parts of a file header, from the right edge, so a click can tell them apart.
-const HEADER_PARTS = { viewed: 92, stats: 120, comments: 44, editor: 32 };
+// Only viewed and editor are clicked, so only they need a fixed width; stats and comments take what they show.
+const HEADER_PARTS = { viewed: 24, editor: 24 }; // stats is added per diff: see statsWidth()
+const HEADER_CHAR_W = 7; // a 13px proportional character, a little generous so a path never clips
 const HEADER_PAD = 14;
 const HEADER_GAP = 8;
 const RIGHT_MENUS = new Set(["settings", "agent", "kinds", "keys"]);
@@ -937,12 +939,24 @@ export default class ChangesPanel extends View {
 
   // Which part of a file header a press `fromRight` px from its right edge landed on.
   headerPart(fromRight) {
-    return headerPartAt(fromRight, HEADER_PARTS, HEADER_PAD, HEADER_GAP);
+    return headerPartAt(fromRight, { ...HEADER_PARTS, stats: this.statsWidth() }, HEADER_PAD, HEADER_GAP);
+  }
+
+  // One width for every file's −n +m, from the longest, so the column lines up and the
+  // buttons to its left stay where a click expects them.
+  statsWidth() {
+    if (this.statsFor !== this.files) {
+      this.statsFor = this.files;
+      const chars = Math.max(2, ...this.files.map((f) => `−${f.del}`.length + `+${f.add}`.length));
+      this.statsW = Math.ceil(chars * HEADER_CHAR_W) + 6;
+    }
+    return this.statsW;
   }
 
   pressHeader(file, part, cx) {
     if (part === "viewed") return this.toggleViewed(file, cx);
-    if (part === "editor") return this.openInEditor(file, cx);
+    // A deleted file draws no button, so a press where it would be is just the header's.
+    if (part === "editor" && file.type !== "deleted") return this.openInEditor(file, cx);
     return this.toggleCollapsed(file, cx);
   }
 
@@ -1288,32 +1302,36 @@ export default class ChangesPanel extends View {
     const collapsed = this.isCollapsed(f);
     const viewed = isViewed(this.review, f);
     const count = this.comments.filter((c) => c.file === f.id && !c.outdated).length;
-    const slash = f.name.lastIndexOf("/");
+    const moved = this.moves.perFile.get(f.id) ?? 0;
+    const room = this.mainW - SCROLLBAR_W - 2 * HEADER_PAD - 14 - 26 - HEADER_PARTS.viewed - this.statsWidth() - (f.type === "deleted" ? 0 : HEADER_PARTS.editor) - (count ? 44 : 0)
+      - (moved ? 70 : 0) - (f.generated || f.large ? 60 : 0) - (changedSinceViewed(this.review, f) ? 140 : 0) - (f.prevName ? f.prevName.length * HEADER_CHAR_W + 30 : 0) - 8 * 7;
+    const name = this.mainW ? abbreviatePath(f.name, Math.floor(room / HEADER_CHAR_W)) : f.name;
+    const slash = name.lastIndexOf("/");
     const label = f.generated ? "generated" : f.large ? "large" : null;
     const tag = (text, outline) => div().ml(2).px(6).py(1).rounded(4).text_size(11).text_color(t.muted)
       .when(outline, (el) => el.border_1().border_color(t.border)).when(!outline, (el) => el.bg(t.raised)).child(text);
-    const part = (width) => h_flex().w(width).h_full().flex_none().items_center().justify_end();
+    const part = (width) => h_flex().w(width).h_full().flex_none().items_center().justify_center();
     const header = h_flex().h(HEADER_H).w_full().pl(14).pr(14).gap(8).items_center().bg(t.background).text_size(13)
       .when(index > 0 || pinned, (el) => el.border_t_1()).when(pinned || !collapsed, (el) => el.border_b_1()).border_color(t.border)
       .when(pinned, (el) => el.shadow_md())
       .child(div().text_color(t.muted).child(icon(collapsed ? "chevron-right" : "chevron-down", 14)))
       .child(badge(f.name, t))
       .child(h_flex().min_w(0).flex_1().gap(0).truncate()
-        .when(slash > 0, (el) => el.child(div().text_color(t.muted).child(f.name.slice(0, slash + 1))))
-        .child(div().text_color(viewed ? t.muted : t.foreground).child(f.name.slice(slash + 1)))
+        .when(slash > 0, (el) => el.child(div().text_color(t.muted).child(name.slice(0, slash + 1))))
+        .child(div().text_color(viewed ? t.muted : t.foreground).child(name.slice(slash + 1)))
         .when(Boolean(f.prevName), (el) => el.child(div().ml(8).text_color(t.dim).child(`← ${f.prevName}`))))
       .when(Boolean(label), (el) => el.child(tag(label, false)))
       .when(changedSinceViewed(this.review, f), (el) => el.child(tag("changed since viewed", true)))
-      .when((this.moves.perFile.get(f.id) ?? 0) > 0, (el) => el.child(div().ml(2).text_size(11.5).text_color(t.dim).child(`${this.moves.perFile.get(f.id)} moved`)))
-      .child(part(HEADER_PARTS.comments).gap(4).text_size(12).text_color(t.muted).when(count > 0, (el) => el.child(icon("comment", 13)).child(String(count))))
-      .child(part(HEADER_PARTS.stats).gap(6).text_size(12)
+      .when(moved > 0, (el) => el.child(div().ml(2).flex_none().text_size(11.5).text_color(t.dim).child(`${moved} moved`)))
+      .when(count > 0, (el) => el.child(h_flex().flex_none().gap(4).items_center().text_size(12).text_color(t.muted).child(icon("comment", 13)).child(String(count))))
+      // Only when there is a file on disk to open; its slot is not held back for deleted files.
+      .when(f.type !== "deleted", (el) => el.child(part(HEADER_PARTS.editor).text_color(t.dim).child(icon("editor", 13))))
+      .child(h_flex().w(this.statsWidth()).flex_none().justify_end().gap(6).items_center().text_size(12)
         .child(div().text_color(t.ansi1).child(`−${f.del}`)).child(div().text_color(t.ansi2).child(`+${f.add}`)))
-      .child(part(HEADER_PARTS.viewed).gap(6).text_size(12).text_color(t.muted)
+      // Always there, last, at the right edge.
+      .child(part(HEADER_PARTS.viewed)
         .child(div().size(14).rounded(3).border_1().border_color(viewed ? t.accent : t.input).when(viewed, (el) => el.bg(t.accent))
-          .flex().items_center().justify_center().text_color(t.accent_foreground).when(viewed, (el) => el.child(icon("check", 10))))
-        .child("Viewed"))
-      // Last, so it sits at the right edge. Nothing on disk to open for a deleted file.
-      .child(part(HEADER_PARTS.editor).child(f.type === "deleted" ? div() : div().text_color(t.dim).child(icon("editor", 13))));
+          .flex().items_center().justify_center().text_color(t.accent_foreground).when(viewed, (el) => el.child(icon("check", 10)))));
     if (!pinned) return header;
     // The pinned copy sits outside the list, so it can have handlers of its own.
     return header.id("pinned").cursor_pointer().on_mouse_down("left", (e, cx) => {

@@ -111,3 +111,21 @@ export function breakdown(files) {
   }
   return KINDS.filter(([id]) => by.has(id)).map(([id, label]) => ({ id, label, ...by.get(id) }));
 }
+
+// A path that fits in `chars` characters: the file name always stays whole, and folders in
+// the middle collapse to "…" (keeping the first folder and as many trailing ones as fit),
+// like "adapters/…/pi/src/cli.ts". A name too long on its own is left for the caller to clip.
+export function abbreviatePath(path, chars) {
+  if (path.length <= chars) return path;
+  const parts = path.split("/");
+  const file = parts.pop();
+  if (!parts.length) return path;
+  const [first, ...rest] = parts;
+  for (let keep = rest.length - 1; keep >= 0; keep--) {
+    const tail = rest.slice(rest.length - keep);
+    const out = [first, "…", ...tail, file].join("/");
+    if (out.length <= chars) return out;
+  }
+  const bare = `…/${file}`;
+  return bare;
+}

@@ -12,10 +12,12 @@ export function rowAt(sizes, top, y, count = sizes.length) {
 }
 
 // Which part of a file header a press `fromRight` px from its right edge landed on. Parts
-// are laid out from the right as: editor, gap, Viewed; `pad` is the header's right padding.
-export function headerPart(fromRight, { editor, viewed }, pad, gap) {
+// are laid out from the right as: Viewed, gap, stats, gap, editor; `pad` is the header's right
+// padding. The stats column is fixed-width so the editor button sits at a known place.
+export function headerPart(fromRight, { viewed, stats, editor }, pad, gap) {
   const x = fromRight - pad;
-  if (x < editor) return "editor";
-  if (x < editor + gap + viewed) return "viewed";
+  if (x < viewed + gap) return "viewed"; // the gap belongs to Viewed
+  const editorAt = viewed + gap + stats + gap;
+  if (x >= editorAt && x < editorAt + editor) return "editor";
   return "header";
 }

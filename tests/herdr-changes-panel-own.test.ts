@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { findMoves, isMoved } from "../home/dot_config/herdr-app/mods/changes-panel/moved.js";
 import { areas, reviewOrder } from "../home/dot_config/herdr-app/mods/changes-panel/insights.js";
 import { parsePatch } from "../home/dot_config/herdr-app/mods/changes-panel/patch.js";
-import { treeOrder, treeRows } from "../home/dot_config/herdr-app/mods/changes-panel/tree.js";
+import { abbreviatePath, treeOrder, treeRows } from "../home/dot_config/herdr-app/mods/changes-panel/tree.js";
 import { headerPart, rowAt } from "../home/dot_config/herdr-app/mods/changes-panel/pointer.js";
 
 const diff = (path: string, lines: string[], hunk = "@@ -1,3 +1,3 @@") =>
@@ -32,20 +32,22 @@ describe("pointer", () => {
     expect(rowAt(sizes, 0, 79, 3)).toBe(2);
   });
 
-  const parts = { editor: 32, viewed: 92 };
-  test("headerPart tells the editor, Viewed and the rest of the header apart", () => {
+  const parts = { viewed: 24, stats: 60, editor: 24 };
+  // From the right: Viewed 0-24 (+8 gap), stats to 92, 8 gap, editor 100-124.
+  test("headerPart tells Viewed, the editor and the rest of the header apart", () => {
     const at = (x: number) => headerPart(x + 14, parts, 14, 8);
-    expect(at(0)).toBe("editor");
-    expect(at(31)).toBe("editor");
-    expect(at(32)).toBe("viewed"); // the gap belongs to Viewed
-    expect(at(40)).toBe("viewed");
-    expect(at(131)).toBe("viewed");
-    expect(at(132)).toBe("header");
+    expect(at(0)).toBe("viewed");
+    expect(at(31)).toBe("viewed"); // the gap belongs to Viewed
+    expect(at(32)).toBe("header"); // the stats
+    expect(at(99)).toBe("header");
+    expect(at(100)).toBe("editor");
+    expect(at(123)).toBe("editor");
+    expect(at(124)).toBe("header");
     expect(at(600)).toBe("header");
   });
 
-  test("headerPart counts the right padding as the header", () => {
-    expect(headerPart(13, parts, 14, 8)).toBe("editor");
+  test("headerPart counts the right padding as Viewed", () => {
+    expect(headerPart(13, parts, 14, 8)).toBe("viewed");
   });
 });
 
@@ -146,5 +148,28 @@ describe("diff order follows the file tree", () => {
     treeOrder(input);
     expect(input.map((f: any) => f.name)).toEqual(["b.js", "a.js"]);
     expect(treeOrder([])).toEqual([]);
+  });
+});
+
+describe("abbreviatePath", () => {
+  const path = "adapters/typescript/pi/src/agent-runtime.ts";
+  test("leaves a path that fits alone", () => {
+    expect(abbreviatePath(path, path.length)).toBe(path);
+    expect(abbreviatePath("cli.ts", 3)).toBe("cli.ts");
+  });
+  test("folds middle folders, keeping the first folder, the last folders that fit and the file name", () => {
+    expect(abbreviatePath(path, path.length - 1)).toBe("adapters/…/pi/src/agent-runtime.ts");
+    expect(abbreviatePath(path, 31)).toBe("adapters/…/src/agent-runtime.ts");
+    expect(abbreviatePath(path, 27)).toBe("adapters/…/agent-runtime.ts");
+  });
+  test("keeps the whole file name even when nothing else fits", () => {
+    expect(abbreviatePath(path, 5)).toBe("…/agent-runtime.ts");
+  });
+  test("always keeps the file name and stays within budget when it can", () => {
+    for (let n = 1; n < path.length; n++) {
+      const out = abbreviatePath(path, n);
+      expect(out.endsWith("/agent-runtime.ts")).toBe(true);
+      expect(out.length).toBeLessThanOrEqual(Math.max(n, "…/agent-runtime.ts".length));
+    }
   });
 });
