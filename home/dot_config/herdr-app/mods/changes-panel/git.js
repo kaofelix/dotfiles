@@ -181,7 +181,7 @@ async function untrackedPatchOf(repo) {
 
 // Pull requests, through the GitHub CLI. Null when gh is missing, signed out, or there is none.
 export async function pullRequest(repo, number) {
-  const args = ["pr", "view", ...(number ? [String(number)] : []), "--json", "number,title,url,baseRefName,headRefName,headRefOid"];
+  const args = ["pr", "view", ...(number ? [String(number)] : []), "--json", "number,title,url,baseRefName,headRefName"];
   const result = await exec("gh", args, { cwd: repo }).catch(() => null);
   if (result?.code !== 0) return null;
   try { return JSON.parse(result.stdout); } catch { return null; }

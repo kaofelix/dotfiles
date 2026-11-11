@@ -267,19 +267,6 @@ test("fileRows offers the lines after the last change once the file's text is kn
   assert.deepEqual(open.slice(-3).map((r) => [r.left.n, r.right.n, r.right.text]), [[12, 13, "line 13"], [13, 14, "line 14"], [14, 15, "line 15"]]);
 });
 
-test("reviewPayload turns comments into one GitHub review", async () => {
-  const { reviewPayload } = await import("../home/dot_config/herdr-app/mods/changes-panel/review.js");
-  const files = [{ id: "a.js", name: "a.js" }];
-  const payload = reviewPayload("abc", [
-    { file: "a.js", side: "new", start: 3, end: 3, text: "Why?" },
-    { file: "a.js", side: "old", start: 5, end: 7, text: "Keep this" },
-  ], files);
-  assert.deepEqual(payload, { commit_id: "abc", event: "COMMENT", body: "", comments: [
-    { path: "a.js", line: 3, side: "RIGHT", body: "Why?" },
-    { path: "a.js", line: 7, side: "LEFT", body: "Keep this", start_line: 5, start_side: "LEFT" },
-  ] });
-});
-
 test("insights: areas, effort, hints and review order", async () => {
   const { areas, effort, hints, reviewOrder } = await import("../home/dot_config/herdr-app/mods/changes-panel/insights.js");
   const files = [

@@ -1,8 +1,7 @@
 // Changes panel for Herdr: review a branch like a pull request, without leaving the window.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list, VirtualListScrollHandle } from "gpui-base";
-import { props, focused, notify, agents, panes, hc, appHome, exec, settings, theme } from "herdr";
-import * as fs from "fs/promises";
+import { props, focused, notify, agents, panes, hc, exec, settings, theme } from "herdr";
 import * as git from "./git.js";
 import { parsePatch, skippedFiles, firstChange } from "./patch.js";
 import { languageOf } from "./syntax.js";
@@ -11,7 +10,7 @@ import { abbreviatePath, treeRows, treeOrder, fileMatches, breakdown } from "./t
 import { findMoves, isMoved } from "./moved.js";
 import { areas, effort, hints, reviewOrder } from "./insights.js";
 import { rowAt, partAt, partsWidth } from "./pointer.js";
-import { reviewKey, rangeKey, sinceReview, emptyReview, isViewed, changedSinceViewed, toggleViewed, linesText, withStatus, reviewPrompt, reviewPayload } from "./review.js";
+import { reviewKey, rangeKey, sinceReview, emptyReview, isViewed, changedSinceViewed, toggleViewed, linesText, withStatus, reviewPrompt } from "./review.js";
 import { DEFAULT_PREFS, readPrefs, writePrefs, readReview, writeReview, readLastReviewed, writeLastReviewed } from "./store.js";
 
 const ICONS = "mods/changes-panel/icons";
@@ -689,41 +688,6 @@ export default class ChangesPanel extends View {
     });
   }
 
-  // Comments for the pull request: open ones not posted yet.
-  unsentComments() {
-    return this.prShown() ? this.comments.filter((c) => !c.outdated && !c.sent) : [];
-  }
-
-  prShown() {
-    return Boolean(this.pr) && this.pr.head === this.source?.head && !this.source.commit && !this.source.since;
-  }
-
-  // Posts the comments to the pull request as one review, through gh, and marks them sent.
-  sendToGitHub(cx) {
-    const comments = this.unsentComments();
-    if (!comments.length || this.posting) return;
-    this.posting = true;
-    cx.notify();
-    cx.spawn(async (cx) => {
-      const file = `${appHome()}/data/changes-panel/github-review.json`;
-      try {
-        await fs.mkdir(`${appHome()}/data/changes-panel`, { recursive: true });
-        await fs.writeFile(file, JSON.stringify(reviewPayload(this.pr.headRefOid, comments, this.files)));
-        const result = await exec("gh", ["api", `repos/{owner}/{repo}/pulls/${this.pr.number}/reviews`, "--method", "POST", "--input", file], { cwd: this.source.repo });
-        if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim().split("\n").pop());
-        const sent = new Set(comments.map((c) => c.id));
-        this.setReview({ ...this.review, comments: this.review.comments.map((c) => (sent.has(c.id) ? { ...c, sent: true } : c)) });
-        this.rebuild();
-        notify({ title: `Posted ${plural(comments.length, "comment")} on #${this.pr.number}`, body: this.pr.title, level: "success", timeout: 3000 });
-      } catch (e) {
-        notify({ title: "Couldn't post the review", body: String(e.message ?? e), level: "error" });
-      } finally {
-        this.posting = false;
-        cx.notify();
-      }
-    });
-  }
-
   copyReview(cx) {
     const open = this.comments.filter((c) => !c.outdated);
     if (!open.length) return;
@@ -939,7 +903,6 @@ export default class ChangesPanel extends View {
       ["Reload", "", (cx) => this.reload({}, cx)],
       ["Overview", "", (cx) => this.openOverview(cx)],
       [`${this.prefs.wholeFiles ? "Folded" : "Whole"} files`, "", (cx) => this.setWholeFiles(!this.prefs.wholeFiles, cx)],
-      ...(this.unsentComments().length ? [["Send comments to GitHub", "", (cx) => this.sendToGitHub(cx)]] : []),
     ].filter(([label]) => !query || label.toLowerCase().includes(query.toLowerCase()))
       .map(([label, hint, run]) => ({ label, hint: hint || "action", run }));
     return [...files, ...commits, ...actions];
@@ -1153,9 +1116,6 @@ export default class ChangesPanel extends View {
         .child(h_flex().id("clear-comments").h(28).w(28).flex_none().justify_center().items_center().rounded_r(6).border_1().border_l_0().border_color(t.border)
           .cursor_pointer().text_color(t.muted).hover((st) => st.bg(t.hover)).tooltip("Clear comments").on_click((_e, cx) => this.setReview({ ...this.review, comments: [] }) || (this.rebuild(), cx.notify()))
           .child(icon("x", 12)))))
-      .when(this.unsentComments().length > 0, (el) => el.child(h_flex().id("github").h(28).px(10).gap(6).items_center().rounded(6).border_1().border_color(t.border)
-        .cursor_pointer().text_size(12).hover((st) => st.bg(t.hover)).tooltip("Post comments as a GitHub review").on_click((_e, cx) => this.sendToGitHub(cx))
-        .child(icon("pull", 13)).child(this.posting ? "Sending…" : `GitHub (${this.unsentComments().length})`)))
       .when(files.length > 0, (el) => el.child(this.button("overview", icon("chart"), (cx) => this.openOverview(cx), { active: this.overview, tip: "Overview" })))
       .child(this.button("collapse", icon(files.length && files.every((f) => this.isCollapsed(f)) ? "expand" : "collapse"), (cx) => this.toggleAll(cx), { tip: files.length && files.every((f) => this.isCollapsed(f)) ? "Expand all files" : "Collapse all files" }))
       .child(this.button("style", icon(this.prefs.diffStyle === "split" ? "split" : "unified"), (cx) => this.setPref("diffStyle", this.prefs.diffStyle === "split" ? "unified" : "split", cx), { tip: this.prefs.diffStyle === "split" ? "Switch to unified view" : "Switch to split view" }))
@@ -1430,7 +1390,6 @@ export default class ChangesPanel extends View {
         .child(h_flex().gap(8).text_size(11.5).text_color(t.dim)
           .child(icon("comment", 12))
           .child(div().flex_1().child(c.start === c.end ? `Line ${c.end}` : `Lines ${c.start}–${c.end}`))
-          .when(Boolean(c.sent), (el) => el.child(div().px(6).rounded(4).bg(t.raised).text_color(t.muted).child("on GitHub")))
           .child(div().w(46).flex().justify_end().text_color(t.muted).child("Edit"))
           .child(div().w(46).flex().justify_end().text_color(t.muted).child("Delete")))
         .child(div().text_size(13).text_color(t.foreground).child(c.text)));
