@@ -29,7 +29,7 @@
               "id": "spaces",
               "type": "block",
               "content": {
-                "mod": "spaces"
+                "mod": "spaces-flat"
               },
               "size": {
                 "weight": 1
@@ -40,7 +40,7 @@
               "id": "agents",
               "type": "block",
               "content": {
-                "mod": "agents"
+                "mod": "agents-flat"
               },
               "size": {
                 "weight": 1
@@ -98,7 +98,7 @@
                 "pane": {
                   "header": {
                     "content": {
-                      "mod": "pane"
+                      "mod": "pane-flat"
                     },
                     "reveal": "always",
                     "height": 30,
@@ -176,5 +176,6 @@
   "traffic_lights": [
     12,
     16
-  ]
+  ],
+  "terminal_menu": "menu-plus"
 }
