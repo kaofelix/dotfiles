@@ -1,4 +1,4 @@
-// Beads (https://github.com/gastownhall/beads) for the project in view: in-progress, blocked, open,
+// Beads (https://github.com/gastownhall/beads) for the project in view: in-progress, open, blocked,
 // deferred and closed issues as a tree (children under their epic, even across sections), with a
 // filter, sorting and a detail view. Read-only: it runs `bd ... --readonly`.
 //

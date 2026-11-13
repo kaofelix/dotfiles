@@ -3,8 +3,8 @@
 
 export const SECTIONS = [
   { id: "in_progress", label: "In progress" },
-  { id: "blocked", label: "Blocked" },
   { id: "open", label: "Open" },
+  { id: "blocked", label: "Blocked" },
   { id: "deferred", label: "Deferred" },
   { id: "closed", label: "Closed" },
 ];

@@ -5,7 +5,7 @@ A read-only viewer for [beads](https://github.com/gastownhall/beads) issues in t
 - **Opening it:** `tabs-flat` shows a **Beads** button when the focused folder, or one of its parents, has `.beads/metadata.json`.
   The button, or `cmd-shift-b` (`tabs-flat.beads`), toggles a Beads pane split to the right. The pane is pinned to that project.
 - **Props:** `{ repo?, on?, issue? }`. Without `repo`, the pane follows the focused pane's folder. `issue` opens that bead's details.
-- **The list:** issues are grouped into the In progress, Blocked, Open, Deferred and Closed sections.
+- **The list:** issues are grouped into the In progress, Open, Blocked, Deferred and Closed sections.
   An open issue with an unfinished `blocks` dependency counts as blocked.
   Children nest under their parent epic in every section. A parent outside a section is shown dimmed as context.
   The chips hide or show sections. Section and node folding is saved per project.

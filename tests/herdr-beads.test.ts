@@ -6,6 +6,11 @@ const blocks = (from, on) => ({ issue_id: from, depends_on_id: on, type: "blocks
 const rowsOf = (rows) => rows.map(r => r.kind === "section" ? `# ${r.id} ${r.count}` : `${"  ".repeat(r.depth)}${r.issue.id}${r.context ? " (context)" : ""}`);
 
 describe("beads model", () => {
+  test("lists blocked issues after the open work blocking them", () => {
+    const all = [issue("a"), issue("b", { dependencies: [blocks("b", "a")] }), issue("w", { status: "in_progress" })];
+    expect(rowsOf(buildRows(all, {}))).toEqual(["# in_progress 1", "w", "# open 1", "a", "# blocked 1", "b"]);
+  });
+
   test("groups issues into status sections, an open issue with an open blocker is blocked", () => {
     const all = [issue("a", { status: "in_progress" }), issue("b", { dependencies: [blocks("b", "a")] }), issue("c"), issue("d", { status: "closed" }), issue("e", { dependencies: [blocks("e", "d")] })];
     const byId = new Map(all.map(i => [i.id, i]));
