@@ -96,15 +96,13 @@ export function gitOn(machine) {
 
   const currentBranch = async (repo) => (await line(repo, ["rev-parse", "--abbrev-ref", "HEAD"])) ?? "HEAD";
 
-  // The branch a pull request would most likely target.
-  async function defaultBase(repo) {
+  // What a branch is compared with by default: its copy on origin, so the panel shows what
+  // isn't pushed yet; without one, the branch itself, so only uncommitted work shows.
+  async function defaultBase(repo, branch) {
     if (!(await hasCommits(repo))) return EMPTY_TREE;
-    const remote = await line(repo, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]);
-    if (remote) return remote;
-    for (const candidate of ["main", "master"]) {
-      if (await line(repo, ["rev-parse", "--verify", "--quiet", candidate])) return candidate;
-    }
-    return "HEAD";
+    if (!branch || branch === "HEAD" || isOption(branch)) return "HEAD";
+    const remote = `origin/${branch}`;
+    return (await line(repo, ["rev-parse", "--verify", "--quiet", `refs/remotes/${remote}`])) ? remote : branch;
   }
 
   const isDirty = async (repo) => Boolean(await line(repo, ["status", "--porcelain", "--untracked-files=normal"]));
@@ -159,7 +157,16 @@ export function gitOn(machine) {
       const range = head ? [`${from}...${head}`] : base === EMPTY_TREE ? [base] : ["--merge-base", base];
       command = ["diff", ...whitespace, ...range];
     }
-    const stats = await git(repo, [...command, "--numstat", "-z", "-M", "--"]);
+    let stats;
+    try {
+      stats = await git(repo, [...command, "--numstat", "-z", "-M", "--"]);
+    } catch (e) {
+      // Histories that never met (an orphan branch, an unrelated remote) have no fork point:
+      // compare with the base as it is.
+      if (commit || !/no merge base/i.test(e.message)) throw e;
+      command = ["diff", ...whitespace, since || base, ...(head ? [head] : [])];
+      stats = await git(repo, [...command, "--numstat", "-z", "-M", "--"]);
+    }
     const skipped = numstat(stats).filter((f) => f.add + f.del > MAX_FILE_LINES);
     const excludes = skipped.map((f) => `:(exclude,literal)${f.path}`);
     const [text, untracked] = await Promise.all([

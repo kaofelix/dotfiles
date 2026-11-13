@@ -151,21 +151,21 @@ export default class ChangesPanel extends View {
       this.error = "Not in a git repository. Open this from a terminal inside one.";
       return cx.notify();
     }
-    const [base, branch, dirty, refs] = await Promise.all([this.git.defaultBase(repo), this.git.currentBranch(repo), this.git.isDirty(repo), this.git.refs(repo)]);
+    const branch = await this.git.currentBranch(repo);
+    const [base, dirty, refs] = await Promise.all([this.git.defaultBase(repo, branch), this.git.isDirty(repo), this.git.refs(repo)]);
     this.refs = refs;
     this.branch = branch;
     if (given.pr) return this.openPullRequest(repo, given.pr, cx);
-    // With uncommitted work, show it on top of the branch; otherwise the branch, like a PR.
-    const head = given.head ?? (dirty || base === git.EMPTY_TREE ? "" : branch);
+    // With uncommitted work, show it on top of the branch; otherwise the branch's unpushed
+    // commits. A branch compared with itself has only its working tree to show.
+    const head = given.head ?? (dirty || base === git.EMPTY_TREE || base === branch || base === "HEAD" ? "" : branch);
     await this.load({ repo, on: this.machine, base: given.base ?? base, head, commit: null, ignoreWhitespace: false }, cx);
-    // The branch's pull request, looked up after the diff shows so it never slows it down.
-    // It knows the real base: switch to it unless someone already moved on.
+    // The branch's pull request, looked up after the diff shows so it never slows it down:
+    // its chip links to it, and its base is one pick away in the base menu.
     if (!head || given.base || base === git.EMPTY_TREE) return;
     const pr = await this.git.pullRequest(repo);
     if (!pr || pr.headRefName !== head) return;
     this.pr = { ...pr, head };
-    const prBase = `origin/${pr.baseRefName}`;
-    if (this.source.head === head && this.source.base === base && prBase !== base && this.refs.includes(prBase)) await this.load({ ...this.source, base: prBase }, cx);
     cx.notify();
   }
 
