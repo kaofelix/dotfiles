@@ -104,6 +104,17 @@ test("highlight carries block comments and multi-line strings across lines", () 
   assert.equal(py[1][0].kind, "string");
 });
 
+test("highlight reads Emacs Lisp: comments, keywords, keyword arguments, strings and calls", () => {
+  const [line] = highlight(languageOf("init.el"), ['(use-package org-roam :ensure t ; notes', '  :custom (org-roam-directory "~/notes"))']);
+  const kinds = Object.fromEntries(line.filter((t) => t.kind).map((t) => [t.text.trim(), t.kind]));
+  assert.equal(kinds["use-package"], "keyword");
+  assert.equal(kinds[":ensure"], "property");
+  assert.equal(kinds["; notes"], "comment");
+  const [, second] = highlight(languageOf("init.el"), ['(setq a 1)', '(org-roam-node-find "x")']);
+  assert.deepEqual(second.filter((t) => t.kind && t.kind !== "punctuation").map((t) => [t.text, t.kind]), [["org-roam-node-find", "function"], ['"x"', "string"]]);
+  assert.equal(languageOf("home/dot_emacs.d/init.el.tmpl")?.id, "elisp");
+});
+
 test("highlight marks keys in data files and leaves unknown files plain", () => {
   const [json] = highlight(languageOf("a.json"), ['"name": "x"']);
   assert.equal(json[0].kind, "property");

@@ -55,7 +55,7 @@ function badge(name, t) {
   const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
   const table = {
     ts: ["TS", t.ansi4], tsx: ["TS", t.ansi4], mts: ["TS", t.ansi4], js: ["JS", t.ansi3], jsx: ["JS", t.ansi3], mjs: ["JS", t.ansi3],
-    json: ["{}", t.ansi3], rs: ["RS", t.ansi1], py: ["PY", t.ansi4], go: ["GO", t.ansi6], md: ["M↓", t.ansi4], mdx: ["M↓", t.ansi4],
+    json: ["{}", t.ansi3], rs: ["RS", t.ansi1], py: ["PY", t.ansi4], go: ["GO", t.ansi6], md: ["M↓", t.ansi4], mdx: ["M↓", t.ansi4], el: ["EL", t.ansi5],
     css: ["#", t.ansi5], scss: ["#", t.ansi5], html: ["<>", t.ansi1], svg: ["<>", t.ansi3], yml: ["Y", t.ansi1], yaml: ["Y", t.ansi1],
     toml: ["T", t.ansi1], sh: ["$", t.ansi2], lock: ["≡", t.muted], sql: ["DB", t.ansi6],
   };
