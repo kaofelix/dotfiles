@@ -68,7 +68,8 @@
     "cmd-shift-}": "tab.next",
     "cmd-shift-n": "mod.open:space-from-remote",
     "cmd-shift-g": "tabs-flat.changes",
-    "cmd-alt-g": "tabs-flat.pr"
+    "cmd-alt-g": "tabs-flat.pr",
+    "cmd-shift-b": "tabs-flat.beads"
   },
   "terminal": {
     "cmd-c": "terminal.copy",

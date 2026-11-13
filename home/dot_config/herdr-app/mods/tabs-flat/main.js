@@ -1,6 +1,18 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, panes, focused, run, openOverlay, nextCommand, theme, window, shared, layout, settings } from "herdr";
+import { spaces, panes, focused, run, openOverlay, nextCommand, theme, window, shared, layout, settings, readTextFile } from "herdr";
+
+// The beads database (.beads/metadata.json) in a folder or the nearest parent that has one.
+async function beadsRoot(cwd, on) {
+  let dir = cwd.replace(/[\\/]+$/, "");
+  for (let i = 0; dir && i < 32; i++) {
+    if (await readTextFile(dir + "/.beads/metadata.json", { on }).catch(() => null) !== null) return dir;
+    const up = dir.replace(/[\\/][^\\/]*$/, "");
+    if (up === dir) break;
+    dir = up;
+  }
+  return null;
+}
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -14,12 +26,14 @@ function find(node, id) {
 export default class Tabs extends View {
   init(_props, cx) {
     this.pressed = null;
-    // `tabs-flat.changes` from a key toggles the Changes pane; `tabs-flat.pr` picks a pull request.
+    // `tabs-flat.changes` from a key toggles the Changes pane; `tabs-flat.pr` picks a pull request;
+    // `tabs-flat.beads` toggles the Beads pane.
+    this.beads = new Map(); // "machine|cwd" -> beads root or null (pending: undefined)
     cx.spawn(async () => {
       for (;;) {
         const command = await nextCommand();
         // One failed toggle must not end the loop and leave the key dead.
-        try { if (command === "changes") this.toggleDiff(); else if (command === "pr") this.pickPullRequest(); } catch (e) { console.warn(`tabs-flat: ${command}: ${e?.message ?? e}`); }
+        try { if (command === "changes") this.toggleDiff(); else if (command === "pr") this.pickPullRequest(); else if (command === "beads") this.toggleBeads(); } catch (e) { console.warn(`tabs-flat: ${command}: ${e?.message ?? e}`); }
       }
     });
     this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}");
@@ -34,6 +48,27 @@ export default class Tabs extends View {
     const open = panes().find(p => p.tab === f.tab && p.mod === "changes-panel");
     if (open) return run("pane.close", { pane: open.pane });
     run("pane.split", { direction: "right", mod: "changes-panel", props: f.cwd ? { repo: f.cwd } : {} });
+  }
+
+  // Beads: shown when the focused folder belongs to a beads project, pinned to that project.
+  beadsFor(f, cx) {
+    if (!f?.cwd) return null;
+    const space = spaces().find(s => s.id === f.space), on = space?.machine ?? null, key = (on ?? "") + "|" + f.cwd;
+    if (!this.beads.has(key) && cx) {
+      this.beads.set(key, undefined);
+      cx.spawn(async (cx) => { this.beads.set(key, await beadsRoot(f.cwd, on)); cx.notify(); });
+    }
+    const root = this.beads.get(key);
+    return root ? { repo: root, on } : null;
+  }
+
+  toggleBeads() {
+    const f = focused();
+    if (!f) return;
+    const open = panes().find(p => p.tab === f.tab && p.mod === "beads");
+    if (open) return run("pane.close", { pane: open.pane });
+    const target = this.beadsFor(f);
+    run("pane.split", { direction: "right", mod: "beads", props: target ?? {} });
   }
 
   // A pull request of the focused terminal's repository, reviewed in a Changes dialog.
@@ -68,8 +103,9 @@ export default class Tabs extends View {
     localStorage.setItem("panels", JSON.stringify(this.panels));
   }
 
-  render() {
+  render(cx) {
     const t = theme();
+    const beads = this.beadsFor(focused(), cx);
     const space = spaces().find(p => p.active);
     const shown = space?.tabs ?? [];
     const stop = (_e, cx) => cx.stop_propagation();
@@ -106,7 +142,7 @@ export default class Tabs extends View {
     const panelButton = (id, label, icon, open) => {
       const f = focused();
       // Changes is a pane, not the side panel: active while one is open in this tab.
-      const on = open ? panes().some(p => p.tab === f?.tab && p.mod === "changes-panel")
+      const on = open ? panes().some(p => p.tab === f?.tab && p.mod === (id === "beads" ? "beads" : "changes-panel"))
         : panel && !panel.hidden && body?.active === id;
       return h_flex().id(`panel-${id}`).h_full().px(10).gap(5).flex_none().items_center()
         .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
@@ -124,6 +160,7 @@ export default class Tabs extends View {
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg", () => this.toggleDiff())))
+      .when(Boolean(beads) || panes().some(p => p.tab === focused()?.tab && p.mod === "beads"), el => el.child(panelButton("beads", "Beads", "mods/beads/icons/beads.svg", () => this.toggleBeads())))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs-flat/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs-flat/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
         .child(button("close-window", w.platform === "windows" ? svg("mods/tabs-flat/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));
