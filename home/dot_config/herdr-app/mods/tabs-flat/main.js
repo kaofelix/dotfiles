@@ -14,12 +14,12 @@ function find(node, id) {
 export default class Tabs extends View {
   init(_props, cx) {
     this.pressed = null;
-    // `tabs-flat.changes` from a key toggles the Changes pane.
+    // `tabs-flat.changes` from a key toggles the Changes pane; `tabs-flat.pr` picks a pull request.
     cx.spawn(async () => {
       for (;;) {
         const command = await nextCommand();
         // One failed toggle must not end the loop and leave the key dead.
-        try { if (command === "changes") this.toggleDiff(); } catch (e) { console.warn(`tabs-flat: ${command}: ${e?.message ?? e}`); }
+        try { if (command === "changes") this.toggleDiff(); else if (command === "pr") this.pickPullRequest(); } catch (e) { console.warn(`tabs-flat: ${command}: ${e?.message ?? e}`); }
       }
     });
     this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}");
@@ -34,6 +34,12 @@ export default class Tabs extends View {
     const open = panes().find(p => p.tab === f.tab && p.mod === "changes-panel");
     if (open) return run("pane.close", { pane: open.pane });
     run("pane.split", { direction: "right", mod: "changes-panel", props: f.cwd ? { repo: f.cwd } : {} });
+  }
+
+  // A pull request of the focused terminal's repository, reviewed in a Changes dialog.
+  pickPullRequest() {
+    const f = focused();
+    openOverlay({ mod: "pr-picker", kind: "dialog", width: 640, props: f?.cwd ? { repo: f.cwd } : {} });
   }
 
   syncPanel(space, panel, body, enabled) {

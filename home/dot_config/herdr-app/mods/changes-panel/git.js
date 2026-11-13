@@ -187,13 +187,28 @@ export async function pullRequest(repo, number) {
   try { return JSON.parse(result.stdout); } catch { return null; }
 }
 
-// Fetches a pull request's head and base, so it can be reviewed without checking it out.
+// The remote that holds a pull request's repository (https://host/owner/repo/pull/N), else
+// that repository's URL itself.
+export function remoteFor(remotes, url) {
+  const m = /^(https?:\/\/[^/]+)\/([^/]+\/[^/]+)\/pull\/\d+/.exec(url ?? "");
+  if (!m) return "origin";
+  const slug = m[2].toLowerCase();
+  for (const line of remotes.split("\n")) {
+    const [name, address] = line.split(/\s+/);
+    if (address && address.toLowerCase().replace(/\.git$/, "").replace(/\/$/, "").match(/[:/]([^/:]+\/[^/]+)$/)?.[1] === slug) return name;
+  }
+  return `${m[1]}/${m[2]}.git`;
+}
+
+// Fetches a pull request's head and base into the panel's own refs, so it can be reviewed
+// without checking it out and without moving any branch or remote-tracking ref.
 export async function fetchPullRequest(repo, pr) {
-  const head = `origin/pr/${pr.number}`;
-  const result = await exec("git", ["-C", repo, "fetch", "--quiet", "origin",
-    `+pull/${pr.number}/head:refs/remotes/${head}`, `+${pr.baseRefName}:refs/remotes/origin/${pr.baseRefName}`]);
+  const remotes = await git(repo, ["remote", "-v"]).catch(() => "");
+  const ref = `refs/changes-panel/pr/${pr.number}`;
+  const result = await exec("git", ["-C", repo, "fetch", "--quiet", "--no-tags", "--refmap=", remoteFor(remotes, pr.url),
+    `+refs/pull/${pr.number}/head:${ref}/head`, `+refs/heads/${pr.baseRefName}:${ref}/base`]);
   if (result.code !== 0) throw new Error(result.stderr.trim() || `couldn't fetch #${pr.number}`);
-  return { base: `origin/${pr.baseRefName}`, head };
+  return { base: `${ref}/base`, head: `${ref}/head` };
 }
 
 // A file's text on the new side of the diff, for expanding the lines a separator hides:

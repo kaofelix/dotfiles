@@ -1,7 +1,7 @@
 // Changes panel for Herdr: review a branch like a pull request, without leaving the window.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list, VirtualListScrollHandle } from "gpui-base";
-import { props, focused, notify, agents, panes, hc, exec, settings, theme } from "herdr";
+import { props, closeOverlay, focused, notify, agents, panes, hc, exec, settings, theme } from "herdr";
 import * as git from "./git.js";
 import { parsePatch, skippedFiles, firstChange } from "./patch.js";
 import { languageOf } from "./syntax.js";
@@ -162,7 +162,7 @@ export default class ChangesPanel extends View {
     }
     try {
       const { base, head } = await git.fetchPullRequest(repo, pr);
-      this.pr = { ...pr, head };
+      this.pr = { ...pr, base, head };
       this.refs = await git.refs(repo);
       await this.load({ repo, base, head, commit: null, ignoreWhitespace: false }, cx);
     } catch (e) {
@@ -789,15 +789,24 @@ export default class ChangesPanel extends View {
     cx.notify();
   }
 
+  // The panel's own pull request refs, by the branch names they stand for; in the menus,
+  // marked apart from local branches of the same name.
+  refLabel(ref, { menu = false } = {}) {
+    const pr = this.pr, mark = menu ? ` (#${pr?.number})` : "";
+    if (pr?.base === ref) return pr.baseRefName + mark;
+    if (pr?.head === ref && ref.startsWith("refs/")) return pr.headRefName + mark;
+    return ref;
+  }
+
   menuOptions() {
     const s = this.source;
     const query = this.menuInput.value().toLowerCase();
     const refs = [...new Set([...this.refs, s.base, s.head].filter(Boolean))];
     const match = (o) => !query || o.label.toLowerCase().includes(query);
-    if (this.menu === "base") return refs.map((r) => ({ label: r, current: r === s.base, pick: (cx) => this.reload({ base: r, commit: null }, cx) })).filter(match);
+    if (this.menu === "base") return refs.map((r) => ({ label: this.refLabel(r, { menu: true }), current: r === s.base, pick: (cx) => this.reload({ base: r, commit: null }, cx) })).filter(match);
     if (this.menu === "head") {
       return [{ label: "Working tree", current: !s.head, pick: (cx) => this.reload({ head: "", commit: null }, cx) },
-        ...refs.map((r) => ({ label: r, current: r === s.head, pick: (cx) => this.reload({ head: r, commit: null }, cx) }))].filter(match);
+        ...refs.map((r) => ({ label: this.refLabel(r, { menu: true }), current: r === s.head, pick: (cx) => this.reload({ head: r, commit: null }, cx) }))].filter(match);
     }
     if (this.menu === "keys") {
       const close = (cx) => { this.menu = null; this.handle.focus(); cx.notify(); };
@@ -1074,11 +1083,12 @@ export default class ChangesPanel extends View {
       return trigger;
     };
     return h_flex().id("toolbar").h(TOOLBAR_H).flex_none().px(10).gap(6).items_center().border_b_1().border_color(t.border).bg(t.background)
+      .when(Boolean(props()?.overlay), (el) => el.child(this.button("close", icon("x"), () => closeOverlay(props().overlay), { tip: "Close" })))
       .child(this.button("sidebar", icon("panel"), (cx) => this.setPref("sidebar", !this.prefs.sidebar, cx), { tip: "Toggle file sidebar" }))
       .when(Boolean(s), (el) => el
-        .child(picker("base", s.base === git.EMPTY_TREE ? "No commits yet" : s.base, s.base !== git.EMPTY_TREE))
+        .child(picker("base", s.base === git.EMPTY_TREE ? "No commits yet" : this.refLabel(s.base), s.base !== git.EMPTY_TREE))
         .child(this.button("swap", icon("swap"), (cx) => s.head && this.reload({ base: s.head, head: s.base, commit: null }, cx), { tip: "Swap base and head" }))
-        .child(picker("head", s.head || "Working tree", Boolean(s.head)))
+        .child(picker("head", s.head ? this.refLabel(s.head) : "Working tree", Boolean(s.head)))
         .when(this.commits.length > 1, (el) => el.child(picker("commit", s.commit ? `${s.commit.slice(0, 7)} ${this.commits.find((c) => c.sha === s.commit)?.subject ?? ""}` : `All ${this.commits.length} commits`, false)))
         .child(this.button("reload", icon("reload"), (cx) => this.reload({}, cx), { tip: "Reload" }))
         .child(this.button("whitespace", icon("pilcrow"), (cx) => this.reload({ ignoreWhitespace: !s.ignoreWhitespace }, cx), { active: s.ignoreWhitespace, tip: "Ignore whitespace changes" }))
