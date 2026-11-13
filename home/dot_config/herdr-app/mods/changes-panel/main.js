@@ -1,7 +1,7 @@
 // Changes panel for Herdr: review a branch like a pull request, without leaving the window.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list, VirtualListScrollHandle } from "gpui-base";
-import { props, closeOverlay, focused, notify, agents, panes, hc, exec, settings, theme } from "herdr";
+import { props, closeOverlay, focused, spaces, notify, agents, panes, hc, exec, settings, theme } from "herdr";
 import * as git from "./git.js";
 import { parsePatch, skippedFiles, firstChange } from "./patch.js";
 import { languageOf } from "./syntax.js";
@@ -27,6 +27,7 @@ const TOOLBAR_H = 48;
 const MENU_LIST_H = 320;
 const EDITOR_H = 96;
 const REFRESH_MS = 2000; // uncommitted changes move under our feet
+const REMOTE_REFRESH_MS = 5000; // on another machine every look is a round trip
 // Fixed-width parts of a file header, from the right edge, so a click can tell them apart.
 // Only viewed and editor are clicked, so only they need a fixed width; stats and comments take what they show.
 const HEADER_BUTTON_W = 24;
@@ -36,6 +37,14 @@ const HEADER_GAP = 8;
 const RIGHT_MENUS = new Set(["settings", "agent", "kinds", "keys"]);
 const EDITORS = { emacs: "Emacs", zed: "Zed", vscode: "VS Code", cursor: "Cursor" };
 const SYNTAX = { keyword: "ansi5", string: "ansi2", number: "ansi3", constant: "ansi3", function: "ansi4", type: "ansi6", property: "ansi4" };
+
+// A link that opens path at line in an editor, over SSH when host is given.
+export function editorUrl(editor, path, line, host) {
+  const p = encodeURI(path);
+  if (!host) return `${editor}://file${p}:${line}`;
+  if (editor === "zed") return `zed://ssh/${host}${p}:${line}`;
+  return `${editor}://vscode-remote/ssh-remote+${host}${p}:${line}`;
+}
 
 const icon = (name, size = 14) => svg(`${ICONS}/${name}.svg`).size(size).flex_none();
 const alpha = (color, hex) => (/^#[0-9a-f]{6}$/i.test(color) ? color + hex : color);
@@ -56,6 +65,11 @@ function badge(name, t) {
 
 export default class ChangesPanel extends View {
   init(_props, cx) {
+    // The machine the repository is on: whoever opened the panel names it with the repo,
+    // otherwise it is the focused terminal's. Null is this computer.
+    const given = props() ?? {}, f = focused();
+    this.machine = given.repo ? given.machine ?? null : spaces().find((s) => s.id === f?.space)?.machine ?? null;
+    this.polled = 0;
     this.prefs = DEFAULT_PREFS;
     this.source = null;
     this.refs = [];
@@ -112,6 +126,11 @@ export default class ChangesPanel extends View {
     cx.timer.every(REFRESH_MS, (cx) => this.refresh(cx));
   }
 
+  // Git on the panel's machine.
+  get git() {
+    return (this.gitOnMachine ??= git.gitOn(this.machine ?? null));
+  }
+
   input(placeholder, onChange) {
     const state = InputState.new({ placeholder });
     state.on("change", (_e, cx) => { onChange(state.value()); cx.notify(); });
@@ -126,23 +145,23 @@ export default class ChangesPanel extends View {
     // the focused terminal's repository.
     const given = props() ?? {};
     const dir = given.repo ?? focused()?.cwd;
-    const repo = dir && await git.toplevel(dir);
+    const repo = dir && await this.git.toplevel(dir);
     if (!repo) {
       this.loading = false;
       this.error = "Not in a git repository. Open this from a terminal inside one.";
       return cx.notify();
     }
-    const [base, branch, dirty, refs] = await Promise.all([git.defaultBase(repo), git.currentBranch(repo), git.isDirty(repo), git.refs(repo)]);
+    const [base, branch, dirty, refs] = await Promise.all([this.git.defaultBase(repo), this.git.currentBranch(repo), this.git.isDirty(repo), this.git.refs(repo)]);
     this.refs = refs;
     this.branch = branch;
     if (given.pr) return this.openPullRequest(repo, given.pr, cx);
     // With uncommitted work, show it on top of the branch; otherwise the branch, like a PR.
     const head = given.head ?? (dirty || base === git.EMPTY_TREE ? "" : branch);
-    await this.load({ repo, base: given.base ?? base, head, commit: null, ignoreWhitespace: false }, cx);
+    await this.load({ repo, on: this.machine, base: given.base ?? base, head, commit: null, ignoreWhitespace: false }, cx);
     // The branch's pull request, looked up after the diff shows so it never slows it down.
     // It knows the real base: switch to it unless someone already moved on.
     if (!head || given.base || base === git.EMPTY_TREE) return;
-    const pr = await git.pullRequest(repo);
+    const pr = await this.git.pullRequest(repo);
     if (!pr || pr.headRefName !== head) return;
     this.pr = { ...pr, head };
     const prBase = `origin/${pr.baseRefName}`;
@@ -154,17 +173,17 @@ export default class ChangesPanel extends View {
     this.error = null;
     this.loadingMessage = `Fetching pull request #${number}…`;
     cx.notify();
-    const pr = await git.pullRequest(repo, number);
+    const pr = await this.git.pullRequest(repo, number);
     if (!pr) {
       this.loading = false;
       this.error = `Couldn't find pull request #${number}. Is the GitHub CLI (gh) installed and signed in?`;
       return cx.notify();
     }
     try {
-      const { base, head } = await git.fetchPullRequest(repo, pr);
+      const { base, head } = await this.git.fetchPullRequest(repo, pr);
       this.pr = { ...pr, base, head };
-      this.refs = await git.refs(repo);
-      await this.load({ repo, base, head, commit: null, ignoreWhitespace: false }, cx);
+      this.refs = await this.git.refs(repo);
+      await this.load({ repo, on: this.machine, base, head, commit: null, ignoreWhitespace: false }, cx);
     } catch (e) {
       this.loading = false;
       this.error = String(e.message ?? e);
@@ -185,8 +204,8 @@ export default class ChangesPanel extends View {
     }
     try {
       // Before the diff: a commit that lands while it is read is then seen as a move next tick.
-      const tips = await git.tips(source);
-      const [{ text, skipped }, commits] = await Promise.all([git.diff(source), git.commits(source.repo, source.base, source.head)]);
+      const tips = await this.git.tips(source);
+      const [{ text, skipped }, commits] = await Promise.all([this.git.diff(source), this.git.commits(source.repo, source.base, source.head)]);
       if (rev !== this.rev) return;
       const key = reviewKey(source);
       const newReview = key !== this.reviewKey;
@@ -231,7 +250,7 @@ export default class ChangesPanel extends View {
     cx.spawn(async (cx) => {
       for (let i = 0; i < wanted.length; i += 8) {
         await Promise.all(wanted.slice(i, i + 8).map(async (f) => {
-          const text = await git.fileText(this.source.repo, f, worktree).catch(() => null);
+          const text = await this.git.fileText(this.source.repo, f, worktree).catch(() => null);
           if (text != null) openAll(f, text.replaceAll("\t", "    ").split("\n"));
         }));
       }
@@ -251,11 +270,13 @@ export default class ChangesPanel extends View {
   refresh(cx) {
     const source = this.source;
     if (!source || source.commit || this.loading || this.busy) return;
+    if (this.machine && Date.now() - this.polled < REMOTE_REFRESH_MS) return;
+    this.polled = Date.now();
     if (source.head) return this.refreshBranch(source, cx);
     this.busy = true;
     cx.spawn(async (cx) => {
       try {
-        const { text, skipped } = await git.diff(source);
+        const { text, skipped } = await this.git.diff(source);
         if (source !== this.source || text === this.text) return;
         const before = this.openCommentIds();
         this.text = text;
@@ -282,9 +303,9 @@ export default class ChangesPanel extends View {
     this.busy = true;
     cx.spawn(async (cx) => {
       try {
-        const tips = await git.tips(source);
+        const tips = await this.git.tips(source);
         if (source !== this.source || !tips || tips === this.tips) return;
-        this.refs = await git.refs(source.repo);
+        this.refs = await this.git.refs(source.repo);
         await this.load(source, cx, { quiet: true });
       } catch {
         // Keep the last good diff; the next tick tries again.
@@ -356,7 +377,7 @@ export default class ChangesPanel extends View {
       return cx.notify();
     }
     cx.spawn(async (cx) => {
-      const text = await git.fileText(this.source.repo, file, !this.source.head && !this.source.commit).catch(() => null);
+      const text = await this.git.fileText(this.source.repo, file, !this.source.head && !this.source.commit).catch(() => null);
       if (text == null) {
         notify({ title: "Couldn't load the hidden lines", body: file.name, level: "warning", timeout: 2500 });
         return;
@@ -662,9 +683,10 @@ export default class ChangesPanel extends View {
     if (!s) return [];
     const branch = this.pr?.headRefName ?? (s.head ? s.head.replace(/^origin\//, "") : this.branch);
     const byPane = new Map(panes().map((p) => [p.pane, p]));
+    const machineOf = new Map(spaces().flatMap((sp) => sp.tabs.map((tab) => [tab.id, sp.machine ?? null])));
     return agents()
       .map((agent) => ({ agent, pane: byPane.get(agent.pane) }))
-      .filter(({ pane }) => pane?.cwd && (pane.cwd === s.repo || pane.cwd.startsWith(`${s.repo}/`) || (branch && pane.branch === branch)))
+      .filter(({ pane }) => pane?.cwd && (machineOf.get(pane.tab) ?? null) === this.machine && (pane.cwd === s.repo || pane.cwd.startsWith(`${s.repo}/`) || (branch && pane.branch === branch)))
       .sort((a, b) => (b.pane.branch === branch) - (a.pane.branch === branch) || b.agent.seq - a.agent.seq);
   }
 
@@ -695,19 +717,30 @@ export default class ChangesPanel extends View {
     notify({ title: "Review copied", body: `${plural(open.length, "comment")} as a prompt, ready to paste`, level: "success", timeout: 2500 });
   }
 
+  // The editor runs here; a file on another machine is opened over SSH (TRAMP, Remote-SSH).
   openInEditor(file, cx) {
     if (!file || file.type === "deleted") return;
     const line = firstChange(file);
-    if (this.prefs.editor === "emacs") {
-      // The running Emacs server, without waiting for the buffer to be finished.
-      cx.spawn(async () => {
-        const r = await exec("emacsclient", ["-n", `+${line}`, "--", `${this.source.repo}/${file.name}`]).catch((e) => ({ code: 1, stderr: String(e?.message ?? e) }));
+    const path = `${this.source.repo}/${file.name}`;
+    cx.spawn(async () => {
+      const host = this.machine && await this.sshTarget();
+      if (this.machine && !host) return notify({ title: "Can't open the file", body: `No SSH address for ${this.machine}.`, level: "warning" });
+      if (this.prefs.editor === "emacs") {
+        // The running Emacs server, without waiting for the buffer to be finished.
+        const r = await exec("emacsclient", ["-n", `+${line}`, "--", host ? `/ssh:${host}:${path}` : path]).catch((e) => ({ code: 1, stderr: String(e?.message ?? e) }));
         if (r.code) notify({ title: "emacsclient failed", body: String(r.stderr || "Is the Emacs server running?").trim().split("\n")[0], level: "warning" });
-      });
-      return;
-    }
-    const path = encodeURI(`${this.source.repo}/${file.name}`);
-    cx.open_url(`${this.prefs.editor}://file${path}:${line}`);
+        return;
+      }
+      cx.open_url(editorUrl(this.prefs.editor, path, line, host));
+    });
+  }
+
+  // The machine's SSH address (user@host), from herdr-core; kept once found.
+  async sshTarget() {
+    if (this.target) return this.target;
+    const r = await hc(["machine", "ls", "--json"]).catch(() => null);
+    try { this.target = JSON.parse(r.stdout).machines.find((m) => m.name === this.machine)?.target ?? null; } catch { this.target = null; }
+    return this.target;
   }
 
   close() {}
@@ -722,7 +755,7 @@ export default class ChangesPanel extends View {
     cx.notify();
     if (this.overview && this.source?.head) {
       cx.spawn(async (cx) => {
-        this.churn = await git.churn(this.source.repo, this.source.since || this.source.base, this.source.head);
+        this.churn = await this.git.churn(this.source.repo, this.source.since || this.source.base, this.source.head);
         cx.notify();
       });
     }

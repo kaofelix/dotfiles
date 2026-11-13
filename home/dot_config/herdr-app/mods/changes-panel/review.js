@@ -1,14 +1,17 @@
 // What a review keeps: viewed files and line comments. Pure.
 
 // Identifies what is under review, so progress and comments come back with it.
+// A repository on another machine is kept apart from one at the same path here.
+const where = (source) => (source.on ? `${source.on}|${source.repo}` : source.repo);
+
 export function reviewKey(source) {
-  return `${source.repo}:${source.base}...${source.head || "worktree"}${source.commit ? `@${source.commit}` : ""}`;
+  return `${where(source)}:${source.base}...${source.head || "worktree"}${source.commit ? `@${source.commit}` : ""}`;
 }
 
 export const emptyReview = () => ({ viewed: {}, comments: [] });
 
 // The range whose head you review commit by commit: a branch, not the working tree or one commit.
-export const rangeKey = (source) => (source.head && !source.commit ? `${source.repo}:${source.base}...${source.head}` : null);
+export const rangeKey = (source) => (source.head && !source.commit ? `${where(source)}:${source.base}...${source.head}` : null);
 
 // New commits on top of the tip you last reviewed: commits are newest first, so the reviewed
 // tip's position is how many are new. Null when there are none, or it isn't in the range.

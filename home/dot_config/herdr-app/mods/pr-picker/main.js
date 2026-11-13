@@ -1,5 +1,5 @@
 // Pick one of a repository's open pull requests and review it in a Changes dialog.
-// Opened by tabs-flat's `pr` command with props { repo }. Type to filter (or a number for
+// Opened by tabs-flat's `pr` command with props { repo, machine }. Type to filter (or a number for
 // one that isn't listed), ↑/↓ and Enter to open, Esc to leave.
 
 import { View, div } from "gpui-kit";
@@ -18,14 +18,14 @@ export function matches(prs, filter) {
   return shown;
 }
 
-async function toplevel(dir) {
-  const result = await exec("git", ["-C", dir, "rev-parse", "--show-toplevel"]).catch(() => null);
+async function toplevel(dir, on) {
+  const result = await exec("git", ["-C", dir, "rev-parse", "--show-toplevel"], on).catch(() => null);
   return result?.code === 0 ? result.stdout.trim() : null;
 }
 
 // Open pull requests, newest first: [{ number, title, author, headRefName, isDraft }].
-async function pullRequests(repo) {
-  const result = await exec("gh", ["pr", "list", "--limit", "100", "--json", "number,title,author,headRefName,isDraft"], { cwd: repo }).catch(() => null);
+async function pullRequests(repo, on) {
+  const result = await exec("gh", ["pr", "list", "--limit", "100", "--json", "number,title,author,headRefName,isDraft"], { cwd: repo, ...on }).catch(() => null);
   if (result?.code !== 0) throw new Error(result?.stderr?.trim() || "gh pr list failed. Is the GitHub CLI (gh) installed and signed in?");
   return JSON.parse(result.stdout).map((p) => ({ ...p, author: p.author?.login ?? "" }));
 }
@@ -46,9 +46,11 @@ export default class PrPicker extends View {
     cx.spawn(async (cx) => {
       try {
         const dir = props()?.repo;
-        this.repo = dir && await toplevel(dir);
+        this.machine = props()?.machine ?? null;
+        const on = this.machine ? { on: this.machine } : {};
+        this.repo = dir && await toplevel(dir, on);
         if (!this.repo) throw new Error("Not in a git repository. Open this from a terminal inside one.");
-        this.prs = await pullRequests(this.repo);
+        this.prs = await pullRequests(this.repo, on);
       } catch (e) {
         this.error = String(e?.message ?? e);
       }
@@ -68,7 +70,7 @@ export default class PrPicker extends View {
   open(pr) {
     if (!pr || !this.repo) return;
     this.close();
-    openOverlay({ mod: "changes-panel", kind: "dialog", modal: true, width: 0.94, height: 0.92, props: { repo: this.repo, pr: pr.number } });
+    openOverlay({ mod: "changes-panel", kind: "dialog", modal: true, width: 0.94, height: 0.92, props: { repo: this.repo, machine: this.machine, pr: pr.number } });
   }
 
   render() {

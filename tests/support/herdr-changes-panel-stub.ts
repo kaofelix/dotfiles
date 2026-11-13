@@ -9,7 +9,7 @@ export const stub: { exec: (...args: any[]) => any; readTextFile: (...args: any[
 export function installHerdrStubs() {
   mock.module("herdr", () => ({
     agents: () => [], appHome: () => "/tmp/changes-panel-test", focused: none, hc: none, notify: none, closeOverlay: none, openOverlay: none,
-    panes: () => [], props: () => ({}), settings: () => ({}), theme: () => ({}),
+    panes: () => [], spaces: () => [], props: () => ({}), settings: () => ({}), theme: () => ({}),
     exec: (...args: any[]) => stub.exec(...args), readTextFile: (...args: any[]) => stub.readTextFile(...args),
   }));
   mock.module("gpui-kit", () => ({ View: class {}, div: () => ({}), svg: () => ({}) }));
