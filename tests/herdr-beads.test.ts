@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildRows, parseQuery, relations, sectionOf } from "../home/dot_config/herdr-app/mods/beads/model.js";
+import { buildRows, listWidth, parseQuery, relations, rowColumns, sectionOf } from "../home/dot_config/herdr-app/mods/beads/model.js";
 
 const issue = (id, extra = {}) => ({ id, title: id, status: "open", priority: 2, issue_type: "task", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z", ...extra });
 const blocks = (from, on) => ({ issue_id: from, depends_on_id: on, type: "blocks" });
@@ -63,5 +63,18 @@ describe("beads model", () => {
     expect(r.related.map(i => i.id)).toEqual(["x"]);
     expect(relations(all[1], all).blocks.map(i => i.id)).toEqual(["ep.2"]);
     expect(relations(all[0], all).progress).toEqual({ closed: 1, total: 2 });
+  });
+
+  test("row labels only disappear as the pane gets narrower, never reappear, with or without details open", () => {
+    for (const detail of [false, true]) {
+    let previous = null;
+    for (let width = 1600; width >= 200; width -= 10) {
+      const shown = rowColumns(listWidth(width, detail));
+      if (previous) for (const [label, on] of Object.entries(shown)) if (on) expect([label, previous[label]]).toEqual([label, true]);
+      previous = shown;
+    }
+    }
+    expect(rowColumns(1200)).toEqual({ type: true, assignee: true });
+    expect(rowColumns(300)).toEqual({ type: false, assignee: false });
   });
 });

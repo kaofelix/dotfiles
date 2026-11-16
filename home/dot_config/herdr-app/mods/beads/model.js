@@ -155,6 +155,21 @@ export function relations(issue, issues) {
   };
 }
 
+// The list's width in a pane this wide. Below WIDE the details replace the list; above it they take DETAIL_W beside
+// it. The list's labels hide below the narrowest list WIDE leaves, so they're never shown again just because the
+// pane got narrow enough to drop the details.
+export const WIDE = 720, DETAIL_W = 400;
+export function listWidth(paneWidth, detailOpen) {
+  if (!detailOpen) return paneWidth;
+  return paneWidth >= WIDE ? paneWidth - DETAIL_W : 0; // 0: the details cover the list
+}
+
+// Which optional labels a row shows, from the list's own width. With the details beside it, the list is at most
+// WIDE - DETAIL_W = 320 when they appear, below both thresholds, so labels go before the split and stay gone.
+export function rowColumns(listWidth) {
+  return { type: listWidth >= 440, assignee: listWidth >= 560 };
+}
+
 // "3h ago", "2d ago", or the date for anything older than a month.
 export function ago(iso, now = Date.now()) {
   const t = time(iso);

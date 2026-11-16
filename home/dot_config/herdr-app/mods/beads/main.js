@@ -7,11 +7,10 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, theme, settings, props, nextCommand } from "herdr";
-import { SECTIONS, SORTS, buildRows, relations, sectionOf, index, ago, isDone } from "./model.js";
+import { SECTIONS, SORTS, WIDE, buildRows, listWidth, relations, rowColumns, sectionOf, index, ago, isDone } from "./model.js";
 
 const ICON = (name) => "mods/beads/icons/" + name + ".svg";
 const POLL_MS = 4000, FALLBACK_RELOAD_MS = 15000, LOCATE_MS = 10000;
-const WIDE = 720;
 
 function location() {
   const p = props() ?? {};
@@ -313,7 +312,7 @@ export default class Beads extends View {
       })));
   }
 
-  listRow(row, t, c, mono, compact) {
+  listRow(row, t, c, mono, cols) {
     if (row.kind === "section") {
       const color = c.status[row.id];
       return h_flex().id("beads-row-" + row.key).h(28).flex_none().px(10).mt(4).gap(6).items_center().cursor_pointer()
@@ -341,8 +340,8 @@ export default class Beads extends View {
       .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(isDone(i) && !row.context ? t.muted : t.foreground)
         .when(i.issue_type === "epic", el => el.font_semibold()).child(i.title ?? ""))
       .when(Boolean(kids), el => el.child(div().flex_none().text_size(11).text_color(t.dim).child(kids.closed + "/" + kids.total)))
-      .when(i.issue_type && i.issue_type !== "task" && !compact, el => el.child(this.chip(i.issue_type, typeColor, t)))
-      .when(!compact && Boolean(i.assignee), el => el.child(div().flex_none().max_w(90).truncate().text_size(11).text_color(t.dim).child("@" + i.assignee.split(/\s+/)[0])))
+      .when(i.issue_type && i.issue_type !== "task" && cols.type, el => el.child(this.chip(i.issue_type, typeColor, t)))
+      .when(cols.assignee && Boolean(i.assignee), el => el.child(div().flex_none().max_w(90).truncate().text_size(11).text_color(t.dim).child("@" + i.assignee.split(/\s+/)[0])))
       .child(div().flex_none().w(22).text_right().text_size(11).font_semibold().text_color(c.priority[i.priority] ?? t.dim).child(typeof i.priority === "number" ? "P" + i.priority : ""));
   }
 
@@ -352,11 +351,11 @@ export default class Beads extends View {
   }
 
   list(t, c, mono) {
-    const rows = this.rows(), compact = this.wide() ? this.width * 0.45 < 420 : this.width < 420;
+    const rows = this.rows(), cols = rowColumns(listWidth(this.width, Boolean(this.detailId)));
     if (!rows.length) return div().flex_1().p(16).text_size(12.5).text_color(t.dim)
       .child(this.issues.length ? "Nothing matches this filter." : "No issues yet. Create one with bd create \"…\".");
     return v_flex().id("beads-list").flex_1().min_h(0).overflow_y_scrollbar().track_scroll(this.scroll).py(4)
-      .children(rows.map(r => this.listRow(r, t, c, mono, compact)));
+      .children(rows.map(r => this.listRow(r, t, c, mono, cols)));
   }
 
   // Detail
@@ -447,7 +446,7 @@ export default class Beads extends View {
     else if (this.status === "error" && !this.issues.length) body = this.message(t, "Couldn't read beads", this.error);
     else {
       const wide = this.wide(), detail = Boolean(this.detailId);
-      const listPane = v_flex().min_h(0).min_w(0).when(wide && detail, el => el.w(Math.max(320, this.width * 0.45)).flex_none().border_r(1).border_color(t.border)).when(!(wide && detail), el => el.flex_1())
+      const listPane = v_flex().min_h(0).min_w(0).when(wide && detail, el => el.w(listWidth(this.width, true)).flex_none().border_r(1).border_color(t.border)).when(!(wide && detail), el => el.flex_1())
         .child(this.toolbar(t, c)).child(this.list(t, c, mono));
       body = h_flex().flex_1().min_h(0).items_start()
         .when(!detail || wide, el => el.child(listPane.h_full()))
