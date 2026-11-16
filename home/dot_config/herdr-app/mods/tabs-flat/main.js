@@ -1,5 +1,6 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
+import { candidateFolders, pickRoot } from "./projects.js";
 import { spaces, panes, focused, run, openOverlay, nextCommand, theme, window, shared, layout, settings, readTextFile, exec } from "herdr";
 
 // A project with Kubernetes in it: the nearest parent with one of these (a git root ends the search).
@@ -66,29 +67,21 @@ export default class Tabs extends View {
     run("pane.split", { direction: "right", mod: "changes-panel", props: this.repoOf(f) });
   }
 
-  // Beads: shown when the focused folder belongs to a beads project, pinned to that project.
-  beadsFor(f, cx) {
-    if (!f?.cwd) return null;
-    const space = spaces().find(s => s.id === f.space), on = space?.machine ?? null, key = (on ?? "") + "|" + f.cwd;
-    if (!this.beads.has(key) && cx) {
-      this.beads.set(key, undefined);
-      cx.spawn(async (cx) => { this.beads.set(key, await beadsRoot(f.cwd, on)); cx.notify(); });
+  // The project a button acts on: the focused folder's, else any of the space's terminals' (a focused panel has no
+  // folder). Folders are looked up once each and cached; a result redraws the bar.
+  projectFor(cache, find, f, cx) {
+    if (!f) return null;
+    const on = spaces().find(s => s.id === f.space)?.machine ?? null;
+    const { root, unknown } = pickRoot(candidateFolders(f, spaces(), panes()), on, cache);
+    if (cx) for (const cwd of unknown) {
+      const key = (on ?? "") + "|" + cwd;
+      cache.set(key, undefined);
+      cx.spawn(async (cx) => { cache.set(key, await find(cwd, on)); cx.notify(); });
     }
-    const root = this.beads.get(key);
-    return root ? { repo: root, on } : null;
+    return root;
   }
-
-  // Kubernetes: shown for projects with manifests or charts; the key opens it anywhere (it uses kubectl's context).
-  kubeFor(f, cx) {
-    if (!f?.cwd) return null;
-    const space = spaces().find(s => s.id === f.space), on = space?.machine ?? null, key = (on ?? "") + "|" + f.cwd;
-    if (!this.kube.has(key) && cx) {
-      this.kube.set(key, undefined);
-      cx.spawn(async (cx) => { this.kube.set(key, await kubeRoot(f.cwd, on)); cx.notify(); });
-    }
-    const root = this.kube.get(key);
-    return root ? { repo: root, on } : null;
-  }
+  beadsFor(f, cx) { return this.projectFor(this.beads, beadsRoot, f, cx); }
+  kubeFor(f, cx) { return this.projectFor(this.kube, kubeRoot, f, cx); }
 
   toggleKube() {
     const f = focused();

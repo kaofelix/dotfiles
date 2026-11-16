@@ -69,7 +69,7 @@ test:
 	python3 tests/session-history-duckdb.test.py
 	bash ./tests/chezmoi-source.test.sh
 	./tests/platform-rendering.test.sh
-	bun test tests/python-env.test.ts tests/herdr-projects.test.ts tests/herdr-remote-space.test.ts tests/herdr-changes-panel.test.js tests/herdr-changes-panel-own.test.ts tests/herdr-changes-panel-cache.test.ts tests/herdr-changes-panel-polling.test.ts tests/herdr-changes-panel-stale.test.ts tests/herdr-changes-panel-jump.test.ts tests/herdr-changes-panel-pr.test.ts tests/herdr-changes-panel-remote.test.ts tests/herdr-changes-panel-base.test.ts tests/herdr-beads.test.ts tests/herdr-kube.test.ts
+	bun test tests/python-env.test.ts tests/herdr-projects.test.ts tests/herdr-remote-space.test.ts tests/herdr-changes-panel.test.js tests/herdr-changes-panel-own.test.ts tests/herdr-changes-panel-cache.test.ts tests/herdr-changes-panel-polling.test.ts tests/herdr-changes-panel-stale.test.ts tests/herdr-changes-panel-jump.test.ts tests/herdr-changes-panel-pr.test.ts tests/herdr-changes-panel-remote.test.ts tests/herdr-changes-panel-base.test.ts tests/herdr-beads.test.ts tests/herdr-kube.test.ts tests/herdr-tabs-projects.test.ts
 	./tests/pi-auth-setup.test.sh
 	./tests/pi-auth-setup-generation.test.sh
 	$(MAKE) _deps
