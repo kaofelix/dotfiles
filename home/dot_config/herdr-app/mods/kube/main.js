@@ -5,7 +5,7 @@
 // Props: { repo?, on?, context? } pins a folder, machine and kubectl context; without them it follows the focused
 // pane and kubectl's current context. { select } opens a workload's details by name; { view: "list" } starts in the list.
 import { View, div, svg, PathBuilder } from "gpui-kit";
-import { v_flex, h_flex, InputState, Input } from "gpui-base";
+import { v_flex, h_flex, InputState, Input, Select, Popup } from "gpui-base";
 import { spaces, panes, focused, exec, theme, settings, props, nextCommand, run } from "herdr";
 import { BOX, SHORT_KIND, SYSTEM_NAMESPACES, age, buildGraph, health, images, layoutGraph, visibleGraph } from "./model.js";
 
@@ -80,6 +80,8 @@ export default class Kube extends View {
     this.graph = null; this.items = []; this.selected = null; this.detailOpen = false; this.events = null;
     this.width = 0; this.status = "loading"; this.error = null; this.query = ""; this.expanded = new Set();
     this.handle = cx.focus_handle();
+    // The context dropdown: its trigger and its list take the keyboard in turn.
+    this.ctxTrigger = cx.focus_handle(); this.ctxList = cx.focus_handle(); this.ctxHot = 0;
     this.filter = InputState.new({ placeholder: "Filter  name · ns:loom · kind:deploy · is:failing · image:postgres · app=web · -term" });
     this.filter.on("change", (_e, cx) => { this.query = this.filter.value(); cx.notify(); });
     this.filter.on("focus", (_e, cx) => { this.filtering = true; cx.notify(); });
@@ -93,6 +95,7 @@ export default class Kube extends View {
           const n = this.graph?.byId.get(this.selected);
           if (c === "focus") this.handle.focus();
           else if (c === "reload") { this.signature = null; this.load(cx); }
+          else if (c === "context") this.setPicking(!this.picking, cx);
           else if (c === "logs" && n) this.logs(n);
           else if (c === "shell" && n?.pods[0]) this.shell(n.pods[0], n);
           else if (c === "describe" && n) this.describe(n);
@@ -231,7 +234,17 @@ export default class Kube extends View {
   toggleNs(ns, cx) { if (this.prefs.hidden.has(ns)) this.prefs.hidden.delete(ns); else this.prefs.hidden.add(ns); this.savePrefs(); cx.notify(); }
   setView(view, cx) { this.prefs.view = view; this.savePrefs(); cx.notify(); }
   toggleSystem(cx) { this.prefs.showSystem = !this.prefs.showSystem; this.savePrefs(); cx.notify(); }
-  pickContext(c, cx) { this.prefs.context = c; this.picking = false; this.savePrefs(); this.graph = null; this.signature = null; this.status = "loading"; this.extraKinds = null; this.selected = null; this.detailOpen = false; cx.notify(); this.load(cx); }
+  setPicking(open, cx) {
+    this.picking = open;
+    if (open) { this.ctxHot = Math.max(0, (this.contexts ?? []).indexOf(this.context())); this.ctxList.focus(); }
+    else this.handle.focus();
+    cx.notify();
+  }
+
+  pickContext(c, cx) {
+    if (c === this.context()) return this.setPicking(false, cx);
+    this.prefs.context = c; this.picking = false; this.handle.focus(); this.savePrefs(); this.graph = null; this.signature = null; this.status = "loading"; this.extraKinds = null; this.selected = null; this.detailOpen = false; cx.notify(); this.load(cx);
+  }
 
   // kubectl in a pane below this one. Terminal panes close when their program exits, so every command runs in
   // the RUNNER script, which keeps the pane open on failure (and pages describe) instead of vanishing.
@@ -274,7 +287,7 @@ export default class Kube extends View {
       ".": () => this.toggleSystem(cx),
       "l": () => n && this.logs(n), "d": () => n && this.describe(n), "s": () => n?.pods[0] && this.shell(n.pods[0], n),
       "c": () => n && cx.write_to_clipboard(n.name),
-      "escape": () => { if (this.picking) { this.picking = false; cx.notify(); } else if (this.detailOpen) this.closeDetail(cx); else if (this.query) { this.filter.set_value(""); this.query = ""; cx.notify(); } else return false; },
+      "escape": () => { if (this.picking) this.setPicking(false, cx); else if (this.detailOpen) this.closeDetail(cx); else if (this.query) { this.filter.set_value(""); this.query = ""; cx.notify(); } else return false; },
     };
     const fn = actions[k];
     if (!fn || fn() === false) return;
@@ -310,10 +323,7 @@ export default class Kube extends View {
     return h_flex().h(34).flex_none().px(10).gap(8).items_center().border_b(1).border_color(t.border)
       .child(svg(ICON("kube")).size(15).flex_none().text_color(t.accent))
       .child(div().font_semibold().child("Kubernetes"))
-      .child(h_flex().id("kube-context").h(22).px(7).gap(4).items_center().rounded(5).cursor_pointer().text_size(12).text_color(t.muted).min_w(0)
-        .hover(s => s.bg(t.hover).text_color(t.foreground)).tooltip("Switch context")
-        .on_click((_e, cx) => { this.picking = !this.picking; cx.notify(); })
-        .child(div().truncate().child(ctx ?? "no context")).child(svg(ICON("chevron-down")).size(11)))
+      .child(this.contextDropdown(ctx, t))
       .child(div().flex_1())
       .when(this.status === "ready", el => el
         .child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
@@ -329,13 +339,36 @@ export default class Kube extends View {
       .on_click((_e, cx) => onClick(cx)).child(label);
   }
 
-  contextPicker(t) {
-    return v_flex().mx(10).mt(6).p(4).rounded(6).border_1().border_color(t.border).bg(t.popover).flex_none()
-      .children((this.contexts ?? []).map(c => h_flex().id("kube-ctx-" + c).h(26).px(8).gap(6).items_center().rounded(5).cursor_pointer().text_size(12.5)
-        .hover(s => s.bg(t.hover)).on_click((_e, cx) => this.pickContext(c, cx))
-        .child(div().w(12).text_color(t.accent).child(c === this.context() ? "✓" : ""))
-        .child(div().flex_1().truncate().child(c))
-        .when(c === this.currentContext, el => el.child(div().text_size(11).text_color(t.dim).child("current")))));
+  // A real dropdown: the list floats over the panel, pinned under its trigger (Select + Popup, as Herdr's own
+  // machine picker). Escape or a press outside closes it; ↑ ↓ move, Enter picks.
+  contextDropdown(ctx, t) {
+    const contexts = this.contexts ?? [], open = Boolean(this.picking) && contexts.length > 0;
+    const trigger = h_flex().id("kube-context").h(22).px(7).gap(4).items_center().rounded(5).cursor_pointer().text_size(12).min_w(0)
+      .text_color(open ? t.foreground : t.muted).when(open, el => el.bg(t.hover))
+      .hover(s => s.bg(t.hover).text_color(t.foreground)).track_focus(this.ctxTrigger)
+      .on_click((_e, cx) => this.setPicking(!this.picking, cx))
+      .child(div().truncate().child(ctx ?? "no context")).child(svg(ICON("chevron-down")).size(11));
+    const row = (c, i) => h_flex().id("kube-ctx-" + c).h(26).px(8).gap(6).items_center().rounded(5).cursor_pointer().text_size(12.5)
+      .bg(i === this.ctxHot ? t.selected : t.popover).hover(s => s.bg(t.hover))
+      .on_click((_e, cx) => this.pickContext(c, cx))
+      .child(div().w(12).text_color(t.accent).child(c === ctx ? "✓" : ""))
+      .child(div().flex_1().truncate().child(c))
+      .when(c === this.currentContext, el => el.child(div().text_size(11).text_color(t.dim).child("current")));
+    return Select.new("kube-context-select").flex_none().min_w(0).accessibility_label("Kubernetes context")
+      .open(open).track_focus(this.ctxTrigger).content_focus_handle(this.ctxList)
+      .on_open_change((o, cx) => this.setPicking(o, cx))
+      .child(Popup.new("kube-context-list", trigger).anchor("top_left")
+        .when(open, el => el.content(v_flex().id("kube-context-options").track_focus(this.ctxList)
+          .mt(4).p(4).gap(1).min_w(220).max_w(420).rounded(8).border_1().border_color(t.border).bg(t.popover).shadow_md()
+          .on_key_down((e, cx) => {
+            const k = e.key;
+            if (k === "down" || k === "up") { this.ctxHot = (this.ctxHot + (k === "down" ? 1 : contexts.length - 1)) % contexts.length; cx.notify(); }
+            else if (k === "enter") this.pickContext(contexts[this.ctxHot], cx);
+            else if (k === "escape") this.setPicking(false, cx);
+            else return;
+            cx.stop_propagation();
+          })
+          .children(contexts.map(row)))));
   }
 
   toolbar(t) {
@@ -623,6 +656,6 @@ export default class Kube extends View {
     return v_flex().id("kube").track_focus(this.handle).on_key_down((e, cx) => this.onKey(e, cx))
       .on_size_change((s, cx) => { if (this.width !== s.width) { this.width = s.width; cx.notify(); } })
       .size_full().min_h(0).overflow_hidden().bg(t.background).text_color(t.foreground).text_size(13)
-      .child(this.header(t)).when(Boolean(this.picking), el => el.child(this.contextPicker(t))).child(body);
+      .child(this.header(t)).child(body);
   }
 }

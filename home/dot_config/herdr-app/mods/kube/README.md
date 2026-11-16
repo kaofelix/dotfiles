@@ -5,7 +5,7 @@ A read-only view of the cluster behind the focused project: an architecture map 
 - **Opening it:** `tabs-flat` shows a **Kube** button when the focused folder, or a parent below its git root, has one of these:
   `deploy/k8s`, `k8s`, `kubernetes`, `manifests`, `charts`, `helm`, `kustomization.yaml`, `Chart.yaml`, `skaffold.yaml`, `Tiltfile`, `kind.yaml` or `kind-config.yaml`.
   `cmd-shift-k` (`tabs-flat.kube`) toggles the pane in any folder.
-- **Props:** `{ repo?, on?, context?, select?, view? }`. Without `context`, the pane uses kubectl's current context; the header switches context.
+- **Props:** `{ repo?, on?, context?, select?, view? }`. Without `context`, the pane uses kubectl's current context. The header's dropdown switches context (↑ ↓, Enter, Esc).
   `select` opens a workload by name, and `view: "list"` starts in the list.
 - **Map:**
   - Each namespace is a band.
@@ -30,7 +30,7 @@ A read-only view of the cluster behind the focused project: an architecture map 
   - volumes, network policies, conditions, labels, recent events
 - **Filter:** free text, `ns:`, `kind:` (`deploy`, `sts`, `ds`, `svc`), `is:ok|degraded|failing|idle|isolated`, `image:`, `label=value`, and `-` to negate.
   The namespace chips hide namespaces. `+ system` shows kube-system and the other system namespaces.
-- **Commands:** `kube.logs`, `kube.shell`, `kube.describe` and `kube.reload` act on the selected workload (from keys.json or `herdr-app do`).
+- **Commands:** `kube.logs`, `kube.shell`, `kube.describe`, `kube.reload` and `kube.context` (opens the context dropdown) act on the selected workload (from keys.json or `herdr-app do`).
 - **Keys:** `j`/`k` move, `enter` opens, `v` switches map/list, `/` filters, `l` logs, `s` shell, `d` describe, `c` copies the name, `.` toggles system namespaces, `r` reloads.
 
 The pane polls one `kubectl get <kinds> -A -o json` every 5 s, and redraws only when the output changes.
