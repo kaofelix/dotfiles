@@ -2,11 +2,9 @@
 
 ## Commands and scope
 
-Run from the project directory; these absolute helper paths leave it unchanged:
-
 ```bash
 skill_dir="$HOME/.agents/skills/session-history-duckdb"
-CODEX_SESSION_GLOB="$HOME/.codex/sessions/2026/11/**/*.jsonl" \
+CODEX_SESSION_GLOB="$HOME/.codex/sessions/**/*.jsonl" \
   bash "$skill_dir/adapters/codex/scripts/query.sh" -box <<'SQL'
 SELECT filename, session_id, started_at, cwd FROM codex_sessions;
 SQL

@@ -41,6 +41,7 @@ class SessionHistoryTest(unittest.TestCase):
         self.log.parent.mkdir(parents=True)
         self.env = {**os.environ, "HOME": str(self.home),
                     "CLAUDE_SESSION_GLOB": str(self.log)}
+        self.env.pop("PI_SESSION_GLOB", None)
 
     def write_log(self, events, path=None):
         path = path or self.log
@@ -233,7 +234,7 @@ class SessionHistoryTest(unittest.TestCase):
         self.assertEqual(self.query("SELECT output_tokens::BIGINT AS output_tokens FROM codex_token_usage"),
                          [{"output_tokens": 4}])
 
-    def test_pi_adapter_and_pifind_default_location_survive_move(self):
+    def test_pi_entrypoints_and_pifind_handle_mixed_message_content(self):
         self.scripts = self.skill / "adapters/pi/scripts"
         session = self.home / ".pi/agent/sessions/project/2026-01-01_aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.jsonl"
         self.write_log([
@@ -241,6 +242,8 @@ class SessionHistoryTest(unittest.TestCase):
              "cwd": "/example"},
             {"type": "session_info", "id": "info", "name": "Example",
              "timestamp": "2026-01-01T00:00:01Z"},
+            {"type": "message", "id": "system", "timestamp": "2026-01-01T00:00:01Z",
+             "message": {"role": "system", "content": "System instructions"}},
             {"type": "message", "id": "u1", "timestamp": "2026-01-01T00:00:02Z",
              "message": {"role": "user", "timestamp": 1767225602000, "content": [
                  {"type": "text", "text": '<skill name="demo">body</skill> Inspect this.'}]}},
@@ -261,13 +264,130 @@ class SessionHistoryTest(unittest.TestCase):
         env = {**self.env}
         env.pop("PI_SESSIONS_DUCKDB_SKILL_DIR", None)
         module = (ROOT / "packages/pifind/duckdb.js").as_uri()
+        search_module = (ROOT / "packages/pifind/session-search.js").as_uri()
         code = (f"import {{ DuckDbSessionStore }} from {json.dumps(module)}; "
-                "console.log(JSON.stringify(await new DuckDbSessionStore().query("
-                "'SELECT count(*) AS n FROM pi_conversation')));")
+                f"import {{ SessionSearch }} from {json.dumps(search_module)}; "
+                "const store = new DuckDbSessionStore(); "
+                "console.log(JSON.stringify({count: await store.query("
+                "'SELECT count(*) AS n FROM pi_conversation'), "
+                "matches: await new SessionSearch(store).search({terms: ['Inspect']})}));")
         result = subprocess.run(["node", "--input-type=module", "-e", code], env=env,
                                 capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), [{"n": 2}])
+        found = json.loads(result.stdout)
+        self.assertEqual(found["count"], [{"n": 2}])
+        self.assertEqual(len(found["matches"]), 1)
+        self.assertEqual({key: found["matches"][0][key] for key in
+                          ["session_file", "session_id", "cwd", "name", "matching_messages"]},
+                         {"session_file": str(session), "session_id": "session-1",
+                          "cwd": "/example", "name": "Example", "matching_messages": 1})
+
+    def test_pi_json_projections_preserve_raw_shapes_and_file_local_tools(self):
+        self.scripts = self.skill / "adapters/pi/scripts"
+        parent = self.home / ".pi/agent/sessions/shapes/2026-01-01_bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb.jsonl"
+        child = parent.with_name("2026-01-01_cccccccc-cccc-cccc-cccc-cccccccccccc.jsonl")
+        def message(id, role, content, **extra):
+            return {"type": "message", "id": id, "timestamp": "2026-01-01T00:00:00Z",
+                    "message": {"role": role, "content": content, **extra}}
+        self.write_log([
+            {"type": "future-event", "payload": {"unknown": [1, "two"]}},
+            message("system", "system", "Private instructions"),
+            message("u", "user", [{"type": "text", "text": "First"},
+                                  {"type": "text", "text": "second"}]),
+            # Same timestamp/ID must not merge distinct stored events.
+            message("u", "user", '<skill name="demo">body</skill> Next'),
+            message("a", "assistant", "Scalar assistant reply"),
+            message("odd", "assistant", {"new_shape": True}),
+            message("a2", "assistant", [
+                {"type": "thinking", "thinking": "Not narrative"},
+                {"type": "toolCall", "id": "shared", "name": "read",
+                 "arguments": {"path": "/parent", "nested": {"values": [1, True]},
+                               "command": 'printf "quoted"\nC:\\work\\file\tend'}},
+                {"type": "toolCall", "id": "other", "name": "run",
+                 "arguments": "a different argument shape"}]),
+            message("r", "toolResult", [{"type": "image", "source": {"data": "fake"}}],
+                    toolCallId="shared", toolName="read", isError=True),
+        ], parent)
+        self.write_log([
+            message("a", "assistant", [{"type": "toolCall", "id": "shared", "name": "read",
+                                         "arguments": {"path": "/child"}}]),
+            message("r", "toolResult", "Child output", toolCallId="shared",
+                    toolName="read", isError=False),
+        ], child)
+        self.env["PI_SESSION_GLOB"] = str(parent.parent / "*.jsonl")
+        self.assertEqual(self.query("""
+            SELECT session_id, count(*) AS n FROM pi_events
+            GROUP BY session_id ORDER BY session_id
+        """), [{"session_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "n": 8},
+               {"session_id": "cccccccc-cccc-cccc-cccc-cccccccccccc", "n": 2}])
+        self.assertEqual(self.query("""
+            SELECT json_extract(event, '$.payload.unknown') AS payload
+            FROM pi_events WHERE type = 'future-event'
+        """), [{"payload": [1, "two"]}])
+        self.assertEqual(self.query("""
+            SELECT json_type(content) AS shape FROM pi_messages WHERE event_id = 'odd'
+        """), [{"shape": "OBJECT"}])
+        self.assertEqual(self.query("""
+            SELECT text FROM pi_conversation ORDER BY event_ordinal
+        """), [{"text": "First\nsecond"}, {"text": "[skill demo omitted] Next"},
+               {"text": "Scalar assistant reply"}])
+        tools = self.query("""
+            SELECT filename, tool_call_id, tool_arguments, tool_arguments_text,
+                   is_error, result_ordinal, result_content, result_text
+            FROM pi_tool_executions ORDER BY filename, tool_call_id
+        """)
+        parent_result = next(r for r in tools if r["filename"] == str(parent)
+                             and r["tool_call_id"] == "shared")
+        self.assertEqual(parent_result["tool_arguments"],
+                         {"path": "/parent", "nested": {"values": [1, True]},
+                          "command": 'printf "quoted"\nC:\\work\\file\tend'})
+        self.assertEqual(json.loads(parent_result["tool_arguments_text"]),
+                         parent_result["tool_arguments"])
+        self.assertNotIn("\n", parent_result["tool_arguments_text"])
+        self.assertEqual(self.query("""
+            SELECT tool_call_id FROM pi_tool_calls
+            WHERE contains(json_extract_string(tool_arguments, '$.command'),
+                           '"quoted"' || chr(10) || 'C:' || chr(92) || 'work')
+        """), [{"tool_call_id": "shared"}])
+        self.assertTrue(parent_result["is_error"])
+        self.assertIsNotNone(parent_result["result_ordinal"])
+        self.assertIsNone(parent_result["result_text"])
+        self.assertEqual(parent_result["result_content"][0]["type"], "image")
+        self.assertEqual(next(r for r in tools if r["filename"] == str(child))["result_text"],
+                         "Child output")
+        result = self.run_script("conversation-text.sh", "--include-skills", str(parent))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([r["text"] for r in csv.DictReader(io.StringIO(result.stdout))],
+                         ["First\nsecond", '<skill name="demo">body</skill> Next',
+                          "Scalar assistant reply"])
+
+    def test_pi_scope_and_strict_parsing_apply_to_both_entrypoints(self):
+        self.scripts = self.skill / "adapters/pi/scripts"
+        selected = self.case / "selected.jsonl"
+        corrupt = self.home / ".pi/agent/sessions/corrupt/broken.jsonl"
+        self.write_log([{"type": "message", "id": "u", "message": {
+            "role": "user", "content": "Selected file only"}}], selected)
+        corrupt.parent.mkdir(parents=True, exist_ok=True)
+        corrupt.write_text('{"type":\n')
+        self.env["PI_SESSION_GLOB"] = str(selected)
+        self.assertEqual(self.query("SELECT count(*) AS n FROM pi_events"), [{"n": 1}])
+        self.env["PI_SESSION_GLOB"] = str(corrupt)
+        result = self.run_script("query.sh", "-c", "SELECT count(*) FROM pi_events")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Malformed JSON", result.stderr)
+        # The helper selects its argument, not the inherited root/glob.
+        result = self.run_script("conversation-text.sh", str(selected))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([r["text"] for r in csv.DictReader(io.StringIO(result.stdout))],
+                         ["Selected file only"])
+        result = self.run_script("conversation-text.sh", str(corrupt))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Malformed JSON", result.stderr)
+        self.assertEqual(self.run_script("conversation-text.sh", "--help").returncode, 0)
+        self.assertEqual(self.run_script("conversation-text.sh", "relative.jsonl").returncode, 2)
+        special = self.case / "session[1].jsonl"
+        special.write_text('{}\n')
+        self.assertEqual(self.run_script("conversation-text.sh", str(special)).returncode, 2)
 
 
 if __name__ == "__main__":

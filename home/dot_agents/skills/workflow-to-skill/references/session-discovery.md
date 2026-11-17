@@ -1,6 +1,6 @@
 # Session discovery for workflow archaeology
 
-Run these recipes through `bash "$HOME/.agents/skills/session-history-duckdb/adapters/pi/scripts/query.sh"` without changing the project's working directory. If inferred Pi views fail on scalar system content, use the explicit-JSON fallback in that skill's Pi query reference. Funnel from metadata to candidate sessions before loading complete transcripts.
+Run these recipes through `bash "$HOME/.agents/skills/session-history-duckdb/adapters/pi/scripts/query.sh"` without changing the project's working directory. Scope inputs with `PI_SESSION_GLOB`; use `pi_events.event` for raw JSON fields not exposed by the projections. Funnel from metadata to candidate sessions before loading complete transcripts.
 
 ## Inventory a broad scope
 
@@ -76,7 +76,7 @@ GROUP BY filename, tool_name
 ORDER BY filename, calls DESC;
 ```
 
-Search `tool_arguments_text` for recurring artifacts, commands, paths, or delegated roles only after the aggregate identifies a plausible pattern.
+Search `tool_arguments_text` for recurring artifacts, commands, paths, or delegated roles only after the aggregate identifies a plausible pattern. For exact quoted or multiline field text, use the decoded-field search in the Pi query reference; the serialized JSON escapes those characters.
 
 Tool co-occurrence alone does not prove a workflow. Confirm shared intent, ordering, and decision boundaries in the conversation.
 

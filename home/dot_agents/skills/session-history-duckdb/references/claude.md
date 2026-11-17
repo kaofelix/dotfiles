@@ -2,8 +2,6 @@
 
 ## Commands and scope
 
-Run from the project directory; these absolute helper paths leave it unchanged:
-
 ```bash
 skill_dir="$HOME/.agents/skills/session-history-duckdb"
 CLAUDE_SESSION_GLOB="$HOME/.claude/projects/<project>/*.jsonl" \

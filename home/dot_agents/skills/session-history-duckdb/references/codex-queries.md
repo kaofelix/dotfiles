@@ -6,11 +6,9 @@
 - [Selected tools and collaboration](#selected-tools-and-collaboration)
 - [Usage](#usage)
 
-Run helper-view SQL from the project directory without changing it:
-
 ```bash
 skill_dir="$HOME/.agents/skills/session-history-duckdb"
-CODEX_SESSION_GLOB="$HOME/.codex/sessions/2026/11/**/*.jsonl" \
+CODEX_SESSION_GLOB="$HOME/.codex/sessions/**/*.jsonl" \
   bash "$skill_dir/adapters/codex/scripts/query.sh" -box <<'SQL'
 SELECT filename, session_id, cwd, started_at FROM codex_sessions;
 SQL
@@ -56,6 +54,16 @@ SELECT role, json_extract_string(item.value, '$.type') AS content_type,
        count(*) AS n
 FROM codex_messages, json_each(content) AS item
 GROUP BY ALL ORDER BY role, content_type;
+```
+
+For completeness-sensitive work, set `CODEX_SESSION_GLOB` to one selected file
+and compare a strict raw count with the projected event count. The strict read
+fails on malformed JSON; the bundled views use `ignore_errors=true`:
+
+```sql
+SELECT count(*) AS strict_events
+FROM read_json_objects(getenv('CODEX_SESSION_GLOB'), format='newline_delimited');
+SELECT count(*) AS projected_events FROM codex_events;
 ```
 
 ## Complete bounded episodes

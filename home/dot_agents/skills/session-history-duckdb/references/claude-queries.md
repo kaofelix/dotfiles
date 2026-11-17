@@ -8,8 +8,7 @@
 - [Subagents and compaction](#subagents-and-compaction)
 - [Usage](#usage)
 
-Run from the project directory, preserving its working directory. Scope queries
-with an absolute file or glob:
+Scope queries with an absolute file or glob:
 
 ```bash
 skill_dir="$HOME/.agents/skills/session-history-duckdb"
@@ -33,13 +32,13 @@ file**, not full conversation/tool payloads. Adapt the terms to the question:
 SELECT filename, session_id, agent_id, count(*) AS matches,
        min(event_time) AS first_match, max(event_time) AS last_match
 FROM claude_conversation
-WHERE regexp_matches(lower(text), 'refactor|slow|timing')
+WHERE contains(lower(text), '<search-term>')
 GROUP BY ALL ORDER BY matches DESC LIMIT 20;
 
 SELECT filename, tool_name, count(*) AS matches,
        min(event_timestamp) AS first_match, max(event_timestamp) AS last_match
 FROM claude_tool_calls
-WHERE contains(lower(tool_arguments_text), 'zig build test')
+WHERE contains(lower(tool_arguments_text), '<tool-search-term>')
 GROUP BY filename, tool_name ORDER BY matches DESC LIMIT 20;
 ```
 
@@ -49,7 +48,7 @@ Select filenames, narrow `CLAUDE_SESSION_GLOB`, then preview positions and text:
 SELECT event_ordinal, event_timestamp, event_id, role,
        left(text, 400) AS preview
 FROM claude_conversation
-WHERE regexp_matches(lower(text), 'refactor|slow|timing')
+WHERE contains(lower(text), '<search-term>')
 ORDER BY event_ordinal LIMIT 20;
 ```
 
@@ -149,8 +148,8 @@ FROM claude_tool_calls
 WHERE tool_call_id = 'chosen-handback-id';
 ```
 
-Read the complete selected report as tool evidence; leave the compact transcript
-unchanged. Tool names/input shapes vary by producer. Inspect the selected call's
+Read and cite the complete selected report as tool evidence alongside the
+compact transcript. Tool names/input shapes vary by producer. Inspect the selected call's
 `tool_arguments` if `message` is absent; add a filename predicate when querying
 more than one file because call IDs are file-local.
 
