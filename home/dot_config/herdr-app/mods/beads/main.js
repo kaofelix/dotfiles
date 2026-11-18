@@ -3,10 +3,11 @@
 // filter, sorting and a detail view. Read-only: it runs `bd ... --readonly`.
 //
 // Props: { repo?, on? } pins a folder (and machine); without them it follows the focused pane.
-// { issue } opens that issue's details once it's loaded.
+// { issue } opens that issue's details once it's loaded; { view: "stats" } starts on the Stats view.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, theme, settings, props, nextCommand } from "herdr";
+import { statsView } from "./statsview.js";
 import { SECTIONS, SORTS, WIDE, buildRows, listWidth, relations, rowColumns, sectionOf, index, ago, isDone } from "./model.js";
 
 const ICON = (name) => "mods/beads/icons/" + name + ".svg";
@@ -47,6 +48,7 @@ export default class Beads extends View {
     this.query = ""; this.selected = null; this.detailId = null; this.detail = null;
     this.width = 0; this.status = "locating"; this.error = null;
     this.prefs = { sort: { key: "auto", desc: false }, hidden: [], collapsed: [], ...(json(localStorage.getItem("prefs") ?? "") ?? {}) };
+    if (props()?.view) this.prefs.view = props().view;
     this.handle = cx.focus_handle();
     this.scroll = ScrollHandle.new();
     this.filter = InputState.new({ placeholder: "Filter  text · type:bug · p0 · @who · #label · is:open · -term" });
@@ -54,7 +56,7 @@ export default class Beads extends View {
     this.filter.on("submit", (_e, cx) => { const first = this.rows().find(r => r.kind === "issue" && !r.context); if (first) this.open(first, cx); this.handle.focus(); });
     this.filter.on("focus", (_e, cx) => { this.filtering = true; cx.notify(); });
     this.filter.on("blur", (_e, cx) => { this.filtering = false; cx.notify(); });
-    cx.spawn(async (cx) => { for (;;) { const c = await nextCommand(); if (c === "focus") this.handle.focus(); else if (c === "reload") this.reload(cx); cx.notify(); } });
+    cx.spawn(async (cx) => { for (;;) { const c = await nextCommand(); if (c === "focus") this.handle.focus(); else if (c === "reload") this.reload(cx); else if (c === "stats" || c === "list") this.setView(c, cx); cx.notify(); } });
     this.tick = 0;
     cx.timer.every(POLL_MS, (cx) => this.poll(cx));
     this.relocate(cx);
@@ -236,7 +238,8 @@ export default class Beads extends View {
       "/": () => this.filter.focus(),
       "cmd-f": () => this.filter.focus(),
       "r": () => this.reload(cx),
-      "s": () => this.cycleSort(cx),
+      "s": () => this.prefs.view !== "stats" && this.cycleSort(cx),
+      "t": () => this.setView(this.prefs.view === "stats" ? "list" : "stats", cx),
       "shift-s": () => this.flipSort(cx),
       "c": () => this.detailId && cx.write_to_clipboard(this.detailId),
       "escape": () => { if (this.detailId) this.back(cx); else if (this.query) { this.filter.set_value(""); this.query = ""; cx.notify(); } else return false; },
@@ -282,7 +285,10 @@ export default class Beads extends View {
       .child(div().font_semibold().child("Beads"))
       .child(div().flex_1().min_w(0).truncate().text_size(12).text_color(t.dim)
         .child(this.beads ? (this.beads.prefix ?? "") + "  ·  " + this.beads.root.split(/[\\/]/).pop() : this.loc?.cwd?.split(/[\\/]/).pop() ?? ""))
-      .when(this.status === "ready", el => el
+      .when(this.status === "ready", el => el.child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
+          .child(this.segment("beads-view-list", "List", this.prefs.view !== "stats", (cx) => this.setView("list", cx), t))
+          .child(this.segment("beads-view-stats", "Stats", this.prefs.view === "stats", (cx) => this.setView("stats", cx), t))))
+      .when(this.status === "ready" && this.prefs.view !== "stats", el => el
         .child(div().id("beads-sort").h(22).px(7).flex_none().flex().items_center().gap(4).rounded(5).cursor_pointer().text_size(11.5).text_color(t.muted)
           .hover(s => s.bg(t.hover).text_color(t.foreground)).tooltip("Sort (s)").on_click((_e, cx) => this.cycleSort(cx))
           .child(svg(ICON("sort")).size(12)).child(sortLabel))
@@ -293,7 +299,15 @@ export default class Beads extends View {
       .when(this.loading, el => el.child(svg(ICON("reload")).size(12).flex_none().text_color(t.dim).spin(900)));
   }
 
-  toolbar(t, c) {
+  segment(id, label, on, onClick, t) {
+    return div().id(id).h(22).px(9).flex().items_center().cursor_pointer().text_size(11.5)
+      .bg(on ? t.selected : t.background).text_color(on ? t.foreground : t.dim).hover(s => s.text_color(t.foreground))
+      .tooltip(label + " (t)").on_click((_e, cx) => onClick(cx)).child(label);
+  }
+
+  setView(view, cx) { this.prefs.view = view; this.savePrefs(); cx.notify(); }
+
+  toolbar(t, c, stats = false) {
     const counts = this.counts(), hidden = new Set(this.prefs.hidden);
     return v_flex().flex_none().px(10).py(8).gap(7).border_b(1).border_color(t.border)
       .child(h_flex().h(28).px(8).gap(6).items_center().rounded(6).border_1().border_color(this.filtering ? t.accent : t.input).bg(t.surface)
@@ -301,7 +315,7 @@ export default class Beads extends View {
         .child(Input.new(this.filter).flex_1().text_size(12.5))
         .when(Boolean(this.query), el => el.child(div().id("beads-clear").flex_none().cursor_pointer().text_color(t.dim).hover(s => s.text_color(t.foreground))
           .on_click((_e, cx) => { this.filter.set_value(""); this.query = ""; cx.notify(); }).child(svg(ICON("x")).size(12)))))
-      .child(h_flex().gap(5).flex_wrap().children(SECTIONS.map(s => {
+      .when(!stats, el => el.child(h_flex().gap(5).flex_wrap().children(SECTIONS.map(s => {
         const on = !hidden.has(s.id), color = c.status[s.id];
         return h_flex().id("beads-sec-" + s.id).h(22).px(7).gap(5).items_center().rounded(11).cursor_pointer().text_size(11.5)
           .border_1().border_color(on ? color : t.border).text_color(on ? t.foreground : t.dim).when(on, el => el.bg(t.raised))
@@ -309,7 +323,7 @@ export default class Beads extends View {
           .on_click((_e, cx) => this.toggleSection(s.id, cx))
           .child(svg(ICON(s.id)).size(11).text_color(on ? color : t.dim))
           .child(s.label).child(div().text_color(t.dim).child(String(counts[s.id] ?? 0)));
-      })));
+      }))));
   }
 
   listRow(row, t, c, mono, cols) {
@@ -447,7 +461,8 @@ export default class Beads extends View {
     else {
       const wide = this.wide(), detail = Boolean(this.detailId);
       const listPane = v_flex().min_h(0).min_w(0).when(wide && detail, el => el.w(listWidth(this.width, true)).flex_none().border_r(1).border_color(t.border)).when(!(wide && detail), el => el.flex_1())
-        .child(this.toolbar(t, c)).child(this.list(t, c, mono));
+        .child(this.toolbar(t, c, this.prefs.view === "stats"))
+        .child(this.prefs.view === "stats" ? statsView(this, t, c, mono) : this.list(t, c, mono));
       body = h_flex().flex_1().min_h(0).items_start()
         .when(!detail || wide, el => el.child(listPane.h_full()))
         .when(detail, el => el.child(v_flex().h_full().flex_1().min_w(0).id("beads-detail-wrap")
