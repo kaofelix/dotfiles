@@ -303,15 +303,50 @@ describe("a branch under review gets new commits", () => {
     expect(view.error).toBeNull();
   });
 
-  test("never polls a working tree or a single commit for tips", async () => {
+  test("never polls a single commit, and a working tree only for its HEAD", async () => {
     const { repo, git } = await branchRepo();
     const sha = (await git("rev-parse", "HEAD")).stdout.trim();
-    for (const source of [{ repo, base: "main", head: "", commit: null }, { repo, base: "main", head: "", commit: sha }]) {
+    const polled = async (source: any) => {
       const { view, cx, settle } = panel(repo, source);
       await view.load(source, cx);
       const spy = execs();
       try { view.refresh(cx); await settle(); } finally { spy.stop(); }
-      expect(spy.seen.some((cmd) => cmd === "git rev-parse")).toBe(false);
-    }
+      return spy.seen.filter((cmd) => cmd === "git rev-parse").length;
+    };
+    expect(await polled({ repo, base: "main", head: "", commit: sha })).toBe(0);
+    expect(await polled({ repo, base: "main", head: "", commit: null })).toBe(1);
+  });
+
+  test("uncommitted only keeps the base and the commit list, and shows only what isn't committed", async () => {
+    const { repo, file } = await branchRepo();
+    await writeFile(file, text(lines(80).map((l, i) => (i === 9 ? "line 10 first" : i === 49 ? "line 50 wip" : l))));
+    const { view, cx, settle } = panel(repo, { repo, base: "main", head: "", commit: null });
+    await view.load(view.source, cx);
+    expect(view.text).toContain("+line 10 first");
+    view.handle = { focus() {} };
+    view.reload({ uncommitted: true }, cx);
+    await settle();
+    expect(view.source.base).toBe("main");
+    expect(view.commits).toHaveLength(1);
+    expect(view.text).toContain("+line 50 wip");
+    expect(view.text).not.toContain("+line 10 first");
+    // Picking a commit, or all of them, leaves it.
+    view.reload({ commit: null }, cx);
+    await settle();
+    expect(view.source.uncommitted).toBe(false);
+    expect(view.text).toContain("+line 10 first");
+  });
+
+  test("a commit on the working tree shows in the commit list on the next tick", async () => {
+    const { repo, git } = await branchRepo();
+    const { view, cx, settle } = panel(repo, { repo, base: "main", head: "", commit: null });
+    await view.load(view.source, cx);
+    expect(view.commits).toHaveLength(1);
+    await writeFile(join(repo, "b.js"), "new\n");
+    await git("add", ".");
+    await git("commit", "-q", "-m", "second");
+    view.refresh(cx);
+    await settle();
+    expect(view.commits.map((c: any) => c.subject)).toEqual(["second", "first"]);
   });
 });

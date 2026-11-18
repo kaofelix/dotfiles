@@ -100,6 +100,9 @@ export default class ChangesPanel extends View {
     this.paletteIndex = 0;
     this.editing = null; // the comment being written: { id, file, side, start, end }
     this.pr = null; // the pull request under review, with the head ref it was fetched to
+    this.branch = null; // the branch checked out where the panel opened
+    this.target = null; // where that branch is headed: what it forked from, or its pull request's base
+    this.own = null; // that branch's copy on a remote
     this.lastReviewed = {}; // range -> the head commit last reviewed there
     this.overview = false;
     this.overviewPrefix = ""; // the folder the overview's "where" panel is in
@@ -152,20 +155,23 @@ export default class ChangesPanel extends View {
       return cx.notify();
     }
     const branch = await this.git.currentBranch(repo);
-    const [base, dirty, refs] = await Promise.all([this.git.defaultBase(repo, branch), this.git.isDirty(repo), this.git.refs(repo)]);
+    const [{ base, target, own }, dirty, refs] = await Promise.all([this.git.baseFor(repo, branch), this.git.isDirty(repo), this.git.refs(repo)]);
     this.refs = refs;
     this.branch = branch;
+    this.target = target;
+    this.own = own;
     if (given.pr) return this.openPullRequest(repo, given.pr, cx);
-    // With uncommitted work, show it on top of the branch; otherwise the branch's unpushed
-    // commits. A branch compared with itself has only its working tree to show.
+    // The branch as a pull request would show it: against where it is headed, with uncommitted
+    // work on top when there is some, else its commits alone. A trunk is compared with its
+    // own copy, so what isn't pushed shows; a branch compared with itself, its working tree.
     const head = given.head ?? (dirty || base === git.EMPTY_TREE || base === branch || base === "HEAD" ? "" : branch);
     await this.load({ repo, on: this.machine, base: given.base ?? base, head, commit: null, ignoreWhitespace: false }, cx);
     // The branch's pull request, looked up after the diff shows so it never slows it down:
     // its chip links to it, and its base is one pick away in the base menu.
-    if (!head || given.base || base === git.EMPTY_TREE) return;
+    if (given.base || base === git.EMPTY_TREE || branch === "HEAD") return;
     const pr = await this.git.pullRequest(repo);
-    if (!pr || pr.headRefName !== head) return;
-    this.pr = { ...pr, head };
+    if (!pr || pr.headRefName !== branch) return;
+    this.pr = { ...pr, head: branch, baseRef: await this.git.refFor(repo, pr.baseRefName) };
     cx.notify();
   }
 
@@ -204,7 +210,7 @@ export default class ChangesPanel extends View {
     }
     try {
       // Before the diff: a commit that lands while it is read is then seen as a move next tick.
-      const tips = await this.git.tips(source);
+      const [tips, headAt] = await Promise.all([this.git.tips(source), source.head ? null : this.git.headCommit(source.repo)]);
       const [{ text, skipped }, commits] = await Promise.all([this.git.diff(source), this.git.commits(source.repo, source.base, source.head)]);
       if (rev !== this.rev) return;
       const key = reviewKey(source);
@@ -226,6 +232,7 @@ export default class ChangesPanel extends View {
       if (newReview || !this.files.some((f) => f.id === this.only)) this.only = null;
       this.commits = commits;
       this.tips = tips;
+      this.headAt = headAt;
       this.ms = Date.now() - started;
       if (sameReview) this.noticeAddressed(before);
     } catch (e) {
@@ -276,8 +283,16 @@ export default class ChangesPanel extends View {
     this.busy = true;
     cx.spawn(async (cx) => {
       try {
-        const { text, skipped } = await this.git.diff(source);
-        if (source !== this.source || text === this.text) return;
+        // A commit leaves the diff against the fork point as it was: HEAD tells it happened.
+        const [{ text, skipped }, at] = await Promise.all([this.git.diff(source), this.git.headCommit(source.repo)]);
+        if (source !== this.source) return;
+        if (at !== this.headAt) {
+          this.headAt = at;
+          this.commits = await this.git.commits(source.repo, source.base, source.head).catch(() => this.commits);
+          if (source !== this.source) return;
+          if (text === this.text) return cx.notify();
+        }
+        if (text === this.text) return;
         const before = this.openCommentIds();
         this.text = text;
         const rev = ++this.rev;
@@ -318,8 +333,9 @@ export default class ChangesPanel extends View {
   reload(change, cx) {
     this.menu = null;
     this.handle.focus();
-    const moved = ["base", "head", "commit"].some((k) => k in change);
-    cx.spawn((cx) => this.load({ ...this.source, ...(moved ? { since: null } : {}), ...change }, cx));
+    const moved = ["base", "head", "commit", "uncommitted"].some((k) => k in change);
+    // Another base, head or commit leaves "uncommitted only" unless the change asks for it.
+    cx.spawn((cx) => this.load({ ...this.source, ...(moved ? { since: null, uncommitted: false } : {}), ...change }, cx));
   }
 
   setPref(key, value, cx) {
@@ -661,6 +677,7 @@ export default class ChangesPanel extends View {
   subject() {
     const s = this.source;
     if (s.commit) return `commit ${s.commit.slice(0, 7)}`;
+    if (s.uncommitted) return "my uncommitted changes (against `HEAD`)";
     return s.head ? `the changes in \`${s.base}...${s.head}\`` : `my uncommitted changes (against \`${s.base}\`)`;
   }
 
@@ -753,9 +770,9 @@ export default class ChangesPanel extends View {
     this.menu = null;
     this.handle.focus();
     cx.notify();
-    if (this.overview && this.source?.head) {
+    if (this.overview && this.source && this.source.base !== git.EMPTY_TREE) {
       cx.spawn(async (cx) => {
-        this.churn = await this.git.churn(this.source.repo, this.source.since || this.source.base, this.source.head);
+        this.churn = await this.git.churn(this.source.repo, this.source.since || this.source.base, this.source.head || "HEAD");
         cx.notify();
       });
     }
@@ -835,11 +852,28 @@ export default class ChangesPanel extends View {
     const s = this.source;
     const query = this.menuInput.value().toLowerCase();
     const refs = [...new Set([...this.refs, s.base, s.head].filter(Boolean))];
-    const match = (o) => !query || o.label.toLowerCase().includes(query);
-    if (this.menu === "base") return refs.map((r) => ({ label: this.refLabel(r, { menu: true }), current: r === s.base, pick: (cx) => this.reload({ base: r, commit: null }, cx) })).filter(match);
+    const match = (o) => !query || o.label.toLowerCase().includes(query) || o.hint?.toLowerCase().includes(query);
+    // The likely picks first, each saying what it shows, then every ref, branches by their remotes.
+    const options = (key, suggested) => {
+      const hints = new Map();
+      for (const [r, hint] of suggested) if (r && !hints.has(r)) hints.set(r, hint);
+      return [...hints.keys(), ...refs.filter((r) => !hints.has(r))].map((r) => ({
+        label: this.refLabel(r, { menu: true }), hint: hints.get(r), current: r === s[key],
+        pick: (cx) => this.reload({ [key]: r, commit: null }, cx),
+      }));
+    };
+    const branch = this.branch && this.branch !== "HEAD" ? this.branch : null;
+    if (this.menu === "base") {
+      return options("base", [
+        [this.pr?.baseRef, `#${this.pr?.number}'s base`],
+        [this.target, "where this branch is headed"],
+        [branch, s.head ? "this branch" : "this branch: uncommitted work only"],
+        [this.own, "its pushed copy: what isn't pushed"],
+      ]).filter(match);
+    }
     if (this.menu === "head") {
-      return [{ label: "Working tree", current: !s.head, pick: (cx) => this.reload({ head: "", commit: null }, cx) },
-        ...refs.map((r) => ({ label: this.refLabel(r, { menu: true }), current: r === s.head, pick: (cx) => this.reload({ head: r, commit: null }, cx) }))].filter(match);
+      return [{ label: "Working tree", hint: "commits and uncommitted work", current: !s.head, pick: (cx) => this.reload({ head: "", commit: null }, cx) },
+        ...options("head", [[branch, "this branch: committed work only"], [this.own, "its pushed copy"]])].filter(match);
     }
     if (this.menu === "keys") {
       const close = (cx) => { this.menu = null; this.handle.focus(); cx.notify(); };
@@ -871,7 +905,11 @@ export default class ChangesPanel extends View {
       })).filter(match);
     }
     if (this.menu === "commit") {
-      return [{ label: `All ${this.commits.length} commits`, current: !s.commit, pick: (cx) => this.reload({ commit: null }, cx) },
+      // On the working tree: everything, or what isn't committed yet on its own. Both keep the
+      // base, so the commits stay listed and this menu stays where it is.
+      const uncommitted = s.head ? [] : [{ label: "Uncommitted changes only", hint: "against HEAD", current: Boolean(s.uncommitted), pick: (cx) => this.reload({ commit: null, uncommitted: true }, cx) }];
+      return [{ label: s.head ? `All ${this.commits.length} commits` : `All ${plural(this.commits.length, "commit")} and uncommitted work`, current: !s.commit && !s.uncommitted, pick: (cx) => this.reload({ commit: null }, cx) },
+        ...uncommitted,
         ...this.commits.map((c) => ({ label: `${c.sha.slice(0, 7)} ${c.subject}`, hint: `${c.author}, ${c.date}`, current: c.sha === s.commit, pick: (cx) => this.reload({ commit: c.sha }, cx) }))].filter(match);
     }
     const next = (list, value) => list[(list.indexOf(value) + 1) % list.length];
@@ -1122,7 +1160,7 @@ export default class ChangesPanel extends View {
         .child(picker("base", s.base === git.EMPTY_TREE ? "No commits yet" : this.refLabel(s.base), s.base !== git.EMPTY_TREE))
         .child(this.button("swap", icon("swap"), (cx) => s.head && this.reload({ base: s.head, head: s.base, commit: null }, cx), { tip: "Swap base and head" }))
         .child(picker("head", s.head ? this.refLabel(s.head) : "Working tree", Boolean(s.head)))
-        .when(this.commits.length > 1, (el) => el.child(picker("commit", s.commit ? `${s.commit.slice(0, 7)} ${this.commits.find((c) => c.sha === s.commit)?.subject ?? ""}` : `All ${this.commits.length} commits`, false)))
+        .when(this.commits.length > (s.head ? 1 : 0), (el) => el.child(picker("commit", s.commit ? `${s.commit.slice(0, 7)} ${this.commits.find((c) => c.sha === s.commit)?.subject ?? ""}` : s.head ? `All ${this.commits.length} commits` : s.uncommitted ? "Uncommitted only" : `${plural(this.commits.length, "commit")} + uncommitted`, false)))
         .child(this.button("reload", icon("reload"), (cx) => this.reload({}, cx), { tip: "Reload" }))
         .child(this.button("whitespace", icon("pilcrow"), (cx) => this.reload({ ignoreWhitespace: !s.ignoreWhitespace }, cx), { active: s.ignoreWhitespace, tip: "Ignore whitespace changes" }))
         .when(Boolean(s.since), (el) => el.child(h_flex().id("since").h(28).px(10).gap(6).items_center().rounded(6).cursor_pointer()
@@ -1136,7 +1174,7 @@ export default class ChangesPanel extends View {
             .on_click((_e, cx) => this.reload({ since: since.sha }, cx))
             .child(icon("history", 12)).child(`${plural(since.count, "new commit")} since your review`));
         })
-        .when(Boolean(this.pr) && this.pr.head === s.head && !s.commit, (el) => el.child(h_flex().id("pr").h(28).px(8).gap(6).items_center().rounded(6).cursor_pointer()
+        .when(Boolean(this.pr) && (this.pr.head === s.head || (!s.head && this.pr.head === this.branch)) && !s.commit, (el) => el.child(h_flex().id("pr").h(28).px(8).gap(6).items_center().rounded(6).cursor_pointer()
           .min_w(0).text_size(12).text_color(t.muted).hover((st) => st.bg(t.hover))
           .on_click((_e, cx) => cx.open_url(this.pr.url))
           .child(div().font_medium().text_color(t.foreground).child(`#${this.pr.number}`))
@@ -1304,7 +1342,7 @@ export default class ChangesPanel extends View {
   renderEmpty(t) {
     const s = this.source;
     const message = this.error ?? (this.loading ? this.loadingMessage ?? "Loading…"
-      : s ? (s.commit ? "This commit changes nothing." : s.head ? `No changes between ${s.base} and ${s.head}.` : `No changes against ${s.base}.`) : "");
+      : s ? (s.commit ? "This commit changes nothing." : s.uncommitted && !s.head ? "Nothing uncommitted." : s.head ? `No changes between ${s.base} and ${s.head}.` : `No changes against ${s.base}.`) : "");
     return v_flex().size_full().items_center().justify_center().gap(6).p(24)
       .child(div().text_size(14).text_color(this.error ? t.ansi1 : t.muted).child(message))
       .when(Boolean(s) && !this.error && !this.loading, (el) => el.child(div().text_size(12).text_color(t.dim).child("Pick another base or head above.")));
@@ -1466,7 +1504,7 @@ export default class ChangesPanel extends View {
     const largest = [...files].sort((a, b) => b.add + b.del - (a.add + a.del)).slice(0, 8);
     const flags = hints(files, this.churn);
     const s = this.source;
-    const subject = s.commit ? `commit ${s.commit.slice(0, 7)}` : `${s.since ? s.since.slice(0, 7) : s.base}...${s.head || "working tree"}`;
+    const subject = s.commit ? `commit ${s.commit.slice(0, 7)}` : s.uncommitted && !s.head ? "HEAD...working tree" : `${s.since ? s.since.slice(0, 7) : s.base}...${s.head || "working tree"}`;
     const leave = (cx) => { this.overview = false; this.handle.focus(); cx.notify(); };
     const n = (v) => v.toLocaleString();
 

@@ -5,7 +5,7 @@
 const where = (source) => (source.on ? `${source.on}|${source.repo}` : source.repo);
 
 export function reviewKey(source) {
-  return `${where(source)}:${source.base}...${source.head || "worktree"}${source.commit ? `@${source.commit}` : ""}`;
+  return `${where(source)}:${source.base}...${source.head || "worktree"}${source.commit ? `@${source.commit}` : !source.head && source.uncommitted ? "@uncommitted" : ""}`;
 }
 
 export const emptyReview = () => ({ viewed: {}, comments: [] });

@@ -14,6 +14,33 @@ const MAX_FILE_LINES = 20000;
 
 const isOption = (ref) => ref?.startsWith("-");
 
+// Branches others branch from: main, master, develop, v1, v2.3, release/4, and the like.
+const TRUNK = /^(main|master|trunk|develop|dev|next|stable|v\d+(\.\d+)*(\.x)?|releases?[-/].+)$/;
+export const isTrunk = (name) => TRUNK.test(name);
+
+// A full ref name: { short, name, rank }. `name` is the branch it is, without a remote; rank
+// 0 for origin's copy, 1 for another remote's, 2 for a local branch, null for anything else.
+function parseRef(ref) {
+  const parts = ref.split("/");
+  const short = parts.slice(2).join("/");
+  if (parts[1] === "remotes") return { short, name: parts.slice(3).join("/"), rank: parts[2] === "origin" ? 0 : 1 };
+  return { short, name: short, rank: parts[1] === "heads" ? 2 : null };
+}
+
+// Full ref names, in the order given, as short names with each branch's copies kept together:
+// the local branch first, then its remote copies, where the first of them stood. Pure.
+export function groupRefs(full) {
+  const groups = new Map();
+  for (const ref of full) {
+    const { short, name, rank } = parseRef(ref);
+    const key = rank == null ? `tag:${short}` : name;
+    if (!groups.has(key)) groups.set(key, []);
+    if (rank === 2) groups.get(key).unshift(short);
+    else groups.get(key).push(short);
+  }
+  return [...groups.values()].flat();
+}
+
 // git's empty tree: the base for a repository with no commits yet, where everything is new.
 export const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
@@ -92,17 +119,72 @@ export function gitOn(machine) {
 
   const hasCommits = async (repo) => Boolean(await line(repo, ["rev-parse", "--verify", "--quiet", "HEAD"]));
 
+  // The commit checked out, for a working tree to see that a commit landed.
+  const headCommit = (repo) => line(repo, ["rev-parse", "--verify", "--quiet", "HEAD"]);
+
   const toplevel = (dir) => line(dir, ["rev-parse", "--show-toplevel"]);
 
   const currentBranch = async (repo) => (await line(repo, ["rev-parse", "--abbrev-ref", "HEAD"])) ?? "HEAD";
 
-  // What a branch is compared with by default: its copy on origin, so the panel shows what
-  // isn't pushed yet; without one, the branch itself, so only uncommitted work shows.
-  async function defaultBase(repo, branch) {
-    if (!(await hasCommits(repo))) return EMPTY_TREE;
-    if (!branch || branch === "HEAD" || isOption(branch)) return "HEAD";
-    const remote = `origin/${branch}`;
-    return (await line(repo, ["rev-parse", "--verify", "--quiet", `refs/remotes/${remote}`])) ? remote : branch;
+  // What a branch is compared with: { base, target, own }. `target` is where the branch is
+  // headed, the ref a pull request from it would merge into; `own` is its copy on a remote.
+  // The base is the target, else its own copy, else the branch itself. The target, first found:
+  //   1. `branch.<name>.gh-merge-base`, the base the GitHub CLI was told;
+  //   2. its upstream, when that is another branch (a worktree started from origin/v1);
+  //   none for a trunk itself (main, v1): it is compared with its own copy, what isn't pushed;
+  //   3. the trunk it forked from last: the one sharing history with it that has the fewest
+  //      commits not in it, then is the fewest behind, the remote's default branch winning a
+  //      tie. A detached HEAD looks for one too.
+  async function baseFor(repo, branch) {
+    if (!(await hasCommits(repo))) return { base: EMPTY_TREE, target: null, own: null };
+    const named = Boolean(branch) && branch !== "HEAD" && !isOption(branch);
+    const [upstream, chosen, list, origin] = await Promise.all([
+      named ? line(repo, ["rev-parse", "--symbolic-full-name", `${branch}@{upstream}`]) : null,
+      named ? line(repo, ["config", "--get", `branch.${branch}.gh-merge-base`]) : null,
+      git(repo, ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"]).catch(() => ""),
+      line(repo, ["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"]),
+    ]);
+    // Branch name -> the ref that stands for it: origin's copy, else another remote's, else local.
+    const byName = new Map();
+    for (const ref of list.split("\n").filter((r) => r && !r.endsWith("/HEAD"))) {
+      const { name, short, rank } = parseRef(ref);
+      if (rank != null && !(byName.get(name)?.rank <= rank)) byName.set(name, { ref: short, rank });
+    }
+    const up = upstream?.startsWith("refs/") ? parseRef(upstream) : null;
+    const own = !named ? null : up?.name === branch && up.rank < 2 ? up.short : byName.get(branch)?.rank < 2 ? byName.get(branch).ref : null;
+    const result = (target) => ({ base: target ?? own ?? (named ? branch : "HEAD"), target, own });
+
+    const asked = chosen && chosen !== branch && byName.get(chosen)?.ref;
+    if (asked) return result(asked);
+    if (up && up.name !== branch) return result(up.short);
+    if (named && isTrunk(branch)) return result(null);
+    const fallback = origin ? parseRef(origin).name : null;
+    const names = [...byName.keys()].filter((n) => n !== branch && (n === fallback || isTrunk(n)))
+      .sort((a, b) => (b === fallback) - (a === fallback)).slice(0, 12);
+    // [ahead, behind] of HEAD against each, or null when their histories never met.
+    const distance = await Promise.all(names.map(async (n) => {
+      const ref = byName.get(n).ref;
+      if (!(await line(repo, ["merge-base", ref, "HEAD"]))) return null;
+      const out = await line(repo, ["rev-list", "--left-right", "--count", `HEAD...${ref}`, "--"]);
+      return out ? out.split(/\s+/).map(Number) : null;
+    }));
+    let best = -1;
+    distance.forEach((d, i) => {
+      const b = distance[best];
+      if (d && (!b || d[0] < b[0] || (d[0] === b[0] && d[1] < b[1]))) best = i;
+    });
+    return result(best < 0 ? null : byName.get(names[best]).ref);
+  }
+
+  const defaultBase = async (repo, branch) => (await baseFor(repo, branch)).base;
+
+  // A branch name as a ref to compare with: origin's copy, else the local branch. Null if neither.
+  async function refFor(repo, name) {
+    if (!name || isOption(name)) return null;
+    for (const [full, short] of [[`refs/remotes/origin/${name}`, `origin/${name}`], [`refs/heads/${name}`, name]]) {
+      if (await line(repo, ["rev-parse", "--verify", "--quiet", full])) return short;
+    }
+    return null;
   }
 
   const isDirty = async (repo) => Boolean(await line(repo, ["status", "--porcelain", "--untracked-files=normal"]));
@@ -117,16 +199,18 @@ export function gitOn(machine) {
     return out?.trim() || null;
   }
 
-  // Branches, remote branches and tags, most recently committed first.
+  // Branches, remote branches and tags, most recently committed first, each branch with its
+  // copies on remotes right after it.
   async function refs(repo) {
     const out = await git(repo, ["for-each-ref", "--sort=-committerdate", "--format=%(refname)", "refs/heads", "refs/remotes", "refs/tags"]).catch(() => "");
-    return out.split("\n").filter((r) => r && !r.endsWith("/HEAD")).map((r) => r.split("/").slice(2).join("/"));
+    return groupRefs(out.split("\n").filter((r) => r && !r.endsWith("/HEAD")));
   }
 
-  // Commits in base..head, newest first, with lines added and removed.
+  // Commits in base..head, newest first, with lines added and removed. With no head (the working
+  // tree), those under it: base..HEAD.
   async function commits(repo, base, head) {
-    if (!head || base === EMPTY_TREE || isOption(base) || isOption(head)) return [];
-    const out = await git(repo, ["log", "--format=%x1e%H%x1f%s%x1f%an%x1f%ar", "--numstat", "--max-count=500", `${base}..${head}`, "--"]).catch(() => "");
+    if (base === EMPTY_TREE || isOption(base) || isOption(head)) return [];
+    const out = await git(repo, ["log", "--format=%x1e%H%x1f%s%x1f%an%x1f%ar", "--numstat", "--max-count=500", `${base}..${head || "HEAD"}`, "--"]).catch(() => "");
     return out.split("\x1e").filter(Boolean).map((record) => {
       const [first, ...stats] = record.split("\n");
       const [sha, subject, author, date] = first.split("\x1f");
@@ -141,9 +225,10 @@ export function gitOn(machine) {
   }
 
   // The patch for a source: one commit, base...head like a pull request, or, with no head,
-  // the working tree against where it forked from base, untracked files included.
+  // the working tree against where it forked from base, untracked files included; with
+  // `uncommitted`, against HEAD instead: only what isn't committed.
   // Returns { text, skipped }: skipped files are too large to diff, with their line counts.
-  async function diff({ repo, base, head, commit, since, ignoreWhitespace }) {
+  async function diff({ repo, base, head, commit, since, uncommitted, ignoreWhitespace }) {
     const whitespace = ignoreWhitespace ? ["-w"] : [];
     let command;
     if (commit) {
@@ -154,7 +239,7 @@ export function gitOn(machine) {
       // The empty tree has no history to fork from: compare against it directly. "Since your
       // review" diffs from the commit you last reviewed instead of the base.
       const from = since || base;
-      const range = head ? [`${from}...${head}`] : base === EMPTY_TREE ? [base] : ["--merge-base", base];
+      const range = head ? [`${from}...${head}`] : base === EMPTY_TREE ? [base] : uncommitted ? ["HEAD"] : ["--merge-base", base];
       command = ["diff", ...whitespace, ...range];
     }
     let stats;
@@ -250,8 +335,8 @@ export function gitOn(machine) {
     return counts;
   }
 
-  return { hasCommits, toplevel, currentBranch, defaultBase, isDirty, tips, refs, commits, diff, pullRequest, fetchPullRequest, fileText, churn };
+  return { headCommit, hasCommits, toplevel, currentBranch, baseFor, defaultBase, refFor, isDirty, tips, refs, commits, diff, pullRequest, fetchPullRequest, fileText, churn };
 }
 
 // This computer's git, for callers that never leave it.
-export const { hasCommits, toplevel, currentBranch, defaultBase, isDirty, tips, refs, commits, diff, pullRequest, fetchPullRequest, fileText, churn } = gitOn(null);
+export const { headCommit, hasCommits, toplevel, currentBranch, baseFor, defaultBase, refFor, isDirty, tips, refs, commits, diff, pullRequest, fetchPullRequest, fileText, churn } = gitOn(null);
