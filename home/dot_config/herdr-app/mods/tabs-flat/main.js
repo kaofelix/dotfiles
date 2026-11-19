@@ -30,6 +30,8 @@ async function beadsRoot(cwd, on) {
   return null;
 }
 
+const PANEL_WIDTHS = { files: 368, github: 640 };
+
 function find(node, id) {
   if (node?.id === id) return node;
   for (const child of node?.children ?? []) {
@@ -50,10 +52,12 @@ export default class Tabs extends View {
       for (;;) {
         const command = await nextCommand();
         // One failed toggle must not end the loop and leave the key dead.
-        try { if (command === "changes") this.toggleDiff(); else if (command === "pr") this.pickPullRequest(); else if (command === "beads") this.toggleBeads(); else if (command === "kube") this.toggleKube(); } catch (e) { console.warn(`tabs-flat: ${command}: ${e?.message ?? e}`); }
+        try { if (command === "changes") this.toggleDiff(); else if (command === "pr") this.pickPullRequest(); else if (command === "beads") this.toggleBeads(); else if (command === "kube") this.toggleKube(); else if (command === "github") this.toggleGitHub(); } catch (e) { console.warn(`tabs-flat: ${command}: ${e?.message ?? e}`); }
       }
     });
     this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}");
+    // The side panel's width per child: GitHub's rows want more room than the file tree. A drag is remembered for the child shown.
+    this.panelWidths = { ...PANEL_WIDTHS, ...JSON.parse(localStorage.getItem("panelWidths") ?? "{}") };
   }
 
   // The side panel is remembered per space: switching shows that space's choice
@@ -83,6 +87,17 @@ export default class Tabs extends View {
   beadsFor(f, cx) { return this.projectFor(this.beads, beadsRoot, f, cx); }
   kubeFor(f, cx) { return this.projectFor(this.kube, kubeRoot, f, cx); }
 
+  // GitHub is the person's work, not a space's: it lives in the side panel (beside Files) and stays put across spaces.
+  githubOpen() {
+    const root = layout();
+    return !find(root, "panel")?.hidden && find(root, "panel-body")?.active === "github";
+  }
+  toggleGitHub() {
+    if (this.githubOpen()) return run("layout.hide", { id: "panel" });
+    this.showPanel("github");
+    run("github.focus");
+  }
+
   toggleKube() {
     const f = focused();
     if (!f) return;
@@ -111,9 +126,30 @@ export default class Tabs extends View {
     return f?.cwd ? { repo: f.cwd, machine: spaces().find(s => s.id === f.space)?.machine ?? null } : {};
   }
 
+  showPanel(id) {
+    run("layout.select", { stack: "panel-body", child: id });
+    const px = this.panelWidths[id];
+    if (px) run("layout.resize", { id: "panel", px });
+    run("layout.show", { id: "panel" });
+    // Until the resize lands (or a second passes), the old width isn't a drag.
+    this.resizing = { id, px, until: Date.now() + 1000 };
+  }
+
   syncPanel(space, panel, body, enabled) {
     if (!space || !panel) return;
     const now = panel.hidden ? null : body?.active ?? null;
+    // A drag on the shown child's width is remembered for it; the resize a switch asked for isn't one.
+    const px = panel.size?.px, rz = this.resizing;
+    if (rz && (rz.id !== now || (rz.px && px !== rz.px)) && Date.now() < rz.until) { /* still switching */ }
+    else {
+      this.resizing = null;
+      if (now && px && Math.abs((this.panelWidths[now] ?? 0) - px) >= 1) {
+        this.panelWidths[now] = px;
+        localStorage.setItem("panelWidths", JSON.stringify(this.panelWidths));
+      }
+    }
+    // GitHub isn't a space's: switching spaces leaves it open, and it isn't remembered as the space's panel.
+    if (now === "github") { this.space = space.id; this.pending = null; return; }
     if (space.id !== this.space) {
       const first = this.space === undefined;
       this.space = space.id; this.pending = null;
@@ -121,7 +157,7 @@ export default class Tabs extends View {
         const stored = this.panels[space.id] ?? null, want = enabled.includes(stored) ? stored : null;
         if (want !== now) {
           this.pending = { want, until: Date.now() + 1000 };
-          if (want) { run("layout.select", { stack: "panel-body", child: want }); run("layout.show", { id: "panel" }); }
+          if (want) this.showPanel(want);
           else run("layout.hide", { id: "panel" });
           return;
         }
@@ -176,7 +212,7 @@ export default class Tabs extends View {
     const panelButton = (id, label, icon, open) => {
       const f = focused();
       // Changes is a pane, not the side panel: active while one is open in this tab.
-      const on = open ? panes().some(p => p.tab === f?.tab && p.mod === ({ beads: "beads", kube: "kube" }[id] ?? "changes-panel"))
+      const on = id === "github" ? this.githubOpen() : open ? panes().some(p => p.tab === f?.tab && p.mod === ({ beads: "beads", kube: "kube" }[id] ?? "changes-panel"))
         : panel && !panel.hidden && body?.active === id;
       return h_flex().id(`panel-${id}`).h_full().px(10).gap(5).flex_none().items_center()
         .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
@@ -184,7 +220,7 @@ export default class Tabs extends View {
         .on_click(() => {
           if (open) return open();
           if (on) run("layout.hide", { id: "panel" });
-          else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
+          else this.showPanel(id);
         }).child(svg(icon).size(14)).child(label);
     };
     return h_flex().size_full().min_w(0).pr(0).pl(lightsPadding).gap(0).items_center().bg(t.chrome).border_b(1).border_color(t.border)
@@ -196,6 +232,7 @@ export default class Tabs extends View {
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg", () => this.toggleDiff())))
       .when(Boolean(beads) || panes().some(p => p.tab === focused()?.tab && p.mod === "beads"), el => el.child(panelButton("beads", "Beads", "mods/beads/icons/beads.svg", () => this.toggleBeads())))
       .when(Boolean(kube) || panes().some(p => p.tab === focused()?.tab && p.mod === "kube"), el => el.child(panelButton("kube", "Kube", "mods/kube/icons/kube.svg", () => this.toggleKube())))
+      .child(panelButton("github", "GitHub", "mods/github/icons/github.svg", () => this.toggleGitHub()))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs-flat/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs-flat/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
         .child(button("close-window", w.platform === "windows" ? svg("mods/tabs-flat/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));

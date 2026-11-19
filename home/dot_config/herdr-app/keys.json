@@ -70,7 +70,8 @@
     "cmd-shift-g": "tabs-flat.changes",
     "cmd-alt-g": "tabs-flat.pr",
     "cmd-shift-b": "tabs-flat.beads",
-    "cmd-shift-k": "tabs-flat.kube"
+    "cmd-shift-k": "tabs-flat.kube",
+    "cmd-shift-h": "tabs-flat.github"
   },
   "terminal": {
     "cmd-c": "terminal.copy",

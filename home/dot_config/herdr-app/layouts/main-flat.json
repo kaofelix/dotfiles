@@ -133,6 +133,13 @@
                       "content": {
                         "mod": "files-flat"
                       }
+                    },
+                    {
+                      "id": "github",
+                      "type": "block",
+                      "content": {
+                        "mod": "github"
+                      }
                     }
                   ],
                   "active": "files"
