@@ -10,7 +10,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, REPOS_QUERY, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, listWidth, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, listWidth, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -617,7 +617,8 @@ export default class GitHub extends View {
     if (!rows.length) {
       const what = this.prefs.kind === "pr" ? "pull requests" : "issues";
       return div().flex_1().p(16).text_size(12.5).text_color(t.dim)
-        .child(this.query ? "Nothing matches this filter." : this.isLoading() && !isLoaded(this.result()) ? "Loading…" : "No " + (this.prefs.state === "all" ? "" : this.prefs.state + " ") + what + " here.");
+        .child(!kindSettled(this.result(), this.prefs.kind) ? h_flex().gap(6).items_center().child(this.spinner(t, 12)).child("Loading…")
+          : this.query ? "Nothing matches this filter." : "No " + (this.prefs.state === "all" ? "" : this.prefs.state + " ") + what + " here.");
     }
     return v_flex().id("gh-list").flex_1().min_h(0).overflow_y_scrollbar().track_scroll(this.scroll).py(4)
       .children(rows.map(r => this.listRow(r, t, mono, cols)));

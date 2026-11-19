@@ -211,6 +211,8 @@ export function buildRows(result, kind, { query = "", collapsed = new Set(), gro
     const header = { kind: "section", key, id: s.id, sectionKey: s.key, label: s.label, count: items.length, truncated: s.hasMore && !pending, total: s.total, search: s.search, collapsed: collapsed.has(key), loading: !s.loaded && !s.error, pending };
     const tail = pending ? { kind: "more", key: "more:" + s.id, section: s.id, sectionKey: s.key, pending: true }
       : (s.error || s.hasMore) ? { kind: "more", key: "more:" + s.id, section: s.id, sectionKey: s.key, loaded: s.ids.length, total: s.total, error: s.error, retry: !s.loaded } : null;
+    // Borrowed items that don't include any of this section's: it's still loading, as far as anyone can tell.
+    if (pending && !items.length) header.loading = true;
     if (header.loading) { if (!query) rows.push(header); continue; }
     if (!items.length && !(tail && !query)) continue;
     rows.push(header);
@@ -238,6 +240,8 @@ export function kindCount(result, kind, repo = null) {
   return ids.size;
 }
 export const kindHasMore = (result, kind) => (result?.sections[kind] ?? []).some(s => s.hasMore);
+// Every section of a kind has its own answer (or failed): only then is an empty list really empty.
+export const kindSettled = (result, kind) => (result?.sections[kind] ?? []).every(s => (s.loaded && !s.seeded) || s.error);
 // Some section still shows another state's items: its count isn't known yet.
 export const kindPending = (result, kind) => (result?.sections[kind] ?? []).some(s => s.seeded && !s.error);
 

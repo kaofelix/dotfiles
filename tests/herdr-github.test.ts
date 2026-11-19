@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -166,6 +166,13 @@ describe("github model", () => {
     expect(rows[0]).toMatchObject({ kind: "section", id: "mine", pending: true, truncated: false });
     expect(rows.at(-1)).toMatchObject({ kind: "more", section: "mine", pending: true });
     expect(kindPending(all, "pr")).toBe(true);
+    expect(kindSettled(all, "pr")).toBe(false);
+    // An empty borrowed section reads as loading, not as an empty one.
+    const review = buildRows(all, "pr", {}).find(r => r.id === "review");
+    expect(review).toMatchObject({ kind: "section", loading: true, count: 0 });
+    expect(buildRows(all, "pr", {}).some(r => r.kind === "more" && r.section === "review")).toBe(false);
+    expect(kindSettled(answer(plan("me", "open"), {}), "pr")).toBe(true);
+    expect(kindSettled(emptyResult(plan("me", "open")), "pr")).toBe(false);
     // The first fetched page replaces the seed.
     applyPage(all, "pr_mine", page([pr("N", "o/a", 9)], { total: 40, cursor: "c", more: true }));
     expect(all.sections.pr.find(s => s.key === "pr_mine").ids).toEqual(["N"]);
