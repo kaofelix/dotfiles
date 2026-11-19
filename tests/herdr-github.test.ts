@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -197,5 +197,41 @@ describe("github model", () => {
   test("projects come open first, closed after", () => {
     expect(projectsOf({ repository: { projectsV2: { nodes: [{ number: 1, title: "Old", url: "u1", closed: true }, { number: 2, title: "Tracker", url: "u2", closed: false }] } } }).map(p => p.title)).toEqual(["Tracker", "Old"]);
     expect(projectsOf(null)).toEqual([]);
+  });
+  const ms = (number, extra) => ({ id: "M" + number, number, title: "M" + number, url: "u" + number, state: "OPEN", dueOn: null, closedAt: null, open: { totalCount: 1 }, closed: { totalCount: 0 }, prs: { totalCount: 0 }, ...extra });
+  test("milestones list open ones by due date, undated last, then closed ones newest first", () => {
+    const list = normalizeMilestones({ repository: { milestones: { nodes: [ms(1), ms(2, { dueOn: "2026-12-01T00:00:00Z" }), ms(3, { dueOn: "2026-11-01T00:00:00Z" }),
+      ms(4, { state: "CLOSED", closedAt: "2026-01-01T00:00:00Z" }), ms(5, { state: "CLOSED", closedAt: "2026-05-01T00:00:00Z" })] } } });
+    expect(list.map(m => m.number + ":" + m.state)).toEqual(["3:open", "2:open", "1:open", "5:closed", "4:closed"]);
+    expect(list[0]).toMatchObject({ open: 1, closed: 0, due: "2026-11-01T00:00:00Z" });
+  });
+
+  test("a milestone's open work groups by epic, keeps outside parents as headers, and others last", () => {
+    const epic = issue("E", "o/r", 1, { issueType: { name: "Epic" }, subIssuesSummary: { total: 3, completed: 1 } });
+    const kid = (id, n, parent, who) => issue(id, "o/r", n, { parent, assignees: { nodes: who ? [{ login: who }] : [] } });
+    const items = milestoneItems({ repository: { milestone: { issues: { totalCount: 6, nodes: [epic, kid("A", 2, { id: "E", number: 1 }, "ann"), kid("B", 3, { id: "E", number: 1 }),
+      kid("C", 4, { id: "X", number: 99, title: "Outside", url: "ux" }, "bob"), kid("D", 5, null, "ann")] }, pullRequests: { totalCount: 1, nodes: [pr("P", "o/r", 7)] } } } });
+    const groups = epicGroups(items.issues);
+    expect(groups.map(g => (g.head?.id ?? g.parent?.number ?? g.label) + ":" + g.items.map(i => i.id).join(","))).toEqual(["E:A,B", "99:C", "Other open work:D"]);
+    expect(ownerGroups(items.issues).map(g => g.label + ":" + g.items.map(i => i.id).join(","))).toEqual(["ann:A,D", "bob:C", "me:E", "Unassigned:B"]);
+    const m = normalizeMilestones({ repository: { milestones: { nodes: [ms(9)] } } });
+    const rows = milestoneRows(m, new Map([[9, items]]), { expanded: new Set([9]) });
+    expect(rows.map(r => r.kind + (r.depth ? r.depth : "") + ":" + (r.item?.id ?? r.label ?? r.parent?.number ?? r.text ?? r.milestone?.number))).toEqual(
+      ["milestone:9", "item1:E", "item2:A", "item2:B", "group1:99", "item2:C", "group1:Other open work", "item2:D", "group1:Open pull requests", "item2:P", "note1:1 more open issues on GitHub"]);
+    expect(rows.find(r => r.item?.id === "E")).toMatchObject({ epic: true, owner: true });
+    expect(milestoneRows(m, new Map(), { expanded: new Set([9]) }).at(-1)).toMatchObject({ kind: "note", loading: true });
+    expect(milestoneRows(m, new Map([[9, items]]), {}).length).toBe(1);
+    expect(milestoneRows(m, new Map([[9, items]]), { state: "closed" })).toEqual([]);
+    expect(milestoneRows(m, new Map([[9, items]]), { expanded: new Set([9]), query: "nothing-like-this" }).at(-1)).toMatchObject({ text: "Nothing here matches this filter." });
+  });
+  test("epics' open sub-issues outside the milestone join their epic, once", () => {
+    const epic = normalize(issue("E", "o/r", 1, { issueType: { name: "Epic" }, subIssuesSummary: { total: 3, completed: 1 } }));
+    const inside = normalize(issue("A", "o/r", 2, { parent: { id: "E", number: 1 } }));
+    const q = subIssuesQuery(["E"]);
+    expect(q).toContain('e0: node(id: "E")');
+    const subs = subIssuesOf({ e0: { subIssues: { nodes: [issue("A", "o/r", 2), issue("B", "o/r", 3), issue("C", "o/r", 4, { state: "CLOSED", stateReason: "COMPLETED" })] } } }, ["E"]);
+    const all = withSubIssues([epic, inside], subs);
+    expect(all.map(i => i.id + (i.borrowed ? "*" : ""))).toEqual(["E", "A", "B*"]);
+    expect(epicGroups(all).map(g => (g.head?.id ?? g.label) + ":" + g.items.map(i => i.id).join(","))).toEqual(["E:A,B"]);
   });
 });

@@ -52,6 +52,108 @@ export function sectionQuery() {
     + "  rateLimit { cost remaining resetAt }\n}";
 }
 
+// Milestones: a repository's, open ones by due date (undated last), then closed ones, most recently closed first.
+export const MILESTONES_QUERY = `query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) {
+  milestones(first: 50, states: [OPEN, CLOSED], orderBy: {field: DUE_DATE, direction: ASC}) { nodes { id number title url state dueOn closedAt description
+    open: issues(states: OPEN) { totalCount } closed: issues(states: CLOSED) { totalCount } prs: pullRequests(states: OPEN) { totalCount } } } } }`;
+export function normalizeMilestones(data) {
+  const list = (data?.repository?.milestones?.nodes ?? []).filter(Boolean).map(m => ({
+    id: m.id, number: m.number, title: m.title ?? "", url: m.url, state: m.state === "CLOSED" ? "closed" : "open", due: m.dueOn ?? null, closedAt: m.closedAt ?? null,
+    description: m.description ?? "", open: m.open?.totalCount ?? 0, closed: m.closed?.totalCount ?? 0, prs: m.prs?.totalCount ?? 0 }));
+  const dueAt = (x) => time(x.due) || Infinity;
+  return [...list.filter(x => x.state === "open").sort((x, y) => dueAt(x) - dueAt(y) || x.number - y.number),
+    ...list.filter(x => x.state === "closed").sort((x, y) => time(y.closedAt) - time(x.closedAt))];
+}
+// A milestone's open work. Pull requests can't be ordered here (GitHub errors), so they're sorted after.
+export const MILESTONE_ITEMS_QUERY = FRAGMENTS + `
+query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { milestone(number: $number) {
+  issues(states: OPEN, first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) { totalCount nodes { ...IS issueType { name } parent { id number title url } subIssuesSummary { total completed } } }
+  pullRequests(states: OPEN, first: 30) { totalCount nodes { ...PR } } } } }`;
+export function milestoneItems(data) {
+  const ms = data?.repository?.milestone;
+  const byUpdated = (x, y) => time(y.updatedAt) - time(x.updatedAt);
+  return { issues: (ms?.issues?.nodes ?? []).filter(Boolean).map(normalize), prs: (ms?.pullRequests?.nodes ?? []).filter(Boolean).map(normalize).sort(byUpdated),
+    issueTotal: ms?.issues?.totalCount ?? 0, prTotal: ms?.pullRequests?.totalCount ?? 0 };
+}
+// Sub-issues of a milestone's epics: often not in the milestone themselves (the epic is), so asked for separately and
+// only for epics with open ones. Aliased per epic, in one request.
+export function subIssuesQuery(ids) {
+  // GitHub refuses a fragment that's defined but unused: only the issue one goes in.
+  return FRAGMENTS.slice(FRAGMENTS.indexOf("fragment IS")) + "\nquery {\n" + ids.map((id, n) => "  e" + n + ": node(id: " + JSON.stringify(id) + ") { ... on Issue { id subIssues(first: 50) { nodes { ...IS issueType { name } subIssuesSummary { total completed } } } } }").join("\n") + "\n}";
+}
+export function subIssuesOf(data, ids) {
+  const out = new Map();
+  ids.forEach((id, n) => out.set(id, (data?.["e" + n]?.subIssues?.nodes ?? []).filter(Boolean).map(x => ({ ...normalize(x), parent: { id, number: null } }))));
+  return out;
+}
+// Folds epics' open sub-issues into a milestone's issues (once each; those already there keep their own record).
+export function withSubIssues(issues, subs) {
+  if (!subs?.size) return issues;
+  const have = new Set(issues.map(i => i.id)), out = [...issues];
+  for (const [parentId, kids] of subs) {
+    const parent = issues.find(i => i.id === parentId);
+    for (const k of kids) if (!isClosed(k) && !have.has(k.id)) { have.add(k.id); out.push({ ...k, parent: { id: parentId, number: parent?.number ?? null, title: parent?.title ?? "" }, borrowed: true }); }
+  }
+  return out;
+}
+export const isEpic = (i) => ["epic", "initiative"].includes(lower(i.type)) || Boolean(i.subs);
+
+// By epic: each epic (or any parent) heads its sub-issues; a parent outside the milestone still heads its children
+// here, as a group row. Everything else is "Other open work", last.
+export function epicGroups(issues) {
+  const inside = new Map(issues.map(i => [i.id, i])), groups = new Map(), other = [];
+  const group = (id, make) => { if (!groups.has(id)) groups.set(id, { ...make(), items: [] }); return groups.get(id); };
+  for (const i of issues) {
+    if (i.parent) group(i.parent.id, () => inside.has(i.parent.id) ? { key: i.parent.id, head: inside.get(i.parent.id) } : { key: i.parent.id, parent: i.parent }).items.push(i);
+    else if (isEpic(i) || issues.some(x => x.parent?.id === i.id)) group(i.id, () => ({ key: i.id, head: i })).head = i;
+    else other.push(i);
+  }
+  // A head that's also someone's child stays with its own group.
+  const out = [...groups.values()].map(g => ({ ...g, items: g.items.filter(i => !groups.has(i.id) || i.id === g.key) }));
+  if (other.length) out.push({ key: "other", label: "Other open work", items: other });
+  return out;
+}
+
+// By owner: each assignee's issues (an issue with two shows under both), most work first; unassigned last.
+export function ownerGroups(issues) {
+  const groups = new Map(), none = [];
+  for (const i of issues) {
+    if (!i.assignees.length) none.push(i);
+    for (const a of i.assignees) { if (!groups.has(a)) groups.set(a, []); groups.get(a).push(i); }
+  }
+  const out = [...groups.entries()].sort((x, y) => y[1].length - x[1].length || x[0].localeCompare(y[0])).map(([a, items]) => ({ key: "@" + a, label: a, owner: a, items }));
+  if (none.length) out.push({ key: "@", label: "Unassigned", unassigned: true, items: none });
+  return out;
+}
+
+// The Milestones tab: a row per milestone (by the state switch), and under each expanded one its open work by epic or
+// by owner, then its open pull requests. Items show their owners, so gaps are visible.
+export function milestoneRows(milestones, items, { state = "open", expanded = new Set(), byOwner = false, query = "", login = null } = {}) {
+  const preds = parseQuery(query, login), rows = [];
+  for (const m of (milestones ?? []).filter(x => state === "all" || x.state === state)) {
+    const key = "ms:" + m.number, open = expanded.has(m.number);
+    rows.push({ kind: "milestone", key, milestone: m, expanded: open });
+    if (!open) continue;
+    const got = items?.get(m.number);
+    if (!got || got.loading && !got.issues) { rows.push({ kind: "note", key: key + ":note", loading: true, depth: 1 }); continue; }
+    if (got.error && !got.issues) { rows.push({ kind: "note", key: key + ":note", text: "Couldn't load: " + got.error, error: true, depth: 1 }); continue; }
+    const issues = withSubIssues(got.issues, got.subs).filter(i => preds.every(p => p(i))), prs = got.prs.filter(i => preds.every(p => p(i)));
+    if (!issues.length && !prs.length) { rows.push({ kind: "note", key: key + ":note", text: query ? "Nothing here matches this filter." : "Nothing open in this milestone.", depth: 1 }); continue; }
+    for (const g of byOwner ? ownerGroups(issues) : epicGroups(issues)) {
+      const gkey = key + ":g:" + g.key;
+      if (g.head) rows.push({ kind: "item", key: gkey, section: key, item: g.head, depth: 1, owner: true, epic: true });
+      else rows.push({ kind: "group", key: gkey, label: g.label ?? null, parent: g.parent ?? null, count: g.items.length, unassigned: Boolean(g.unassigned), depth: 1 });
+      for (const i of g.items) if (i.id !== g.head?.id) rows.push({ kind: "item", key: gkey + ":" + i.id, section: key, item: i, depth: 2, owner: true });
+    }
+    if (prs.length) {
+      rows.push({ kind: "group", key: key + ":prs", label: "Open pull requests", count: prs.length, depth: 1 });
+      for (const i of prs) rows.push({ kind: "item", key: key + ":prs:" + i.id, section: key, item: i, depth: 2, owner: true });
+    }
+    if (got.issueTotal > got.issues.length) rows.push({ kind: "note", key: key + ":more", text: (got.issueTotal - got.issues.length) + " more open issues on GitHub", url: m.url, depth: 1 });
+  }
+  return rows;
+}
+
 // Projects (v2) linked to a repository, for links in its header: they live on GitHub.
 export const PROJECTS_QUERY = "query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { projectsV2(first: 20, orderBy: {field: UPDATED_AT, direction: DESC}) { nodes { number title url closed } } } }";
 export const projectsOf = (data) => (data?.repository?.projectsV2?.nodes ?? []).filter(Boolean)
@@ -97,6 +199,9 @@ export function normalize(n) {
     review: REVIEW[n.reviewDecision] ?? null, conflicts: n.mergeable === "CONFLICTING",
     comments: n.comments?.totalCount ?? 0, additions: n.additions ?? null, deletions: n.deletions ?? null, files: n.changedFiles ?? null,
     head: n.headRefName ?? null, base: n.baseRefName ?? null,
+    // Planning, from milestone queries: the issue type (Epic, Task…), its parent issue and its sub-issues' progress.
+    type: n.issueType?.name ?? null, parent: n.parent ? { id: n.parent.id, number: n.parent.number, title: n.parent.title ?? "", url: n.parent.url ?? null } : null,
+    subs: n.subIssuesSummary?.total ? { total: n.subIssuesSummary.total, completed: n.subIssuesSummary.completed ?? 0 } : null,
     createdAt: n.createdAt, updatedAt: n.updatedAt, closedAt: n.mergedAt ?? n.closedAt ?? null,
   };
 }

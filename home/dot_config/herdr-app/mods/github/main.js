@@ -10,7 +10,7 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popup } from "gpui-base";
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
-import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, homeRows, projectsOf, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
+import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
   isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, listWidth, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
   sectionQuery, serialize } from "./model.js";
 
@@ -73,6 +73,8 @@ export default class GitHub extends View {
     const p = props() ?? {};
     this.prefs = { scope: "me", view: "home", kind: "pr", state: "open", group: true, collapsed: [], pins: [] };
     this.projects = new Map(); // "owner/name" -> [{ number, title, url, closed }] | "loading" | "error"
+    this.milestones = new Map(); // "owner/name" -> { list, at, loading, error }
+    this.msItems = new Map(); // "owner/name#number" -> { issues, prs, issueTotal, prTotal, at, loading, error }
     this.checkouts = new Map(); // "owner/name" -> { root, on }: a local clone, found from the open terminals' folders
     this.probed = new Set(); this.scopeQuery = ""; this.wasShown = true;
     this.collapsed = new Set();
@@ -95,9 +97,15 @@ export default class GitHub extends View {
         try {
           const item = this.current();
           if (c === "focus") this.handle.focus();
-          else if (c === "reload") this.load(cx, true);
+          else if (c === "reload") { this.load(cx, true); if (this.isMilestones()) this.loadMilestones(cx, true); }
           else if (c === "scope") this.setPicking(!this.picking, cx);
           else if (c === "home") this.goHome(cx);
+          else if (c === "milestones") { if (isRepoScope(this.prefs.scope)) this.setKind("milestone", cx); }
+          else if (c === "focus-next-milestone") {
+            const list = (this.milestones.get(this.prefs.scope)?.list ?? []).filter(m => this.prefs.state === "all" || m.state === this.prefs.state);
+            const open = [...this.expandedMilestones()], at = list.findIndex(m => m.number === open[0]);
+            if (list.length) this.focusMilestone(list[(at + 1) % list.length].number, cx);
+          }
           else if (c === "next-pin") { const pins = this.prefs.pins ?? [], at = pins.indexOf(this.prefs.scope); if (pins.length) this.setScope(pins[(at + 1) % pins.length], cx); }
           else if (c === "copy" && item) this.copy(item.url, cx);
           else if (c === "browse" && item) cx.open_url(item.url);
@@ -112,6 +120,8 @@ export default class GitHub extends View {
       await this.restore();
       if (p.scope) this.prefs.scope = p.scope;
       if (isRepoScope(this.prefs.scope)) this.fetchProjects(this.prefs.scope, cx);
+      if (this.prefs.kind === "milestone" && !isRepoScope(this.prefs.scope)) this.prefs.kind = "pr";
+      if (this.isMilestones()) this.loadMilestones(cx);
       if (p.kind) { this.prefs.kind = p.kind; if (this.prefs.scope === "me") this.prefs.view = "list"; }
       this.ready = true;
       cx.notify();
@@ -124,7 +134,9 @@ export default class GitHub extends View {
   }
 
   async restore() {
-    const [prefs, details, names] = await Promise.all([readJson(cacheDir() + "/prefs.json"), readJson(cacheDir() + "/details.json"), readdir(cacheDir()).catch(() => [])]);
+    const [prefs, details, names, ms] = await Promise.all([readJson(cacheDir() + "/prefs.json"), readJson(cacheDir() + "/details.json"), readdir(cacheDir()).catch(() => []), readJson(cacheDir() + "/milestones.json")]);
+    for (const [k, v] of ms?.lists ?? []) this.milestones.set(k, { ...v, loading: false, error: null });
+    for (const [k, v] of ms?.items ?? []) this.msItems.set(k, { ...v, subs: v.subs ? new Map(v.subs) : null, loading: false, error: null });
     if (prefs) { Object.assign(this.prefs, prefs); this.collapsed = new Set(this.prefs.collapsed ?? []); }
     if (Array.isArray(details)) this.details = new Map(details);
     const files = names.filter(n => n.startsWith("result-") && n.endsWith(".json"));
@@ -135,6 +147,9 @@ export default class GitHub extends View {
   opts(timeout) { return { timeout }; }
   // Home is my open work, whatever the lists' state switch says.
   isHome() { return this.prefs.scope === "me" && this.prefs.view !== "list"; }
+  // A repository's Milestones tab (prefs.kind "milestone"); Home and my lists don't have one.
+  isMilestones() { return isRepoScope(this.prefs.scope) && this.prefs.kind === "milestone"; }
+  listKind() { return this.prefs.kind === "milestone" ? "pr" : this.prefs.kind; }
   state() { return this.isHome() ? "open" : this.prefs.state; }
   cacheKey() { return this.prefs.scope + "|" + this.state(); }
   entry() { return this.ensure(this.prefs.scope, this.state()); }
@@ -179,6 +194,12 @@ export default class GitHub extends View {
     })();
   }
 
+  // Milestones and the open work of those opened, so the tab shows them at once next time; a refresh follows.
+  persistMilestones() {
+    const keep = (m) => [...m.entries()].filter(([, v]) => v.list || v.issues).slice(-30).map(([k, v]) => [k, { ...v, subs: v.subs ? [...v.subs.entries()] : undefined, loading: undefined, error: undefined }]);
+    writeJson(cacheDir() + "/milestones.json", { lists: keep(this.milestones), items: keep(this.msItems) });
+  }
+
   persistDetails() {
     const entries = [...this.details.entries()].filter(([, d]) => d.detail).slice(-KEEP_DETAILS);
     writeJson(cacheDir() + "/details.json", entries);
@@ -221,6 +242,7 @@ export default class GitHub extends View {
     // Hidden, it waits: shown again, it catches up at once (see render).
     if (!this.isShown()) return;
     this.scanCheckouts(cx);
+    if (this.isMilestones()) this.loadMilestones(cx);
     const e = this.entry();
     if (Date.now() - e.at >= POLL_MS) this.load(cx);
     const item = this.current();
@@ -315,7 +337,12 @@ export default class GitHub extends View {
 
   rows() {
     if (this.isHome()) return homeRows(this.result(), { query: this.query, collapsed: this.collapsed });
-    return buildRows(this.result(), this.prefs.kind, { query: this.query, collapsed: this.collapsed, group: this.prefs.group && !isRepoScope(this.prefs.scope) });
+    if (this.isMilestones()) {
+      const repo = this.prefs.scope, items = new Map();
+      for (const [k, v] of this.msItems) if (k.startsWith(repo + "#")) items.set(Number(k.slice(repo.length + 1)), v);
+      return milestoneRows(this.milestones.get(repo)?.list, items, { state: this.prefs.state, expanded: this.expandedMilestones(), byOwner: Boolean(this.prefs.msByOwner), query: this.query, login: this.login });
+    }
+    return buildRows(this.result(), this.listKind(), { query: this.query, collapsed: this.collapsed, group: this.prefs.group && !isRepoScope(this.prefs.scope) });
   }
 
   current() { return this.detailId ? this.findItem(this.detailId) : null; }
@@ -326,8 +353,8 @@ export default class GitHub extends View {
     if (scope === this.prefs.scope) return this.setPicking(false, cx);
     if (remember) this.history.push(this.prefs.scope);
     this.prefs.scope = scope; this.picking = false; this.selected = null; this.detailId = null;
-    if (scope === "me") this.prefs.view = "home";
-    else this.fetchProjects(scope, cx);
+    if (scope === "me") { this.prefs.view = "home"; if (this.prefs.kind === "milestone") this.prefs.kind = "pr"; }
+    else { this.fetchProjects(scope, cx); if (this.prefs.kind === "milestone") this.loadMilestones(cx); }
     this.handle.focus(); this.savePrefs(); this.load(cx); cx.notify();
   }
   // Home's "View all": the full sectioned list of my pull requests or issues; esc comes back.
@@ -351,7 +378,70 @@ export default class GitHub extends View {
       cx.notify();
     });
   }
-  setKind(kind, cx) { this.prefs.kind = kind; this.selected = null; this.detailId = null; this.savePrefs(); cx.notify(); }
+  setKind(kind, cx) {
+    this.prefs.kind = kind; this.selected = null; this.detailId = null; this.savePrefs();
+    if (kind === "milestone") this.loadMilestones(cx);
+    cx.notify();
+  }
+
+  // Milestones of the shown repository, and the open work of each expanded one. Each is kept, shown, then refreshed.
+  expandedMilestones() { return new Set((this.prefs.msExpanded ?? {})[this.prefs.scope] ?? []); }
+  setExpanded(numbers, cx) {
+    this.prefs.msExpanded = { ...(this.prefs.msExpanded ?? {}), [this.prefs.scope]: [...numbers] };
+    this.savePrefs();
+    for (const n of numbers) this.loadMilestoneItems(this.prefs.scope, n, cx);
+    cx.notify();
+  }
+  toggleMilestone(number, cx) {
+    const open = this.expandedMilestones();
+    if (open.has(number)) open.delete(number); else open.add(number);
+    this.setExpanded(open, cx);
+  }
+  // Focus: only this one open.
+  focusMilestone(number, cx) {
+    const open = this.expandedMilestones();
+    this.setExpanded(open.size === 1 && open.has(number) ? new Set() : new Set([number]), cx);
+  }
+  loadMilestones(cx, force = false) {
+    const repo = this.prefs.scope;
+    if (!isRepoScope(repo) || checking()) return;
+    const have = this.milestones.get(repo);
+    if (have?.loading || (!force && have?.at && Date.now() - have.at < POLL_MS)) { for (const n of this.expandedMilestones()) this.loadMilestoneItems(repo, n, cx, force); return; }
+    const [owner, name] = repo.split("/");
+    this.milestones.set(repo, { ...(have ?? {}), loading: true, error: null }); cx.notify();
+    cx.spawn(async (cx) => {
+      try {
+        const list = normalizeMilestones((await graphql(MILESTONES_QUERY, { owner, name }, this.opts(30000))).data);
+        this.milestones.set(repo, { list, at: Date.now(), loading: false, error: null });
+        this.persistMilestones();
+      } catch (e) { this.milestones.set(repo, { ...(this.milestones.get(repo) ?? {}), loading: false, error: String(e?.message ?? e) }); }
+      for (const n of this.expandedMilestones()) this.loadMilestoneItems(repo, n, cx, force);
+      cx.notify();
+    });
+  }
+  loadMilestoneItems(repo, number, cx, force = false) {
+    if (checking()) return;
+    const key = repo + "#" + number, have = this.msItems.get(key);
+    if (have?.loading || (!force && have?.at && Date.now() - have.at < POLL_MS)) return;
+    const [owner, name] = repo.split("/");
+    this.msItems.set(key, { ...(have ?? {}), loading: true, error: null }); cx.notify();
+    cx.spawn(async (cx) => {
+      try {
+        const got = milestoneItems((await graphql(MILESTONE_ITEMS_QUERY, { owner, name, number }, this.opts(30000))).data);
+        const prev = this.msItems.get(key)?.subs;
+        this.msItems.delete(key); this.msItems.set(key, { ...got, subs: prev ?? null, at: Date.now(), loading: false, error: null });
+        cx.notify();
+        // Then the epics' open sub-issues, which mostly aren't in the milestone themselves.
+        const epics = got.issues.filter(i => i.subs && i.subs.completed < i.subs.total).map(i => i.id).slice(0, 20);
+        if (epics.length) {
+          try { this.msItems.get(key).subs = subIssuesOf((await graphql(subIssuesQuery(epics), {}, this.opts(30000))).data, epics); }
+          catch { /* the epics still show, with their progress */ }
+        }
+        this.persistMilestones();
+      } catch (e) { this.msItems.set(key, { ...(this.msItems.get(key) ?? {}), loading: false, error: String(e?.message ?? e) }); }
+      cx.notify();
+    });
+  }
   setState(state, cx) { this.prefs.state = state; this.selected = null; this.detailId = null; this.savePrefs(); this.load(cx); cx.notify(); }
   togglePin(repo, cx) { this.prefs.pins = togglePin(this.prefs.pins ?? [], repo); this.savePrefs(); cx.notify(); }
   toggleGroup(cx) { this.prefs.group = !this.prefs.group; this.savePrefs(); cx.notify(); }
@@ -380,7 +470,7 @@ export default class GitHub extends View {
   reveal(key) { const i = this.rows().findIndex(r => r.key === key); if (i >= 0) this.scroll.scroll_to_item(i); }
 
   step(delta, cx) {
-    const rows = this.rows().filter(r => r.kind === "item" || (r.kind === "more" && !r.pending));
+    const rows = this.rows().filter(r => r.kind === "item" || r.kind === "milestone" || (r.kind === "more" && !r.pending));
     if (!rows.length) return;
     const at = rows.findIndex(r => r.key === this.selected);
     const next = rows[Math.max(0, Math.min(rows.length - 1, at < 0 ? (delta > 0 ? 0 : rows.length - 1) : at + delta))];
@@ -389,7 +479,8 @@ export default class GitHub extends View {
     cx.notify();
   }
 
-  selectedItem() { return this.rows().find(r => r.key === this.selected)?.item ?? this.current(); }
+  selectedItem() { const r = this.rows().find(r => r.key === this.selected); return r?.kind === "milestone" ? null : r?.item ?? this.current(); }
+  kinds() { return isRepoScope(this.prefs.scope) ? [...KINDS, { id: "milestone", label: "Milestones" }] : KINDS; }
 
   copy(text, cx) { cx.write_to_clipboard(text); this.copied = text; cx.notify(); cx.timer.after(1500, (cx) => { if (this.copied === text) { this.copied = null; cx.notify(); } }); }
 
@@ -411,14 +502,17 @@ export default class GitHub extends View {
     const item = this.selectedItem();
     const actions = {
       "j": () => this.step(1, cx), "down": () => this.step(1, cx), "k": () => this.step(-1, cx), "up": () => this.step(-1, cx),
-      "enter": () => { const r = this.rows().find(r => r.key === this.selected); if (r?.kind === "item") this.open(r, cx); else if (r?.kind === "more") this.more(r.sectionKey, cx); },
+      "enter": () => { const r = this.rows().find(r => r.key === this.selected); if (r?.kind === "item") this.open(r, cx); else if (r?.kind === "more") this.more(r.sectionKey, cx); else if (r?.kind === "milestone") this.toggleMilestone(r.milestone.number, cx); },
       "space": () => actions.enter(),
-      "o": () => item && cx.open_url(item.url),
+      "o": () => { const r = this.rows().find(r => r.key === this.selected); if (r?.kind === "milestone") cx.open_url(r.milestone.url); else if (item) cx.open_url(item.url); },
       "c": () => item && this.copy(item.url, cx),
       "shift-c": () => item && this.copy(ref(item), cx),
       "d": () => this.review(item),
       "1": () => this.isHome() ? this.viewAll("pr", cx) : this.setKind("pr", cx), "2": () => this.isHome() ? this.viewAll("issue", cx) : this.setKind("issue", cx),
-      "tab": () => !this.isHome() && this.setKind(this.prefs.kind === "pr" ? "issue" : "pr", cx),
+      "3": () => isRepoScope(this.prefs.scope) && this.setKind("milestone", cx),
+      "tab": () => { if (this.isHome()) return; const ks = this.kinds().map(k => k.id); this.setKind(ks[(ks.indexOf(this.prefs.kind) + 1) % ks.length], cx); },
+      "f": () => { const r = this.rows().find(r => r.key === this.selected); if (r?.kind === "milestone") this.focusMilestone(r.milestone.number, cx); },
+      "w": () => { if (this.isMilestones()) { this.prefs.msByOwner = !this.prefs.msByOwner; this.savePrefs(); cx.notify(); } },
       "h": () => this.goHome(cx),
       "s": () => !this.isHome() && this.setState(STATES[(STATES.findIndex(s => s.id === this.prefs.state) + 1) % STATES.length].id, cx),
       "g": () => this.toggleGroup(cx),
@@ -429,7 +523,7 @@ export default class GitHub extends View {
       "R": () => item && this.setScope(item.repo, cx),
       "shift-r": () => item && this.setScope(item.repo, cx),
       "/": () => this.filter.focus(), "cmd-f": () => this.filter.focus(),
-      "r": () => this.load(cx, true),
+      "r": () => { this.load(cx, true); if (this.isMilestones()) this.loadMilestones(cx, true); },
       "escape": () => {
         if (this.picking) this.setPicking(false, cx);
         else if (this.detailId) this.close(cx);
@@ -496,12 +590,12 @@ export default class GitHub extends View {
       .when(isRepoScope(this.prefs.scope), el => {
         const pinned = (this.prefs.pins ?? []).includes(this.prefs.scope);
         return el.child(this.iconButton("gh-pin", pinned ? "pin-off" : "pin", (pinned ? "Unpin " : "Pin ") + this.prefs.scope + " (P)", (cx) => this.togglePin(this.prefs.scope, cx), t, pinned))
-          .child(this.iconButton("gh-repo-web", "external", "Open the repository on GitHub", (cx) => cx.open_url(repoUrl(this.prefs.scope, this.prefs.kind)), t))
+          .child(this.iconButton("gh-repo-web", "external", "Open the repository on GitHub", (cx) => cx.open_url((this.isMilestones() ? "https://github.com/" + this.prefs.scope + "/milestones" : repoUrl(this.prefs.scope, this.prefs.kind))), t))
           .child(this.projectsMenu(t));
       })
       .child(div().flex_1())
       .when(this.entry().at > 0, el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Last refreshed").child(age(new Date(this.entry().at).toISOString()) + " ago")))
-      .child(this.iconButton("gh-reload", "reload", "Reload (r)", (cx) => this.load(cx, true), t))
+      .child(this.iconButton("gh-reload", "reload", "Reload (r)", (cx) => { this.load(cx, true); if (this.isMilestones()) this.loadMilestones(cx, true); }, t))
       .when(this.isLoading(), el => el.child(svg(ICON("reload")).size(12).flex_none().text_color(t.dim).spin(900)));
   }
 
@@ -594,6 +688,14 @@ export default class GitHub extends View {
       .children((this.prefs.pins ?? []).map(p => chip(p, p.split("/")[1] ?? p, "pin", p)));
   }
 
+  kindBadge(kind, res, t) {
+    if (kind === "milestone") {
+      const ms = this.milestones.get(this.prefs.scope);
+      return ms?.list ? String(ms.list.filter(m => m.state === "open").length) : ms?.loading ? this.spinner(t, 10, "Loading") : null;
+    }
+    return !isLoaded(res) ? null : kindPending(res, kind) ? this.spinner(t, 10, "Counting") : kindCount(res, kind) + (kindHasMore(res, kind) ? "+" : "");
+  }
+
   toolbar(t) {
     const res = this.result(), scope = this.prefs.scope, home = this.isHome();
     // Home and the pins come first, so they stay in place as the rows under them change with the view.
@@ -601,10 +703,14 @@ export default class GitHub extends View {
       .when((this.prefs.pins ?? []).length > 0, el => el.child(this.pinRow(t)))
       .when(!home, el => el.child(h_flex().gap(8).items_center().flex_wrap()
         .child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
-          .children(KINDS.map((k, i) => this.segment("gh-kind-" + k.id, k.label, this.prefs.kind === k.id, (cx) => this.setKind(k.id, cx), t, !isLoaded(res) ? null : kindPending(res, k.id) ? this.spinner(t, 10, "Counting") : kindCount(res, k.id) + (kindHasMore(res, k.id) ? "+" : "")))))
+          .children(this.kinds().map((k, i) => this.segment("gh-kind-" + k.id, k.label, this.prefs.kind === k.id, (cx) => this.setKind(k.id, cx), t, this.kindBadge(k.id, res, t)))))
         .child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
           .children(STATES.map(s => this.segment("gh-state-" + s.id, s.label, this.prefs.state === s.id, (cx) => this.setState(s.id, cx), t))))
         .child(div().flex_1())
+        .when(this.isMilestones(), el => el.child(div().id("gh-by-owner").h(22).px(8).flex().items_center().gap(4).rounded(5).cursor_pointer().text_size(11.5)
+          .text_color(this.prefs.msByOwner ? t.foreground : t.dim).when(Boolean(this.prefs.msByOwner), el => el.bg(t.selected)).hover(s => s.bg(t.hover))
+          .tooltip("Group a milestone's work by owner instead of by epic (w)").on_click((_e, cx) => { this.prefs.msByOwner = !this.prefs.msByOwner; this.savePrefs(); cx.notify(); })
+          .child("by owner")))
         .when(!isRepoScope(scope), el => el.child(div().id("gh-group").h(22).px(8).flex().items_center().gap(4).rounded(5).cursor_pointer().text_size(11.5)
           .text_color(this.prefs.group ? t.foreground : t.dim).when(this.prefs.group, el => el.bg(t.selected)).hover(s => s.bg(t.hover))
           .tooltip("Group by repository (g)").on_click((_e, cx) => this.toggleGroup(cx)).child(svg(ICON("folder")).size(12)).child("by repo")))
@@ -631,8 +737,21 @@ export default class GitHub extends View {
           .on_click((_e, cx) => { cx.stop_propagation(); this.viewAll(row.id, cx); }).child("View all →"));
     }
     if (row.kind === "note") {
-      return h_flex().id("gh-row-" + row.key).h(28).flex_none().pl(30).gap(6).items_center().text_size(12).text_color(t.dim)
-        .when(row.loading, el => el.child(this.spinner(t, 11)).child("Loading…")).when(!row.loading, el => el.child(row.text));
+      return h_flex().id("gh-row-" + row.key).h(28).flex_none().pl(row.depth ? 14 + row.depth * 16 : 30).gap(6).items_center().text_size(12)
+        .text_color(row.error ? t.blocked : row.url ? t.accent : t.dim)
+        .when(Boolean(row.url), el => el.cursor_pointer().hover(s => s.text_color(t.foreground)).on_click((_e, cx) => cx.open_url(row.url)))
+        .when(row.loading, el => el.child(this.spinner(t, 11)).child("Loading…")).when(!row.loading, el => el.child(row.text + (row.url ? " ↗" : "")));
+    }
+    if (row.kind === "milestone") return this.milestoneRow(row, t);
+    if (row.kind === "group") {
+      return h_flex().id("gh-row-" + row.key).h(26).flex_none().pl(14 + row.depth * 16).pr(10).mx(4).gap(6).items_center().text_size(11.5)
+        .text_color(row.unassigned ? t.working : t.muted)
+        .when(Boolean(row.parent), el => el.cursor_pointer().rounded(5).hover(s => s.bg(t.hover)).tooltip("Parent outside this milestone: open on GitHub")
+          .on_click((_e, cx) => row.parent.url && cx.open_url(row.parent.url))
+          .child(svg(ICON("issue-open")).size(12).text_color(t.dim)).child(div().flex_none().text_color(t.dim).child("#" + row.parent.number))
+          .child(div().flex_1().min_w(0).truncate().child(row.parent.title)))
+        .when(!row.parent, el => el.child(div().font_semibold().child(row.label)))
+        .child(div().flex_none().text_color(t.dim).child(String(row.count)));
     }
     if (row.kind === "section") {
       return h_flex().id("gh-row-" + row.key).h(28).flex_none().px(10).mt(4).gap(6).items_center().cursor_pointer()
@@ -643,7 +762,7 @@ export default class GitHub extends View {
         .when(!row.pending, el => el.child(div().text_color(t.dim).font_normal().child(String(row.count))))
         .when(row.pending, el => el.child(this.spinner(t, 10, "Counting")))
         .when(row.truncated, el => el.child(div().id("gh-more-" + row.id).text_color(t.accent).font_normal().cursor_pointer().tooltip("See all " + row.total + " on GitHub")
-          .on_click((_e, cx) => { cx.stop_propagation(); cx.open_url(searchUrl(row.search, this.prefs.kind)); }).child("of " + row.total + " ↗")))
+          .on_click((_e, cx) => { cx.stop_propagation(); cx.open_url(searchUrl(row.search, this.listKind())); }).child("of " + row.total + " ↗")))
         .when(row.loading, el => el.child(svg(ICON("reload")).size(10).text_color(t.dim).spin(900)));
     }
     if (row.kind === "more" && row.pending) {
@@ -680,8 +799,10 @@ export default class GitHub extends View {
       .on_click((_e, cx) => { this.handle.focus(); this.open(row, cx); })
       .child(this.stateIcon(i, t))
       .child(div().flex_none().text_size(11.5).font_family(mono).text_color(t.dim).child("#" + i.number))
+      .when(Boolean(row.epic) || (Boolean(i.type) && Boolean(row.owner) && i.type !== "Task"), el => el.child(this.chip(i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, t)))
       .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(isClosed(i) ? t.muted : t.foreground).child(i.title))
       .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
+      .when(Boolean(i.borrowed), el => el.child(div().flex_none().text_size(10.5).text_color(t.dim).tooltip("A sub-issue of this epic, not itself in the milestone").child("sub")))
       .when(cols.labels, el => el.children(i.labels.slice(0, 2).map(l => this.chip(l.name, this.labelColor(l.color, t), t))))
       .when(Boolean(repoName) && cols.repo, el => el.child(div().flex_none().max_w(120).truncate().text_size(11).text_color(t.dim).child(repoName)))
       .when(i.conflicts && !isClosed(i), el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
@@ -689,16 +810,48 @@ export default class GitHub extends View {
       .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))
       .when(cols.comments, el => el.child(h_flex().flex_none().w(30).gap(3).items_center().justify_end().text_size(11).text_color(t.dim)
         .when(i.comments > 0, el => el.child(svg(ICON("comment")).size(10)).child(String(i.comments)))))
-      .when(cols.author, el => el.child(div().flex_none().w(84).truncate().text_right().text_size(11).text_color(i.author === this.login ? t.dim : t.muted).child(i.author)))
+      .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
+      .when(cols.author && !row.owner, el => el.child(div().flex_none().w(84).truncate().text_right().text_size(11).text_color(i.author === this.login ? t.dim : t.muted).child(i.author)))
+      .when(Boolean(row.owner), el => el.child(div().flex_none().w(96).truncate().text_right().text_size(11)
+        .text_color(i.assignees.length ? (i.assignees.includes(this.login) ? t.accent : t.muted) : t.working).tooltip(i.assignees.length ? "Assigned: " + i.assignees.join(", ") : "Nobody is assigned")
+        .child(i.assignees.length ? i.assignees[0] + (i.assignees.length > 1 ? " +" + (i.assignees.length - 1) : "") : "unassigned")))
       .child(div().flex_none().w(30).text_right().text_size(11).text_color(t.dim).tooltip("Updated").child(age(i.updatedAt)));
+  }
+
+  milestoneRow(row, t) {
+    const m = row.milestone, total = m.open + m.closed, pct = total ? m.closed / total : 0, selected = row.key === this.selected;
+    const overdue = m.state === "open" && m.due && Date.parse(m.due) < Date.now();
+    const due = m.due ? new Date(m.due).toLocaleDateString(undefined, { month: "short", day: "numeric", year: new Date(m.due).getFullYear() === new Date().getFullYear() ? undefined : "numeric" }) : null;
+    return h_flex().id("gh-row-" + row.key).h(34).flex_none().pl(10).pr(10).mx(4).mt(2).gap(8).items_center().rounded(6).cursor_pointer()
+      .when(selected, el => el.bg(t.raised)).hover(s => s.bg(t.hover))
+      .on_click((e, cx) => { this.handle.focus(); this.selected = row.key; if (e.modifiers?.alt) this.focusMilestone(m.number, cx); else this.toggleMilestone(m.number, cx); })
+      .child(svg(ICON(row.expanded ? "chevron-down" : "chevron-right")).size(11).flex_none().text_color(t.dim))
+      .child(svg(ICON("milestone")).size(13).flex_none().text_color(m.state === "closed" ? t.ansi5 : t.dim))
+      .child(div().flex_1().min_w(0).truncate().text_size(13).font_semibold().text_color(m.state === "closed" ? t.muted : t.foreground).child(m.title))
+      .when(Boolean(due), el => el.child(div().flex_none().text_size(11).text_color(overdue ? t.blocked : t.dim).tooltip(overdue ? "Past due" : "Due").child((overdue ? "overdue · " : "due ") + due)))
+      .child(div().flex_none().w(72).h(5).rounded(3).bg(t.border).overflow_hidden().child(div().h_full().w(Math.round(72 * pct)).bg(m.state === "closed" ? t.ansi5 : t.done)))
+      .child(div().flex_none().w(66).text_right().text_size(11).text_color(t.dim).tooltip(m.open + " open · " + m.closed + " closed" + (m.prs ? " · " + m.prs + " open PRs" : "")).child(m.closed + "/" + total))
+      .child(div().id("gh-ms-focus-" + m.number).flex_none().px(5).h(18).flex().items_center().rounded(4).text_size(11).text_color(t.dim)
+        .hover(s => s.bg(t.border).text_color(t.foreground)).tooltip("Show only this one (f, alt-click)")
+        .on_click((_e, cx) => { cx.stop_propagation(); this.selected = row.key; this.focusMilestone(m.number, cx); }).child("focus"))
+      .child(div().id("gh-ms-web-" + m.number).flex_none().size(20).flex().items_center().justify_center().rounded(4).text_color(t.dim)
+        .hover(s => s.bg(t.border).text_color(t.foreground)).tooltip("Open on GitHub (o)")
+        .on_click((_e, cx) => { cx.stop_propagation(); cx.open_url(m.url); }).child(svg(ICON("external")).size(11)));
   }
 
   list(t, mono) {
     const rows = this.rows(), cols = rowColumns(listWidth(this.width, Boolean(this.detailId)));
+    if (!rows.length && this.isMilestones()) {
+      const ms = this.milestones.get(this.prefs.scope);
+      return div().flex_1().p(16).text_size(12.5).text_color(ms?.error ? t.blocked : t.dim)
+        .child(!ms?.list && !ms?.error ? h_flex().gap(6).items_center().child(this.spinner(t, 12)).child("Loading…")
+          : ms?.error && !ms?.list ? "Couldn't load milestones: " + ms.error
+          : "No " + (this.prefs.state === "all" ? "" : this.prefs.state + " ") + "milestones in " + this.prefs.scope + ".");
+    }
     if (!rows.length) {
-      const what = this.prefs.kind === "pr" ? "pull requests" : "issues";
+      const what = this.listKind() === "pr" ? "pull requests" : "issues";
       return div().flex_1().p(16).text_size(12.5).text_color(t.dim)
-        .child(!kindSettled(this.result(), this.prefs.kind) ? h_flex().gap(6).items_center().child(this.spinner(t, 12)).child("Loading…")
+        .child(!kindSettled(this.result(), this.listKind()) ? h_flex().gap(6).items_center().child(this.spinner(t, 12)).child("Loading…")
           : this.query ? "Nothing matches this filter." : "No " + (this.prefs.state === "all" ? "" : this.prefs.state + " ") + what + " here.");
     }
     return v_flex().id("gh-list").flex_1().min_h(0).overflow_y_scrollbar().track_scroll(this.scroll).py(4)
