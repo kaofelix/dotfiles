@@ -11,10 +11,11 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
+const SIDEBAR_W = 180;
 const POLL_MS = 120000, TICK_MS = 15000, PARALLEL = 3;
 // Results, opened items and prefs are kept in files every pane shares (localStorage is per pane, so a new pane would start
 // empty): it opens with what was shown last and refreshes behind it.
@@ -95,6 +96,13 @@ export default class GitHub extends View {
     this.filter.on("change", (_e, cx) => { this.query = this.filter.value(); cx.notify(); });
     this.filter.on("focus", (_e, cx) => { this.filtering = true; cx.notify(); });
     this.filter.on("blur", (_e, cx) => { this.filtering = false; cx.notify(); });
+    // The sidebar's own search narrows its repositories; enter opens the first.
+    this.sideFilter = InputState.new({ placeholder: "Find a repo or owner/name" });
+    this.sideFilter.on("change", (_e, cx) => { this.sideQuery = this.sideFilter.value(); cx.notify(); });
+    this.sideFilter.on("focus", (_e, cx) => { this.sideTyping = true; cx.notify(); });
+    this.sideFilter.on("blur", (_e, cx) => { this.sideTyping = false; cx.notify(); });
+    this.sideFilter.on("submit", (_e, cx) => { const first = this.scopeChoices(this.sideQuery).find(o => o.id !== "me") ?? this.scopeChoices(this.sideQuery)[0]; if (first) { this.clearSide(); this.setScope(first.id, cx); } });
+    this.sideQuery = "";
     this.filter.on("submit", (_e, cx) => { const first = this.rows().find(r => r.kind === "item"); if (first) this.open(first, cx); this.handle.focus(); });
     cx.spawn(async (cx) => {
       for (;;) {
@@ -105,6 +113,7 @@ export default class GitHub extends View {
           else if (c === "reload") { this.load(cx, true); if (this.isMilestones()) this.loadMilestones(cx, true); }
           else if (c === "scope") this.setPicking(!this.picking, cx);
           else if (c === "home") this.goHome(cx);
+          else if (c === "sidebar") this.toggleSidebar(cx);
           else if (c === "open-first") { const row = this.rows().find(r => r.kind === "item"); if (row) this.open(row, cx); }
           else if (c === "milestones") { if (isRepoScope(this.prefs.scope)) this.setKind("milestone", cx); }
           else if (c === "focus-next-milestone") {
@@ -495,11 +504,15 @@ export default class GitHub extends View {
     cx.notify();
   }
 
-  // Where the dropdown can go (see scopeOptions), narrowed by what's typed while it's open.
-  scopes() {
+  // Where the dropdown and the sidebar can go (see scopeOptions), narrowed by what's typed.
+  scopeChoices(query) {
     const mine = this.ensure("me", this.state()).result;
-    return scopeOptions({ login: this.login, pins: this.prefs.pins ?? [], current: this.prefs.scope, counts: repoCounts(mine, this.prefs.kind), recent: this.recent, query: this.scopeQuery });
+    return scopeOptions({ login: this.login, pins: this.prefs.pins ?? [], current: this.prefs.scope, counts: repoCounts(mine, this.listKind()), recent: this.recent, query });
   }
+  scopes() { return this.scopeChoices(this.scopeQuery); }
+
+  toggleSidebar(cx) { this.prefs.sidebar = !this.prefs.sidebar; if (!this.prefs.sidebar) this.clearSide(); this.savePrefs(); this.handle.focus(); cx.notify(); }
+  clearSide() { this.sideFilter.set_value(""); this.sideQuery = ""; }
 
   open(row, cx) {
     this.selected = row.key; this.detailId = row.item.id;
@@ -535,6 +548,10 @@ export default class GitHub extends View {
 
   onKey(e, cx) {
     const k = e.keystroke;
+    if (this.sideTyping) {
+      if (k === "escape") { this.clearSide(); this.handle.focus(); cx.notify(); cx.stop_propagation(); }
+      return;
+    }
     if (this.filtering) {
       if (k === "escape") { this.filter.set_value(""); this.query = ""; this.handle.focus(); cx.notify(); cx.stop_propagation(); }
       else if (k === "down") { this.handle.focus(); this.step(1, cx); cx.stop_propagation(); }
@@ -557,6 +574,7 @@ export default class GitHub extends View {
       "h": () => this.goHome(cx),
       "s": () => !this.isHome() && this.setState(STATES[(STATES.findIndex(s => s.id === this.prefs.state) + 1) % STATES.length].id, cx),
       "g": () => this.toggleGroup(cx),
+      "b": () => this.toggleSidebar(cx),
       "p": () => this.setPicking(!this.picking, cx),
       "m": () => this.goHome(cx),
       "P": () => actions["shift-p"](),
@@ -623,6 +641,7 @@ export default class GitHub extends View {
 
   header(t) {
     return h_flex().h(34).flex_none().px(10).gap(8).items_center().border_b(1).border_color(t.border)
+      .child(this.iconButton("gh-sidebar", "sidebar", (this.prefs.sidebar ? "Hide" : "Show") + " the sidebar (b)", (cx) => this.toggleSidebar(cx), t, Boolean(this.prefs.sidebar)))
       .child(svg(ICON("github")).size(15).flex_none().text_color(t.accent))
       .child(div().font_semibold().child("GitHub"))
       .child(this.scopeDropdown(t))
@@ -714,6 +733,39 @@ export default class GitHub extends View {
           .children(items))));
   }
 
+  // Home, pinned repositories and the others (from my results and recent pushes), with its own search.
+  sidebar(t) {
+    const opts = this.scopeChoices(this.sideQuery), names = shortNames(opts.filter(o => o.id !== "me").map(o => o.id));
+    const GROUPS = { pinned: "Pinned", repos: "Repositories" };
+    const row = (o) => {
+      const on = o.id === this.prefs.scope, me = o.id === "me";
+      const icon = me ? "home" : o.group === "pinned" ? "pin" : "folder";
+      return h_flex().id("gh-side-" + o.id).h(26).px(8).gap(6).items_center().rounded(5).cursor_pointer().text_size(12.5)
+        .bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted).hover(s => s.bg(t.hover).text_color(t.foreground))
+        .tooltip(me ? "Home (h)" : o.id).on_click((_e, cx) => { this.clearSide(); this.setScope(o.id, cx); })
+        .child(svg(ICON(icon)).size(12).flex_none().text_color(on ? t.accent : t.dim))
+        .child(div().flex_1().min_w(0).truncate().when(me, el => el.font_semibold()).child(me ? "Home" : names.get(o.id) ?? o.id))
+        .when(Boolean(o.note) && !me && o.note !== "recent", el => el.child(div().flex_none().text_size(11).text_color(t.dim).child(o.note)))
+        .when(!me, el => el.child(div().id("gh-side-pin-" + o.id).size(18).flex_none().flex().items_center().justify_center().rounded(4)
+          .text_color(o.pinned ? t.accent : t.dim).hover(s => s.bg(t.raised).text_color(t.foreground)).tooltip(o.pinned ? "Unpin" : "Pin")
+          .on_click((_e, cx) => { cx.stop_propagation(); this.togglePin(o.id, cx); }).child(svg(ICON(o.pinned ? "pin-off" : "pin")).size(11))));
+    };
+    const items = [];
+    opts.forEach((o, i) => {
+      if (o.group !== "me" && o.group !== opts[i - 1]?.group) items.push(div().px(8).pt(10).pb(3).text_size(10.5).font_semibold().text_color(t.dim).child(GROUPS[o.group].toUpperCase()));
+      items.push(row(o));
+    });
+    if (!opts.length) items.push(div().px(8).py(6).text_size(11.5).text_color(t.dim).child("No match. Type owner/name to open any repository."));
+    return v_flex().w(SIDEBAR_W).flex_none().h_full().min_h(0).bg(t.chrome).border_r(1).border_color(t.border)
+      .child(div().px(8).pt(8).pb(4).flex_none().child(h_flex().h(26).px(7).gap(5).items_center().rounded(5).border_1()
+        .border_color(this.sideTyping ? t.accent : t.input).bg(t.surface)
+        .child(svg(ICON("search")).size(12).flex_none().text_color(t.dim))
+        .child(Input.new(this.sideFilter).flex_1().text_size(12))
+        .when(Boolean(this.sideQuery), el => el.child(div().id("gh-side-clear").flex_none().cursor_pointer().text_color(t.dim).hover(s => s.text_color(t.foreground))
+          .on_click((_e, cx) => { this.clearSide(); cx.notify(); }).child(svg(ICON("x")).size(11))))))
+      .child(v_flex().id("gh-side-list").flex_1().min_h(0).overflow_y_scrollbar().px(4).pb(8).gap(1).children(items));
+  }
+
   // Home and each pinned repository, one click away; the current one is highlighted.
   pinRow(t) {
     const chip = (id, label, icon, tip) => {
@@ -741,7 +793,7 @@ export default class GitHub extends View {
     const res = this.result(), scope = this.prefs.scope, home = this.isHome();
     // Home and the pins come first, so they stay in place as the rows under them change with the view.
     return v_flex().flex_none().px(10).py(8).gap(7).border_b(1).border_color(t.border)
-      .when((this.prefs.pins ?? []).length > 0, el => el.child(this.pinRow(t)))
+      .when((this.prefs.pins ?? []).length > 0 && !this.prefs.sidebar, el => el.child(this.pinRow(t)))
       .when(!home, el => el.child(h_flex().gap(8).items_center().flex_wrap()
         .child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
           .children(this.kinds().map((k, i) => this.segment("gh-kind-" + k.id, k.label, this.prefs.kind === k.id, (cx) => this.setKind(k.id, cx), t, this.kindBadge(k.id, res, t)))))
@@ -883,7 +935,7 @@ export default class GitHub extends View {
   }
 
   list(t, mono) {
-    const rows = this.rows(), cols = rowColumns(this.width);
+    const rows = this.rows(), cols = rowColumns(this.width - (this.prefs.sidebar ? SIDEBAR_W : 0));
     if (!rows.length && this.isMilestones()) {
       const ms = this.milestones.get(this.prefs.scope);
       return div().flex_1().p(16).text_size(12.5).text_color(ms?.error ? t.blocked : t.dim)
@@ -1028,6 +1080,9 @@ export default class GitHub extends View {
     return v_flex().id("github").track_focus(this.handle).on_key_down((e, cx) => this.onKey(e, cx))
       .on_size_change((s, cx) => { if (this.width !== s.width) { this.width = s.width; cx.notify(); } })
       .size_full().min_h(0).overflow_hidden().bg(t.background).border_l(1).border_color(t.border).text_color(t.foreground).text_size(13)
-      .child(this.header(t)).child(body);
+      .child(this.header(t))
+      .child(h_flex().flex_1().min_h(0).items_start()
+        .when(Boolean(this.prefs.sidebar), el => el.child(this.sidebar(t)))
+        .child(v_flex().flex_1().min_w(0).h_full().min_h(0).child(body)));
   }
 }

@@ -17,6 +17,9 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   a progress bar and closed/total. Click (or `enter`) expands one; **focus** (`f`, alt-click) shows only it. Expanded, its open work is grouped by epic:
   each epic with its open sub-issues (marked **sub** when they aren't in the milestone themselves), then **Other open work**, then its open pull requests.
   Rows show the owner's avatar (a pull request with nobody assigned, its author's), **unassigned** in yellow; **by owner** (`w`) groups by assignee instead. What's expanded is kept per repository; `o` opens the milestone on GitHub.
+- **Sidebar** (`b`, the header's first button): Home, pinned repositories, then the rest (from your results and recent pushes), with its own search
+  (`enter` opens the first match, a typed `owner/name` any repository) and a pin button per row. It's shown or hidden, never folded; the choice is kept.
+  With it shown, the pin chips above the toolbar go, since the sidebar has them.
 - **The dropdown** (`p`) lists Home, pins, the repositories in your results and the ones you pushed to recently. Typing narrows it; a typed `owner/name`
   not listed opens that repository. `cmd-p` there pins the highlighted one. `esc` goes back to the previous scope.
 - **Lists:** PRs / Issues (`tab`, `1`, `2`) and Open / Closed / All (`s`). Each section loads its 25 most recently updated items; **Load more** at its end (or `enter` on it) fetches the next 25, and `of N ↗` opens the full GitHub search. A count with `+` has more to load.
@@ -26,7 +29,7 @@ A read-only dashboard of your pull requests and issues across repositories, or o
 - **Details:** state, review and CI chips, labels, branch and size, assignees and requested reviewers; failing and running checks (all on request, each opens its run),
   the latest reviews, linked issues and pull requests, the description and the latest comments.
   **Open** opens it in the browser and **Copy link** copies its URL. A pull request whose repository is cloned in a folder an open terminal is in also gets **Review diff**, which opens it in the Changes dialog.
-- **Commands:** `github.reload`, `github.scope`, `github.home`, `github.next-pin`, `github.milestones`, `github.focus-next-milestone`, `github.copy` and `github.browse` (from keys.json or `herdr-app do`).
+- **Commands:** `github.reload`, `github.scope`, `github.home`, `github.sidebar`, `github.next-pin`, `github.milestones`, `github.focus-next-milestone`, `github.copy` and `github.browse` (from keys.json or `herdr-app do`).
 - **Keys:** `j`/`k` move, `enter` opens, `o` opens on GitHub, `c` copies the URL, `C` copies `owner/repo#N`, `d` reviews the diff,
   `R` narrows to the item's repo, `P` pins, `h` (or `m`) Home, `/` filters, `r` reloads.
 

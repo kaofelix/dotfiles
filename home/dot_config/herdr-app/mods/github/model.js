@@ -427,6 +427,12 @@ export function scopeOptions({ login = null, pins = [], current = "me", counts =
   if (REPO_NAME.test(q) && !out.some(o => o.id.toLowerCase() === q)) hits.push({ id: query.trim(), label: query.trim(), note: "open", group: "repos", pinned: false });
   return hits;
 }
+// Short names for a list of repositories: just the name, unless two share it (then owner/name).
+export function shortNames(ids) {
+  const names = new Map();
+  for (const id of ids) { const n = id.split("/")[1] ?? id; names.set(n, (names.get(n) ?? 0) + 1); }
+  return new Map(ids.map(id => { const n = id.split("/")[1] ?? id; return [id, names.get(n) > 1 ? id : n]; }));
+}
 export const togglePin = (pins, repo) => !isRepoScope(repo) ? pins : pins.includes(repo) ? pins.filter(p => p !== repo) : [...pins, repo];
 
 // Avatars are downloaded once into the cache folder and shown from there: a file name safe for any login ("app[bot]").
