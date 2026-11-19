@@ -24,14 +24,19 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   not listed opens that repository. `cmd-p` there pins the highlighted one. `esc` goes back to the previous scope.
 - **Lists:** PRs / Issues (`tab`, `1`, `2`) and Open / Closed / All (`s`). Each section loads its 25 most recently updated items; **Load more** at its end (or `enter` on it) fetches the next 25, and `of N ↗` opens the full GitHub search. A count with `+` has more to load.
   Rows show state, number, title, labels, repository, conflicts, review decision, CI (green, red, yellow), comments, author and last update.
-- **Filter:** free text (title, repository, author, branch, labels), `repo:`, `org:`, `@author` (`@me`), `assignee:`, `#label`, a number,
+- **Filter:** free text (title, repository, author, branch, labels; quote to keep spaces), `repo:`, `org:`, `@author` (`@me`), `assignee:`, `#label` or `label:"area: ci"`, a number,
+  `milestone:"GTC DC"`, `type:epic`, `no:milestone|assignee|label`,
   `is:open|draft|merged|closed|completed|not_planned|private|conflict`, `ci:pass|fail|pending`, `review:approved|changes|required|none`, and `-` to negate.
+- **Chips are filters:** click a row's label, milestone (◆, without "Roadmap:"), type, review chip or repository name to add it to the filter;
+  it's highlighted while it's there, and a second click takes it away.
+- **Pinned items:** `x` or the pin in an item's details pins a pull request or issue; Home then starts with a **Pinned** block (only while something is pinned).
+  Pins are kept with their last-seen state and refreshed by id, so closed or merged ones stay until unpinned. Pinned rows elsewhere show a pin.
 - **Details:** state, review and CI chips, labels, branch and size, assignees and requested reviewers; failing and running checks (all on request, each opens its run),
   the latest reviews, linked issues and pull requests, the description and the latest comments.
   **Open** opens it in the browser and **Copy link** copies its URL. A pull request whose repository is cloned in a folder an open terminal is in also gets **Review diff**, which opens it in the Changes dialog.
 - **Commands:** `github.reload`, `github.scope`, `github.home`, `github.sidebar`, `github.next-pin`, `github.milestones`, `github.focus-next-milestone`, `github.copy` and `github.browse` (from keys.json or `herdr-app do`).
 - **Keys:** `j`/`k` move, `enter` opens, `o` opens on GitHub, `c` copies the URL, `C` copies `owner/repo#N`, `d` reviews the diff,
-  `R` narrows to the item's repo, `P` pins, `h` (or `m`) Home, `/` filters, `r` reloads.
+  `R` narrows to the item's repo, `P` pins the repository, `x` pins the item, `h` (or `m`) Home, `/` filters, `r` reloads.
 
 Each section is its own `gh api graphql` search (about 3 of the 5000 hourly points per page), three at a time, so sections fill in as they arrive.
 GitHub gives up on a search after about 10 s (502/504); a page that does is retried with 9 items, and a section that still fails shows a retry row.

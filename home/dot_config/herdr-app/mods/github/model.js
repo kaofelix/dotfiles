@@ -38,12 +38,12 @@ export function plan(scope, state) {
 const FRAGMENTS = `
 fragment PR on PullRequest { __typename id number title url state isDraft createdAt updatedAt closedAt mergedAt
   author { login } repository { nameWithOwner isPrivate } headRefName baseRefName additions deletions changedFiles
-  reviewDecision mergeable comments { totalCount }
+  reviewDecision mergeable comments { totalCount } milestone { number title }
   labels(first: 8) { nodes { name color } } assignees(first: 5) { nodes { login } }
   reviewRequests(first: 8) { nodes { requestedReviewer { ... on User { login } ... on Team { slug } } } }
   commits(last: 1) { nodes { commit { statusCheckRollup { state } } } } }
 fragment IS on Issue { __typename id number title url state stateReason createdAt updatedAt closedAt
-  author { login } repository { nameWithOwner isPrivate } comments { totalCount }
+  author { login } repository { nameWithOwner isPrivate } comments { totalCount } milestone { number title }
   labels(first: 8) { nodes { name color } } assignees(first: 5) { nodes { login } } }`;
 
 export function sectionQuery() {
@@ -199,6 +199,7 @@ export function normalize(n) {
     review: REVIEW[n.reviewDecision] ?? null, conflicts: n.mergeable === "CONFLICTING",
     comments: n.comments?.totalCount ?? 0, additions: n.additions ?? null, deletions: n.deletions ?? null, files: n.changedFiles ?? null,
     head: n.headRefName ?? null, base: n.baseRefName ?? null,
+    milestone: n.milestone ? { number: n.milestone.number, title: n.milestone.title ?? "" } : null,
     // Planning, from milestone queries: the issue type (Epic, Task…), its parent issue and its sub-issues' progress.
     type: n.issueType?.name ?? null, parent: n.parent ? { id: n.parent.id, number: n.parent.number, title: n.parent.title ?? "", url: n.parent.url ?? null } : null,
     subs: n.subIssuesSummary?.total ? { total: n.subIssuesSummary.total, completed: n.subIssuesSummary.completed ?? 0 } : null,
@@ -279,11 +280,16 @@ export const isLoaded = (result) => Boolean(result) && [...result.sections.pr, .
 const lower = (v) => String(v ?? "").toLowerCase();
 const has = (v, q) => lower(v).includes(q);
 
-// "login repo:nemo -#bug @alice is:draft ci:fail review:approved 123" -> predicates, all must hold.
+// Words of a filter; a value in quotes keeps its spaces: label:"area: ci" milestone:"GTC DC".
+export const tokens = (query) => String(query ?? "").match(/-?[^\s"]*"[^"]*"?|\S+/g) ?? [];
+const unquote = (v) => v.replace(/"/g, "");
+
+// "login repo:nemo -#bug @alice is:draft ci:fail review:approved milestone:"GTC DC" no:milestone 123" -> predicates, all must hold.
 export function parseQuery(query, login = null) {
   const preds = [];
-  for (const raw of String(query ?? "").trim().split(/\s+/).filter(Boolean)) {
-    const neg = raw.length > 1 && raw.startsWith("-"), tok = lower(neg ? raw.slice(1) : raw);
+  for (const raw of tokens(query)) {
+    const neg = raw.length > 1 && raw.startsWith("-"), tok = unquote(lower(neg ? raw.slice(1) : raw));
+    if (!tok) continue;
     let m, pred;
     const who = (v) => (v === "me" || v === "@me") && login ? lower(login) : v;
     if ((m = /^repo:(.+)$/.exec(tok))) pred = (i) => has(i.repo, m[1]);
@@ -296,7 +302,10 @@ export function parseQuery(query, login = null) {
       const v = m[1];
       pred = (i) => v === "closed" ? isClosed(i) : v === "private" ? i.private : v === "pr" ? i.kind === "pr" : v === "issue" ? i.kind === "issue"
         : v === "conflict" ? i.conflicts : i.state === v.replace("-", "_");
-    } else if ((m = /^ci:(.+)$/.exec(tok))) pred = (i) => i.ci === ({ failing: "fail", failure: "fail", success: "pass", ok: "pass" }[m[1]] ?? m[1]);
+    } else if ((m = /^(?:milestone|ms):(.+)$/.exec(tok))) pred = (i) => has(i.milestone?.title, m[1]);
+    else if ((m = /^type:(.+)$/.exec(tok))) pred = (i) => lower(i.type) === m[1];
+    else if ((m = /^no:(.+)$/.exec(tok))) pred = (i) => m[1] === "milestone" ? !i.milestone : m[1] === "assignee" ? !i.assignees.length : m[1] === "label" ? !i.labels.length : true;
+    else if ((m = /^ci:(.+)$/.exec(tok))) pred = (i) => i.ci === ({ failing: "fail", failure: "fail", success: "pass", ok: "pass" }[m[1]] ?? m[1]);
     else if ((m = /^review:(.+)$/.exec(tok))) pred = (i) => i.review === ({ changes_requested: "changes", required: "required", none: null }[m[1]] ?? m[1]);
     else pred = (i) => has(i.title, tok) || has(i.repo, tok) || has(i.author, tok) || has(i.head, tok) || i.labels.some(l => has(l.name, tok));
     preds.push(neg ? (i) => !pred(i) : pred);
@@ -305,6 +314,23 @@ export function parseQuery(query, login = null) {
 }
 
 const time = (v) => (v ? Date.parse(v) || 0 : 0);
+
+// The filter word a chip stands for, and adding or taking it away (clicking a chip twice undoes it).
+export function filterToken(field, value) {
+  const v = String(value ?? ""), q = /[\s"]/.test(v) ? '"' + v.replace(/"/g, "") + '"' : v;
+  return { label: /[\s"]/.test(v) ? "label:" + q : "#" + v, milestone: "milestone:" + q, repo: "repo:" + q, author: "@" + q, assignee: "assignee:" + q,
+    review: "review:" + q, type: "type:" + q.toLowerCase(), ci: "ci:" + q }[field] ?? q;
+}
+const same = (x, y) => lower(unquote(x)) === lower(unquote(y));
+export const hasToken = (query, token) => tokens(query).some(w => same(w, token));
+export function toggleToken(query, token) {
+  const words = tokens(query);
+  return (words.some(w => same(w, token)) ? words.filter(w => !same(w, token)) : [...words, token]).join(" ");
+}
+
+// Pinned pull requests and issues, refreshed by id (in one request) since they may be in no list at all.
+export const nodesQuery = (ids) => FRAGMENTS + "\nquery {\n  nodes(ids: " + JSON.stringify(ids) + ") { ...PR ...IS }\n}";
+export const nodesOf = (data) => (data?.nodes ?? []).filter(n => n?.id).map(normalize);
 
 // Flat rows for the list: a header per section with matches, its items (optionally under repo headers), then a
 // "more" row when the section has pages left or failed. Sections still loading show just their header.
@@ -355,9 +381,18 @@ export const kindSettled = (result, kind) => (result?.sections[kind] ?? []).ever
 // Home: a block per kind with my open work in one list (review requests first, tagged; then newest first), its first
 // few items, and "View all" for the full list. A block with nothing yet says whether it's still loading.
 export const HOME_LIMIT = 8;
-export function homeRows(result, { query = "", collapsed = new Set(), limit = HOME_LIMIT } = {}) {
+export function homeRows(result, { query = "", collapsed = new Set(), limit = HOME_LIMIT, pinned = [] } = {}) {
   if (!result) return [];
   const preds = parseQuery(query, result.login), rows = [];
+  // Pinned items come first, in their own block, only when there are any.
+  if (pinned.length) {
+    const shown = pinned.filter(i => preds.every(p => p(i))), key = "block:pinned";
+    rows.push({ kind: "block", key, id: "pinned", label: "Pinned", count: shown.length, shown: shown.length, more: false, pending: false, collapsed: collapsed.has(key) });
+    if (!collapsed.has(key)) {
+      if (!shown.length) rows.push({ kind: "note", key: "note:pinned", text: "No pinned item matches this filter." });
+      for (const i of shown) rows.push({ kind: "item", key: "pin:" + i.id, section: "home-pinned", item: i, depth: 0, showRepo: true });
+    }
+  }
   for (const { id: kind } of KINDS) {
     const seen = new Set(), review = [], rest = [];
     for (const s of result.sections[kind] ?? []) for (const id of s.ids) {

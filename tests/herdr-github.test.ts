@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -244,5 +244,42 @@ describe("github model", () => {
   });
   test("sidebar names are short unless two repositories share one", () => {
     expect([...shortNames(["NVIDIA/NemoClaw", "cv/pit", "kaofelix/pit", "o/x"]).values()]).toEqual(["NemoClaw", "cv/pit", "kaofelix/pit", "x"]);
+  });
+  test("items carry their milestone, and the filter takes quoted milestone, label, type and no: words", () => {
+    const a = normalize(issue("A", "o/r", 1, { milestone: { number: 3, title: "Roadmap: GTC DC 2026" }, labels: { nodes: [{ name: "area: ci", color: "fff" }] }, issueType: { name: "Epic" } }));
+    const b = normalize(issue("B", "o/r", 2, { assignees: { nodes: [] }, labels: { nodes: [] } }));
+    expect(a.milestone).toEqual({ number: 3, title: "Roadmap: GTC DC 2026" });
+    const ids = (q) => [a, b].filter(i => parseQuery(q, "me").every(p => p(i))).map(i => i.id);
+    expect(tokens('x milestone:"GTC DC" -label:"area: ci" y')).toEqual(["x", 'milestone:"GTC DC"', '-label:"area: ci"', "y"]);
+    expect(ids('milestone:"gtc dc"')).toEqual(["A"]);
+    expect(ids("no:milestone")).toEqual(["B"]);
+    expect(ids('label:"area: ci"')).toEqual(["A"]);
+    expect(ids('-label:"area: ci"')).toEqual(["B"]);
+    expect(ids("type:epic")).toEqual(["A"]);
+    expect(ids("no:assignee")).toEqual(["B"]);
+    expect(ids('"Issue 2"')).toEqual(["B"]);
+  });
+
+  test("chips stand for filter words that toggle", () => {
+    expect(filterToken("label", "bug")).toBe("#bug");
+    expect(filterToken("label", "area: ci")).toBe('label:"area: ci"');
+    expect(filterToken("milestone", "Roadmap: GTC DC 2026")).toBe('milestone:"Roadmap: GTC DC 2026"');
+    expect(filterToken("author", "cv")).toBe("@cv");
+    expect(filterToken("type", "Epic")).toBe("type:epic");
+    const q = toggleToken("ci:fail", filterToken("label", "area: ci"));
+    expect(q).toBe('ci:fail label:"area: ci"');
+    expect(hasToken(q, 'label:"AREA: CI"')).toBe(true);
+    expect(toggleToken(q, 'label:"area: ci"')).toBe("ci:fail");
+  });
+
+  test("home shows a Pinned block first, only when something is pinned", () => {
+    const p = plan("me", "open"), res = answer(p, { pr_mine: [pr("A", "o/a", 2)] });
+    const pin = normalize(issue("X", "o/z", 9, { state: "CLOSED", stateReason: "COMPLETED" }));
+    expect(homeRows(res).some(r => r.id === "pinned")).toBe(false);
+    const rows = homeRows(res, { pinned: [pin] });
+    expect(rows.slice(0, 2).map(r => r.kind + ":" + (r.id ?? r.item?.id))).toEqual(["block:pinned", "item:X"]);
+    expect(homeRows(res, { pinned: [pin], query: "o/a" }).slice(0, 2).map(r => r.kind)).toEqual(["block", "note"]);
+    expect(nodesQuery(["X", "Y"])).toContain('nodes(ids: ["X","Y"]) { ...PR ...IS }');
+    expect(nodesOf({ nodes: [issue("X", "o/z", 9), null] }).map(i => i.id)).toEqual(["X"]);
   });
 });

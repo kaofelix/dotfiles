@@ -11,7 +11,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -75,7 +75,7 @@ const stripComments = (s) => String(s ?? "").replace(/<!--[\s\S]*?-->/g, "").tri
 export default class GitHub extends View {
   init(_props, cx) {
     const p = props() ?? {};
-    this.prefs = { scope: "me", view: "home", kind: "pr", state: "open", group: true, collapsed: [], pins: [] };
+    this.prefs = { scope: "me", view: "home", kind: "pr", state: "open", group: true, collapsed: [], pins: [], pinnedItems: [] };
     this.projects = new Map(); // "owner/name" -> [{ number, title, url, closed }] | "loading" | "error"
     this.milestones = new Map(); // "owner/name" -> { list, at, loading, error }
     this.avatarState = new Map(); // login -> "ready" | "loading" | "failed"
@@ -114,6 +114,7 @@ export default class GitHub extends View {
           else if (c === "scope") this.setPicking(!this.picking, cx);
           else if (c === "home") this.goHome(cx);
           else if (c === "sidebar") this.toggleSidebar(cx);
+          else if (c === "pin-first") { const row = this.rows().find(r => r.kind === "item" && r.section !== "home-pinned"); if (row) this.toggleItemPin(row.item, cx); }
           else if (c === "open-first") { const row = this.rows().find(r => r.kind === "item"); if (row) this.open(row, cx); }
           else if (c === "milestones") { if (isRepoScope(this.prefs.scope)) this.setKind("milestone", cx); }
           else if (c === "focus-next-milestone") {
@@ -141,6 +142,7 @@ export default class GitHub extends View {
       this.ready = true;
       cx.notify();
       this.load(cx);
+      this.refreshPinned(cx, true);
     });
     cx.spawn(async (cx) => {
       try { const { data } = await graphql(REPOS_QUERY, {}, this.opts()); this.recent = (data.viewer?.repositories?.nodes ?? []).map(r => r.nameWithOwner); cx.notify(); }
@@ -293,6 +295,7 @@ export default class GitHub extends View {
     if (!this.isShown()) return;
     this.scanCheckouts(cx);
     if (this.isMilestones()) this.loadMilestones(cx);
+    if (this.isHome()) this.refreshPinned(cx);
     const e = this.entry();
     if (Date.now() - e.at >= POLL_MS) this.load(cx);
     const item = this.current();
@@ -386,7 +389,7 @@ export default class GitHub extends View {
   // State
 
   rows() {
-    if (this.isHome()) return homeRows(this.result(), { query: this.query, collapsed: this.collapsed });
+    if (this.isHome()) return homeRows(this.result(), { query: this.query, collapsed: this.collapsed, pinned: this.pinnedItems() });
     if (this.isMilestones()) {
       const repo = this.prefs.scope, items = new Map();
       for (const [k, v] of this.msItems) if (k.startsWith(repo + "#")) items.set(Number(k.slice(repo.length + 1)), v);
@@ -404,7 +407,7 @@ export default class GitHub extends View {
       if (i) return i;
       for (const kids of m.subs?.values() ?? []) { const k = kids.find(x => x.id === id); if (k) return k; }
     }
-    return null;
+    return (this.prefs.pinnedItems ?? []).find(p => p.id === id) ?? null;
   }
   isLoading() { return this.loading.size > 0; }
 
@@ -502,6 +505,42 @@ export default class GitHub extends View {
     });
   }
   setState(state, cx) { this.prefs.state = state; this.selected = null; this.detailId = null; this.savePrefs(); this.load(cx); cx.notify(); }
+  // A chip clicked in a row adds its filter word (or takes it away if it's there), so lists narrow in a click.
+  toggleFilter(token, cx) {
+    const q = toggleToken(this.query, token);
+    this.filter.set_value(q); this.query = q; this.selected = null; cx.notify();
+  }
+  // A clickable chip: the filter word it stands for, highlighted while it's in the filter.
+  filterChip(id, label, color, token, t) {
+    const on = hasToken(this.query, token);
+    return div().id(id).flex_none().px(5).h(17).flex().items_center().rounded(4).border_1().cursor_pointer()
+      .border_color(color ?? t.border).text_color(color ?? t.muted).text_size(10.5).when(on, el => el.bg(t.selected))
+      .hover(s => s.bg(t.hover)).tooltip((on ? "Remove " : "Filter by ") + token)
+      .on_click((_e, cx) => { cx.stop_propagation(); this.toggleFilter(token, cx); }).child(label);
+  }
+
+  // Pinned pull requests and issues: kept as they were last seen (so Home shows them at once), refreshed by id.
+  isItemPinned(id) { return (this.prefs.pinnedItems ?? []).some(p => p.id === id); }
+  toggleItemPin(item, cx) {
+    const list = this.prefs.pinnedItems ?? [];
+    this.prefs.pinnedItems = this.isItemPinned(item.id) ? list.filter(p => p.id !== item.id) : [...list, item];
+    this.savePrefs(); cx.notify();
+  }
+  pinnedItems() { return (this.prefs.pinnedItems ?? []).map(p => this.findItem(p.id) ?? p); }
+  refreshPinned(cx, force = false) {
+    const ids = (this.prefs.pinnedItems ?? []).map(p => p.id);
+    if (!ids.length || this.pinnedBusy || checking() || (!force && Date.now() - (this.pinnedAt ?? 0) < POLL_MS)) return;
+    this.pinnedBusy = true;
+    cx.spawn(async (cx) => {
+      try {
+        const fresh = new Map(nodesOf((await graphql(nodesQuery(ids.slice(0, 50)), {}, this.opts(30000))).data).map(i => [i.id, i]));
+        this.prefs.pinnedItems = (this.prefs.pinnedItems ?? []).map(p => fresh.get(p.id) ?? p);
+        this.pinnedAt = Date.now(); this.savePrefs();
+      } catch { /* shown as last seen */ }
+      finally { this.pinnedBusy = false; cx.notify(); }
+    });
+  }
+
   togglePin(repo, cx) { this.prefs.pins = togglePin(this.prefs.pins ?? [], repo); this.savePrefs(); cx.notify(); }
   toggleGroup(cx) { this.prefs.group = !this.prefs.group; this.savePrefs(); cx.notify(); }
   toggleCollapsed(key, cx) { if (this.collapsed.has(key)) this.collapsed.delete(key); else this.collapsed.add(key); this.savePrefs(); cx.notify(); }
@@ -573,6 +612,7 @@ export default class GitHub extends View {
       "space": () => actions.enter(),
       "o": () => { const r = this.rows().find(r => r.key === this.selected); if (r?.kind === "milestone") cx.open_url(r.milestone.url); else if (item) cx.open_url(item.url); },
       "c": () => item && this.copy(item.url, cx),
+      "x": () => item && this.toggleItemPin(item, cx),
       "shift-c": () => item && this.copy(ref(item), cx),
       "d": () => this.review(item),
       "1": () => this.isHome() ? this.viewAll("pr", cx) : this.setKind("pr", cx), "2": () => this.isHome() ? this.viewAll("issue", cx) : this.setKind("issue", cx),
@@ -591,7 +631,7 @@ export default class GitHub extends View {
       "R": () => item && this.setScope(item.repo, cx),
       "shift-r": () => item && this.setScope(item.repo, cx),
       "/": () => this.filter.focus(), "cmd-f": () => this.filter.focus(),
-      "r": () => { this.load(cx, true); if (this.isMilestones()) this.loadMilestones(cx, true); },
+      "r": () => { this.load(cx, true); if (this.isMilestones()) this.loadMilestones(cx, true); this.refreshPinned(cx, true); },
       "escape": () => {
         if (this.picking) this.setPicking(false, cx);
         else if (this.detailId) this.close(cx);
@@ -830,13 +870,13 @@ export default class GitHub extends View {
         .text_size(12).font_semibold().text_color(t.foreground).hover(s => s.text_color(t.foreground))
         .on_click((_e, cx) => this.toggleCollapsed(row.key, cx))
         .child(svg(ICON(row.collapsed ? "chevron-right" : "chevron-down")).size(11).text_color(t.dim))
-        .child(svg(ICON(row.id === "pr" ? "pr-open" : "issue-open")).size(13).text_color(t.dim))
+        .child(svg(ICON(row.id === "pinned" ? "pin" : row.id === "pr" ? "pr-open" : "issue-open")).size(13).text_color(row.id === "pinned" ? t.accent : t.dim))
         .child(row.label)
         .child(row.pending ? this.spinner(t, 10, "Loading") : div().text_size(11).font_normal().text_color(t.dim).child(row.count > row.shown ? row.shown + " of " + row.count + (row.more ? "+" : "") : String(row.count)))
         .child(div().flex_1())
-        .child(div().id("gh-all-" + row.id).flex_none().px(6).h(20).flex().items_center().rounded(4).text_size(11.5).font_normal().text_color(t.accent)
+        .when(row.id !== "pinned", el => el.child(div().id("gh-all-" + row.id).flex_none().px(6).h(20).flex().items_center().rounded(4).text_size(11.5).font_normal().text_color(t.accent)
           .hover(s => s.bg(t.hover)).tooltip("Every section, with closed ones too (" + (row.id === "pr" ? "1" : "2") + ")")
-          .on_click((_e, cx) => { cx.stop_propagation(); this.viewAll(row.id, cx); }).child("View all →"));
+          .on_click((_e, cx) => { cx.stop_propagation(); this.viewAll(row.id, cx); }).child("View all →")));
     }
     if (row.kind === "note") {
       return h_flex().id("gh-row-" + row.key).h(28).flex_none().pl(row.depth ? 14 + row.depth * 16 : 30).gap(6).items_center().text_size(12)
@@ -901,14 +941,18 @@ export default class GitHub extends View {
       .on_click((_e, cx) => { this.handle.focus(); this.open(row, cx); })
       .child(this.stateIcon(i, t))
       .child(div().flex_none().text_size(11.5).font_family(mono).text_color(t.dim).child("#" + i.number))
-      .when(Boolean(row.epic) || (Boolean(i.type) && Boolean(row.owner) && i.type !== "Task"), el => el.child(this.chip(i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, t)))
+      .when(Boolean(row.epic) || (Boolean(i.type) && Boolean(row.owner) && i.type !== "Task"), el => el.child(this.filterChip("gh-ty-" + row.key, i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, filterToken("type", i.type ?? "Epic"), t)))
       .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(isClosed(i) ? t.muted : t.foreground).child(i.title))
       .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
+      .when(this.isItemPinned(i.id) && row.section !== "home-pinned", el => el.child(svg(ICON("pin")).size(11).flex_none().text_color(t.accent)))
       .when(Boolean(i.borrowed), el => el.child(div().flex_none().text_size(10.5).text_color(t.dim).tooltip("A sub-issue of this epic, not itself in the milestone").child("sub")))
-      .when(cols.labels, el => el.children(i.labels.slice(0, 2).map(l => this.chip(l.name, this.labelColor(l.color, t), t))))
-      .when(Boolean(repoName) && cols.repo, el => el.child(div().flex_none().max_w(120).truncate().text_size(11).text_color(t.dim).child(repoName)))
+      .when(cols.labels, el => el.children(i.labels.slice(0, 2).map((l, n) => this.filterChip("gh-lb-" + row.key + "-" + n, l.name, this.labelColor(l.color, t), filterToken("label", l.name), t))))
+      .when(cols.labels && Boolean(i.milestone) && !row.owner, el => el.child(this.filterChip("gh-ms-" + row.key, "◆ " + i.milestone.title.replace(/^Roadmap:\s*/i, ""), t.muted, filterToken("milestone", i.milestone.title), t)))
+      .when(Boolean(repoName) && cols.repo, el => el.child(div().id("gh-rp-" + row.key).flex_none().max_w(120).truncate().text_size(11).cursor_pointer()
+        .text_color(hasToken(this.query, filterToken("repo", i.repo)) ? t.accent : t.dim).hover(s => s.text_color(t.foreground)).tooltip("Filter by repo:" + i.repo)
+        .on_click((_e, cx) => { cx.stop_propagation(); this.toggleFilter(filterToken("repo", i.repo), cx); }).child(repoName)))
       .when(i.conflicts && !isClosed(i), el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
-      .when(Boolean(rv) && !isClosed(i), el => el.child(this.chip(rv[0], rv[1], t)))
+      .when(Boolean(rv) && !isClosed(i), el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
       .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))
       .when(cols.comments, el => el.child(h_flex().flex_none().w(30).gap(3).items_center().justify_end().text_size(11).text_color(t.dim)
         .when(i.comments > 0, el => el.child(svg(ICON("comment")).size(10)).child(String(i.comments)))))
@@ -1011,7 +1055,7 @@ export default class GitHub extends View {
       [i.state === "merged" ? "Merged" : "Closed", i.closedAt ? age(i.closedAt) + " ago" : null],
       ["Branch", i.head ? i.base + " ← " + i.head : null],
       ["Changes", i.additions != null ? "+" + i.additions + " −" + i.deletions + " in " + i.files + " file" + (i.files === 1 ? "" : "s") : null],
-      ["Assignees", i.assignees.join(", ")], ["Reviewers", i.reviewers.join(", ")],
+      ["Assignees", i.assignees.join(", ")], ["Reviewers", i.reviewers.join(", ")], ["Milestone", i.milestone?.title ?? null],
     ].filter(([, v]) => v);
     const checks = detail?.checks ?? [], sum = checkSummary(checks);
     const notable = checks.filter(c => c.state === "fail" || c.state === "pending");
@@ -1027,6 +1071,7 @@ export default class GitHub extends View {
               .tooltip("Copy " + ref(i) + " (C)").on_click((_e, cx) => this.copy(ref(i), cx)).child(ref(i)))
             .child(div().flex_1())
             .when(Boolean(copied), el => el.child(div().text_size(11).text_color(t.dim).child("copied")))
+            .child(this.iconButton("gh-pin-item", this.isItemPinned(i.id) ? "pin-off" : "pin", (this.isItemPinned(i.id) ? "Unpin from" : "Pin to") + " Home (x)", (cx) => this.toggleItemPin(i, cx), t, this.isItemPinned(i.id)))
             .child(this.iconButton("gh-copy", "link", "Copy link (c)", (cx) => this.copy(i.url, cx), t))
             .child(this.iconButton("gh-web", "external", "Open on GitHub (o)", (cx) => cx.open_url(i.url), t)))
           .child(div().text_size(16).font_semibold().child(i.title))
@@ -1036,7 +1081,7 @@ export default class GitHub extends View {
             .when(i.kind === "pr" && Boolean(i.ci), el => el.child(this.chip("CI " + i.ci, this.ciColor(i.ci, t), t)))
             .when(i.conflicts && !isClosed(i), el => el.child(this.chip("conflicts", t.blocked, t)))
             .when(i.private, el => el.child(this.chip("private", t.dim, t)))
-            .children(i.labels.map(l => this.chip(l.name, this.labelColor(l.color, t), t))))
+            .children(i.labels.map((l, n) => this.filterChip("gh-dlb-" + n, l.name, this.labelColor(l.color, t), filterToken("label", l.name), t))))
           .child(h_flex().gap(6).flex_wrap().pt(2)
             .child(this.textButton("gh-open", "Open", "Open on GitHub (o)", (cx) => cx.open_url(i.url), t, "external"))
             .child(this.textButton("gh-copy-link", "Copy link", "Copy the URL (c)", (cx) => this.copy(i.url, cx), t, "copy"))
