@@ -206,14 +206,14 @@ export default class GitHub extends View {
     writeJson(cacheDir() + "/milestones.json", { lists: keep(this.milestones), items: keep(this.msItems) });
   }
 
-  // An avatar for a login: the picture once downloaded, initials until then (or if there isn't one). Hover names them.
+  // An avatar for a login, round: a container's rounding doesn't clip an image, so the image is rounded itself. The picture once downloaded, initials until then (or if there isn't one). Hover names them.
   avatar(id, login, t, size = 18, tip = null) {
     if (!login) return div().w(size).flex_none();
     const file = avatarFile(login), ready = this.avatarState.get("file:" + file) === "ready";
     if (!ready && !this.avatarState.has(login) && !checking()) { this.avatarState.set(login, "queued"); this.avatarQueue.push(login); }
     const pic = Avatar.new().w(size).h(size).flex_none().rounded_full().overflow_hidden().bg(t.border)
       .fallback(AvatarFallback.new().size_full().flex().items_center().justify_center().text_size(Math.max(8, size * 0.42)).text_color(t.muted).child(initials(login)));
-    return div().id(id).flex_none().tooltip(tip ?? login).child(ready ? pic.image(AvatarImage.new(AVATAR_DIR + "/" + file).size_full()) : pic);
+    return div().id(id).flex_none().tooltip(tip ?? login).child(ready ? pic.image(AvatarImage.new(AVATAR_DIR + "/" + file).size_full().rounded(size / 2)) : pic);
   }
   // Several people, overlapping slightly, up to three, then "+n".
   avatars(id, logins, t, size = 18, tip = null) {
