@@ -10,8 +10,8 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popup, Avatar, AvatarImage, AvatarFallback } from "gpui-base";
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
-import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, listWidth, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
+import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -105,6 +105,7 @@ export default class GitHub extends View {
           else if (c === "reload") { this.load(cx, true); if (this.isMilestones()) this.loadMilestones(cx, true); }
           else if (c === "scope") this.setPicking(!this.picking, cx);
           else if (c === "home") this.goHome(cx);
+          else if (c === "open-first") { const row = this.rows().find(r => r.kind === "item"); if (row) this.open(row, cx); }
           else if (c === "milestones") { if (isRepoScope(this.prefs.scope)) this.setKind("milestone", cx); }
           else if (c === "focus-next-milestone") {
             const list = (this.milestones.get(this.prefs.scope)?.list ?? []).filter(m => this.prefs.state === "all" || m.state === this.prefs.state);
@@ -515,7 +516,7 @@ export default class GitHub extends View {
     const at = rows.findIndex(r => r.key === this.selected);
     const next = rows[Math.max(0, Math.min(rows.length - 1, at < 0 ? (delta > 0 ? 0 : rows.length - 1) : at + delta))];
     this.selected = next.key; this.reveal(next.key);
-    if (this.detailId && this.width >= WIDE && next.kind === "item") this.open(next, cx);
+    if (this.detailId && next.kind === "item") this.open(next, cx);
     cx.notify();
   }
 
@@ -882,7 +883,7 @@ export default class GitHub extends View {
   }
 
   list(t, mono) {
-    const rows = this.rows(), cols = rowColumns(listWidth(this.width, Boolean(this.detailId)));
+    const rows = this.rows(), cols = rowColumns(this.width);
     if (!rows.length && this.isMilestones()) {
       const ms = this.milestones.get(this.prefs.scope);
       return div().flex_1().p(16).text_size(12.5).text_color(ms?.error ? t.blocked : t.dim)
@@ -913,8 +914,9 @@ export default class GitHub extends View {
       .child(div().flex_1().min_w(0).text_color(t.foreground).when(Boolean(mono), el => el.font_family(mono).text_size(11.5)).child(String(v)));
   }
 
+  // Markdown keeps the layout it first measured: keyed by the panel's width, a resize (or the full-width detail) redraws it.
   markdown(id, text, t) {
-    return div().text_size(13).text_color(t.foreground).child(TextView.markdown(id, text).selectable(true));
+    return div().text_size(13).text_color(t.foreground).child(TextView.markdown(id + "@" + Math.round(this.width / 40), text).selectable(true));
   }
 
   linkRow(id, l, t, mono) {
@@ -1017,13 +1019,10 @@ export default class GitHub extends View {
     else if (this.status === "noauth") body = this.message(t, "gh isn't signed in", "Run gh auth login in a terminal, then reload (r). " + (this.error ?? ""));
     else if (this.status === "error" && !isLoaded(this.result())) body = this.message(t, "Couldn't reach GitHub", this.error);
     else {
-      const wide = this.width >= WIDE, detail = Boolean(this.detailId);
-      const listPane = v_flex().min_h(0).min_w(0).h_full()
-        .when(wide && detail, el => el.w(listWidth(this.width, true)).flex_none().border_r(1).border_color(t.border)).when(!(wide && detail), el => el.flex_1())
-        .child(this.toolbar(t)).child(this.list(t, mono));
-      body = h_flex().flex_1().min_h(0).items_start()
-        .when(!detail || wide, el => el.child(listPane))
-        .when(detail, el => el.child(v_flex().h_full().flex_1().min_w(0).when(wide, el => el.w(DETAIL_W)).child(this.detailView(t, mono))));
+      // An opened item takes the whole panel, at any width; esc (or back) returns to the list where it was.
+      body = this.detailId
+        ? v_flex().flex_1().min_h(0).min_w(0).child(this.detailView(t, mono))
+        : v_flex().flex_1().min_h(0).min_w(0).child(this.toolbar(t)).child(this.list(t, mono));
       if (this.error) body = v_flex().flex_1().min_h(0).child(div().px(10).py(4).text_size(11).text_color(t.blocked).child(this.error)).child(body);
     }
     return v_flex().id("github").track_focus(this.handle).on_key_down((e, cx) => this.onKey(e, cx))
