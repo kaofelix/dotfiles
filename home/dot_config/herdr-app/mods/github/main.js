@@ -396,7 +396,16 @@ export default class GitHub extends View {
   }
 
   current() { return this.detailId ? this.findItem(this.detailId) : null; }
-  findItem(id) { for (const e of this.cache.values()) { const i = e.result.items.get(id); if (i) return i; } return null; }
+  // An item by id wherever it was listed: the lists' results, then milestones' open work (and their epics' sub-issues).
+  findItem(id) {
+    for (const e of this.cache.values()) { const i = e.result.items.get(id); if (i) return i; }
+    for (const m of this.msItems.values()) {
+      const i = m.issues?.find(x => x.id === id) ?? m.prs?.find(x => x.id === id);
+      if (i) return i;
+      for (const kids of m.subs?.values() ?? []) { const k = kids.find(x => x.id === id); if (k) return k; }
+    }
+    return null;
+  }
   isLoading() { return this.loading.size > 0; }
 
   setScope(scope, cx, remember = true) {
@@ -981,12 +990,18 @@ export default class GitHub extends View {
 
   findLinked(l) {
     for (const e of this.cache.values()) for (const i of e.result.items.values()) if (i.url === l.url) return i;
+    for (const m of this.msItems.values()) {
+      const i = [...(m.issues ?? []), ...(m.prs ?? []), ...[...(m.subs?.values() ?? [])].flat()].find(x => x.url === l.url);
+      if (i) return i;
+    }
     return null;
   }
 
   detailView(t, mono) {
     const i = this.current();
-    if (!i) return div().p(16).text_color(t.dim).child("This item is no longer listed.");
+    if (!i) return v_flex().p(14).gap(10)
+      .child(h_flex().gap(6).items_center().child(this.iconButton("gh-back", "arrow-left", "Back (esc)", (cx) => this.close(cx), t)).child(div().text_size(12).text_color(t.dim).child("Back")))
+      .child(div().text_size(12.5).text_color(t.dim).child("This item is no longer listed. It may have closed or moved since the list loaded; reload (r) to check."));
     const d = this.details.get(i.id), detail = d?.detail;
     const rv = this.reviewLook(i.review, t), [, stateColor] = this.stateLook(i, t);
     const stateLabel = { open: "Open", draft: "Draft", merged: "Merged", closed: "Closed", completed: "Closed", not_planned: "Not planned", duplicate: "Duplicate" }[i.state] ?? i.state;
