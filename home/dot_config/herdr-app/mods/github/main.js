@@ -596,7 +596,9 @@ export default class GitHub extends View {
 
   toolbar(t) {
     const res = this.result(), scope = this.prefs.scope, home = this.isHome();
+    // Home and the pins come first, so they stay in place as the rows under them change with the view.
     return v_flex().flex_none().px(10).py(8).gap(7).border_b(1).border_color(t.border)
+      .when((this.prefs.pins ?? []).length > 0, el => el.child(this.pinRow(t)))
       .when(!home, el => el.child(h_flex().gap(8).items_center().flex_wrap()
         .child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
           .children(KINDS.map((k, i) => this.segment("gh-kind-" + k.id, k.label, this.prefs.kind === k.id, (cx) => this.setKind(k.id, cx), t, !isLoaded(res) ? null : kindPending(res, k.id) ? this.spinner(t, 10, "Counting") : kindCount(res, k.id) + (kindHasMore(res, k.id) ? "+" : "")))))
@@ -607,7 +609,6 @@ export default class GitHub extends View {
           .text_color(this.prefs.group ? t.foreground : t.dim).when(this.prefs.group, el => el.bg(t.selected)).hover(s => s.bg(t.hover))
           .tooltip("Group by repository (g)").on_click((_e, cx) => this.toggleGroup(cx)).child(svg(ICON("folder")).size(12)).child("by repo")))
       ))
-      .when((this.prefs.pins ?? []).length > 0, el => el.child(this.pinRow(t)))
       .child(h_flex().h(28).px(8).gap(6).items_center().rounded(6).border_1().border_color(this.filtering ? t.accent : t.input).bg(t.surface)
         .child(svg(ICON("search")).size(13).flex_none().text_color(t.dim))
         .child(Input.new(this.filter).flex_1().text_size(12.5))
