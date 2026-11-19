@@ -16,7 +16,7 @@ A read-only dashboard of your pull requests and issues across repositories, or o
 - **Milestones** (a repository's third tab, `3`): one row per milestone (Open / Closed / All), open ones by due date, with the due date (red once past),
   a progress bar and closed/total. Click (or `enter`) expands one; **focus** (`f`, alt-click) shows only it. Expanded, its open work is grouped by epic:
   each epic with its open sub-issues (marked **sub** when they aren't in the milestone themselves), then **Other open work**, then its open pull requests.
-  Rows show the owner, **unassigned** in yellow; **by owner** (`w`) groups by assignee instead. What's expanded is kept per repository; `o` opens the milestone on GitHub.
+  Rows show the owner's avatar (a pull request with nobody assigned, its author's), **unassigned** in yellow; **by owner** (`w`) groups by assignee instead. What's expanded is kept per repository; `o` opens the milestone on GitHub.
 - **The dropdown** (`p`) lists Home, pins, the repositories in your results and the ones you pushed to recently. Typing narrows it; a typed `owner/name`
   not listed opens that repository. `cmd-p` there pins the highlighted one. `esc` goes back to the previous scope.
 - **Lists:** PRs / Issues (`tab`, `1`, `2`) and Open / Closed / All (`s`). Each section loads its 25 most recently updated items; **Load more** at its end (or `enter` on it) fetches the next 25, and `of N ↗` opens the full GitHub search. A count with `+` has more to load.
@@ -35,5 +35,6 @@ GitHub gives up on a search after about 10 s (502/504); a page that does is retr
 Milestones and the open work of those opened are kept too (`milestones.json`). Results for the last 8 scope/state pairs, the last 40 opened items and the pane's choices are kept in `~/.config/herdr-app/cache/github/`, shared by every GitHub pane (localStorage is per pane, so a new pane would start empty). While the side panel shows something else, polling pauses; shown again, it catches up. A new copy shows the cache at once and refreshes behind them.
 A state with nothing kept yet starts from the scope's others (All from Open and Closed, Open or Closed from All, filtered) until its own pages land.
 First pages refresh every 2 minutes (`r` now) and keep the pages loaded after them; an opened item is refetched when it changes.
+Avatars (authors on rows, owners in milestones, people in details; hover for the username) are downloaded once with `curl` into `cache/github/avatars/`, initials until then.
 If Herdr's PATH lacks `gh`, it is looked up in the mise/asdf shims, `~/.local/bin` and Homebrew.
 Pure logic lives in `model.js` (`tests/herdr-github.test.ts`).

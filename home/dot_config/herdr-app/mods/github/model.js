@@ -429,6 +429,11 @@ export function scopeOptions({ login = null, pins = [], current = "me", counts =
 }
 export const togglePin = (pins, repo) => !isRepoScope(repo) ? pins : pins.includes(repo) ? pins.filter(p => p !== repo) : [...pins, repo];
 
+// Avatars are downloaded once into the cache folder and shown from there: a file name safe for any login ("app[bot]").
+export const avatarFile = (login) => String(login ?? "").replace(/[^A-Za-z0-9._-]/g, "_") + ".png";
+export const avatarUrl = (login) => "https://github.com/" + encodeURIComponent(String(login ?? "").replace(/\[bot\]$/, "")) + ".png?size=64";
+export const initials = (login) => String(login ?? "?").replace(/\[bot\]$/, "").split(/[-_.]/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase() || "?";
+
 export const ref = (item) => item.repo + "#" + item.number;
 export const searchUrl = (search, kind) => "https://github.com/search?q=" + encodeURIComponent(search) + "&type=" + (kind === "pr" ? "pullrequests" : "issues");
 export const repoUrl = (repo, kind) => "https://github.com/" + repo + (kind === "issue" ? "/issues" : "/pulls");

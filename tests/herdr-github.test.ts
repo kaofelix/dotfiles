@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -233,5 +233,13 @@ describe("github model", () => {
     const all = withSubIssues([epic, inside], subs);
     expect(all.map(i => i.id + (i.borrowed ? "*" : ""))).toEqual(["E", "A", "B*"]);
     expect(epicGroups(all).map(g => (g.head?.id ?? g.label) + ":" + g.items.map(i => i.id).join(","))).toEqual(["E:A,B"]);
+  });
+  test("avatars have safe file names, a URL per login and initials to fall back on", () => {
+    expect(avatarFile("kaofelix")).toBe("kaofelix.png");
+    expect(avatarFile("dependabot[bot]")).toBe("dependabot_bot_.png");
+    expect(avatarUrl("dependabot[bot]")).toBe("https://github.com/dependabot.png?size=64");
+    expect(initials("senthilr-nv")).toBe("SN");
+    expect(initials("cv")).toBe("C");
+    expect(initials("")).toBe("?");
   });
 });

@@ -7,10 +7,10 @@
 // it stays as it was across spaces. Pinned repositories sit one click away; any other is a search in the scope list.
 // Props (optional, e.g. as a pane): { scope: "me" | "owner/name" } starts there; { kind: "pr" | "issue" } picks the list.
 import { View, div, svg } from "gpui-kit";
-import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popup } from "gpui-base";
+import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popup, Avatar, AvatarImage, AvatarFallback } from "gpui-base";
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
-import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
+import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
   isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, listWidth, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
   sectionQuery, serialize } from "./model.js";
 
@@ -20,6 +20,9 @@ const POLL_MS = 120000, TICK_MS = 15000, PARALLEL = 3;
 // empty): it opens with what was shown last and refreshes behind it.
 const KEEP_RESULTS = 8, KEEP_DETAILS = 40;
 const cacheDir = () => appHome() + "/cache/github";
+// Avatars: downloaded once (curl, a few at a time) and drawn from there; image paths are relative to the app folder.
+const AVATAR_DIR = "cache/github/avatars";
+const AVATAR_FETCH = 'mkdir -p "$(dirname "$1")" && curl -fsSL -m 15 -o "$1.part" "$2" && mv "$1.part" "$1"';
 const resultFile = (key) => cacheDir() + "/result-" + encodeURIComponent(key) + ".json";
 async function readJson(path) { try { return json(await readFile(path, "utf8")); } catch { return null; } }
 // One write per file at a time, the latest winning, so a slow write never lands after a newer one.
@@ -74,6 +77,8 @@ export default class GitHub extends View {
     this.prefs = { scope: "me", view: "home", kind: "pr", state: "open", group: true, collapsed: [], pins: [] };
     this.projects = new Map(); // "owner/name" -> [{ number, title, url, closed }] | "loading" | "error"
     this.milestones = new Map(); // "owner/name" -> { list, at, loading, error }
+    this.avatarState = new Map(); // login -> "ready" | "loading" | "failed"
+    this.avatarQueue = [];
     this.msItems = new Map(); // "owner/name#number" -> { issues, prs, issueTotal, prTotal, at, loading, error }
     this.checkouts = new Map(); // "owner/name" -> { root, on }: a local clone, found from the open terminals' folders
     this.probed = new Set(); this.scopeQuery = ""; this.wasShown = true;
@@ -135,6 +140,7 @@ export default class GitHub extends View {
 
   async restore() {
     const [prefs, details, names, ms] = await Promise.all([readJson(cacheDir() + "/prefs.json"), readJson(cacheDir() + "/details.json"), readdir(cacheDir()).catch(() => []), readJson(cacheDir() + "/milestones.json")]);
+    for (const n of await readdir(appHome() + "/" + AVATAR_DIR).catch(() => [])) if (n.endsWith(".png")) this.avatarState.set("file:" + n, "ready");
     for (const [k, v] of ms?.lists ?? []) this.milestones.set(k, { ...v, loading: false, error: null });
     for (const [k, v] of ms?.items ?? []) this.msItems.set(k, { ...v, subs: v.subs ? new Map(v.subs) : null, loading: false, error: null });
     if (prefs) { Object.assign(this.prefs, prefs); this.collapsed = new Set(this.prefs.collapsed ?? []); }
@@ -198,6 +204,40 @@ export default class GitHub extends View {
   persistMilestones() {
     const keep = (m) => [...m.entries()].filter(([, v]) => v.list || v.issues).slice(-30).map(([k, v]) => [k, { ...v, subs: v.subs ? [...v.subs.entries()] : undefined, loading: undefined, error: undefined }]);
     writeJson(cacheDir() + "/milestones.json", { lists: keep(this.milestones), items: keep(this.msItems) });
+  }
+
+  // An avatar for a login: the picture once downloaded, initials until then (or if there isn't one). Hover names them.
+  avatar(id, login, t, size = 18, tip = null) {
+    if (!login) return div().w(size).flex_none();
+    const file = avatarFile(login), ready = this.avatarState.get("file:" + file) === "ready";
+    if (!ready && !this.avatarState.has(login) && !checking()) { this.avatarState.set(login, "queued"); this.avatarQueue.push(login); }
+    const pic = Avatar.new().w(size).h(size).flex_none().rounded_full().overflow_hidden().bg(t.border)
+      .fallback(AvatarFallback.new().size_full().flex().items_center().justify_center().text_size(Math.max(8, size * 0.42)).text_color(t.muted).child(initials(login)));
+    return div().id(id).flex_none().tooltip(tip ?? login).child(ready ? pic.image(AvatarImage.new(AVATAR_DIR + "/" + file).size_full()) : pic);
+  }
+  // Several people, overlapping slightly, up to three, then "+n".
+  avatars(id, logins, t, size = 18, tip = null) {
+    const shown = logins.slice(0, 3);
+    return h_flex().id(id).flex_none().items_center().tooltip(tip ?? logins.join(", "))
+      .children(shown.map((l, n) => div().when(n > 0, el => el.ml(-4)).rounded_full().border_1().border_color(t.background).child(this.avatar(id + "-" + n, l, t, size, tip ?? logins.join(", ")))))
+      .when(logins.length > 3, el => el.child(div().ml(2).text_size(10.5).text_color(t.dim).child("+" + (logins.length - 3))));
+  }
+  fetchAvatars(cx) {
+    if (this.avatarBusy || !this.avatarQueue.length) return;
+    this.avatarBusy = true;
+    cx.spawn(async (cx) => {
+      const worker = async () => {
+        for (let login; (login = this.avatarQueue.shift());) {
+          const file = avatarFile(login);
+          const r = await exec("sh", ["-c", AVATAR_FETCH, "sh", appHome() + "/" + AVATAR_DIR + "/" + file, avatarUrl(login)], { timeout: 20000 }).catch(() => null);
+          this.avatarState.set(login, r?.code === 0 ? "ready" : "failed");
+          if (r?.code === 0) { this.avatarState.set("file:" + file, "ready"); cx.notify(); }
+        }
+      };
+      await Promise.all([worker(), worker(), worker()]);
+      this.avatarBusy = false;
+      cx.notify();
+    });
   }
 
   persistDetails() {
@@ -811,10 +851,12 @@ export default class GitHub extends View {
       .when(cols.comments, el => el.child(h_flex().flex_none().w(30).gap(3).items_center().justify_end().text_size(11).text_color(t.dim)
         .when(i.comments > 0, el => el.child(svg(ICON("comment")).size(10)).child(String(i.comments)))))
       .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
-      .when(cols.author && !row.owner, el => el.child(div().flex_none().w(84).truncate().text_right().text_size(11).text_color(i.author === this.login ? t.dim : t.muted).child(i.author)))
-      .when(Boolean(row.owner), el => el.child(div().flex_none().w(96).truncate().text_right().text_size(11)
-        .text_color(i.assignees.length ? (i.assignees.includes(this.login) ? t.accent : t.muted) : t.working).tooltip(i.assignees.length ? "Assigned: " + i.assignees.join(", ") : "Nobody is assigned")
-        .child(i.assignees.length ? i.assignees[0] + (i.assignees.length > 1 ? " +" + (i.assignees.length - 1) : "") : "unassigned")))
+      .when(cols.author && !row.owner, el => el.child(h_flex().flex_none().w(24).justify_end().child(this.avatar("gh-au-" + row.key, i.author, t, 18, "Opened by " + i.author))))
+      .when(Boolean(row.owner), el => el.child(h_flex().flex_none().w(52).justify_end()
+        .when(i.assignees.length > 0, el => el.child(this.avatars("gh-as-" + row.key, i.assignees, t, 18, "Assigned: " + i.assignees.join(", "))))
+        // A pull request without assignees is owned by whoever opened it.
+        .when(!i.assignees.length && i.kind === "pr", el => el.child(this.avatar("gh-as-" + row.key, i.author, t, 18, "Opened by " + i.author)))
+        .when(!i.assignees.length && i.kind !== "pr", el => el.child(div().id("gh-as-" + row.key).text_size(11).text_color(t.working).tooltip("Nobody is assigned").child("unassigned")))))
       .child(div().flex_none().w(30).text_right().text_size(11).text_color(t.dim).tooltip("Updated").child(age(i.updatedAt)));
   }
 
@@ -864,9 +906,10 @@ export default class GitHub extends View {
     return v_flex().gap(5).child(div().text_size(11).font_semibold().text_color(t.dim).child(title.toUpperCase())).child(body);
   }
 
-  kv(k, v, t, mono) {
+  kv(k, v, t, mono, people = null) {
     return h_flex().gap(8).text_size(12).items_start()
       .child(div().w(84).flex_none().text_color(t.dim).child(k))
+      .when(Boolean(people?.length), el => el.child(this.avatars("gh-kv-" + k, people, t, 16)))
       .child(div().flex_1().min_w(0).text_color(t.foreground).when(Boolean(mono), el => el.font_family(mono).text_size(11.5)).child(String(v)));
   }
 
@@ -930,7 +973,7 @@ export default class GitHub extends View {
             .child(this.textButton("gh-copy-link", "Copy link", "Copy the URL (c)", (cx) => this.copy(i.url, cx), t, "copy"))
             .when(this.canReview(i), el => el.child(this.textButton("gh-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff")))
             .when(this.prefs.scope !== i.repo, el => el.child(this.textButton("gh-scope-repo", i.repo.split("/")[1], "Everything in " + i.repo + " (R)", (cx) => this.setScope(i.repo, cx), t, "folder")))))
-        .child(v_flex().gap(3).children(facts.map(([k, v]) => this.kv(k, v, t))))
+        .child(v_flex().gap(3).children(facts.map(([k, v]) => this.kv(k, v, t, null, { Author: [i.author], Assignees: i.assignees, Reviewers: i.reviewers.filter(r => !r.startsWith("@")) }[k]))))
         .when(i.kind === "pr" && checks.length > 0, el => el.child(this.section("Checks", v_flex().gap(2)
           .child(h_flex().gap(8).text_size(12).flex_wrap()
             .when(sum.fail > 0, el => el.child(div().text_color(t.blocked).child(sum.fail + " failing")))
@@ -943,7 +986,7 @@ export default class GitHub extends View {
             .child(div().size(7).flex_none().rounded(4).bg(this.ciColor(c.state, t)))
             .child(div().flex_1().min_w(0).truncate().text_color(c.state === "fail" ? t.foreground : t.muted).child(c.name)))), t)))
         .when((detail?.reviews ?? []).length > 0, el => el.child(this.section("Reviews", v_flex().gap(2).children(detail.reviews.map(r => h_flex().gap(8).text_size(12)
-          .child(div().w(110).flex_none().truncate().text_color(t.muted).child(r.author))
+          .child(h_flex().w(130).flex_none().gap(6).items_center().child(this.avatar("gh-rv-av-" + r.author, r.author, t, 16)).child(div().min_w(0).truncate().text_color(t.muted).child(r.author)))
           .child(div().flex_1().text_color({ approved: t.done, changes_requested: t.blocked }[r.state] ?? t.dim).child(r.state.replace("_", " ")))
           .child(div().flex_none().text_color(t.dim).child(age(r.at))))), t)))
         .when((detail?.linked ?? []).length > 0, el => el.child(this.section(i.kind === "pr" ? "Closes / linked" : "Linked", v_flex().children(detail.linked.map((l, n) => this.linkRow("gh-link-" + n, l, t, mono))), t)))
@@ -952,7 +995,7 @@ export default class GitHub extends View {
           : div().text_size(12).text_color(t.dim).child("Loading…"), t))
         .when((detail?.comments ?? []).length > 0, el => el.child(this.section("Comments (" + detail.commentCount + ")" + (detail.commentCount > detail.comments.length ? " · latest " + detail.comments.length : ""),
           v_flex().gap(8).children(detail.comments.map((m, n) => v_flex().gap(3).p(8).rounded(6).bg(t.surface).border_1().border_color(t.border)
-            .child(h_flex().gap(6).text_size(11).text_color(t.dim).child(div().font_semibold().text_color(t.muted).child(m.author)).child(age(m.createdAt) + " ago")
+            .child(h_flex().gap(6).items_center().text_size(11).text_color(t.dim).child(this.avatar("gh-cm-av-" + n, m.author, t, 16)).child(div().font_semibold().text_color(t.muted).child(m.author)).child(age(m.createdAt) + " ago")
               .child(div().flex_1()).child(div().id("gh-c-web-" + n).cursor_pointer().hover(s => s.text_color(t.foreground)).on_click((_e, cx) => cx.open_url(m.url)).child("↗")))
             .child(this.markdown("gh-c-" + i.id + "-" + n, stripComments(m.body).slice(0, 8000), t)))), t))));
   }
@@ -966,6 +1009,8 @@ export default class GitHub extends View {
     const t = theme(), mono = settings().font_family ?? "JetBrains Mono";
     const shown = this.isShown();
     if (shown && !this.wasShown) cx.timer.after(0, (cx) => this.poll(cx));
+    // Avatars asked for while drawing are fetched after it.
+    if (this.avatarQueue.length && !this.avatarBusy) cx.timer.after(0, (cx) => this.fetchAvatars(cx));
     this.wasShown = shown;
     let body;
     if (this.status === "nogh") body = this.message(t, "gh isn't available", "Install the GitHub CLI (brew install gh) and sign in with gh auth login. " + (this.error ?? ""));
