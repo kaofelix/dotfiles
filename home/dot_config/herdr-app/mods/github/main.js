@@ -1,5 +1,6 @@
-// GitHub for the person at the keyboard: their pull requests and issues across repositories (review requests, their
-// own, assigned, involved), or everything in one repository, with CI, review state and a detail view. Read-only:
+// GitHub for the person at the keyboard. Home is a dashboard of their open pull requests and issues across repositories
+// (review requests first), each with "View all" for the full sectioned list; a repository shows everything in it, with
+// links to its projects on GitHub. CI, review state and a detail view throughout. Read-only:
 // one `gh api graphql` call per scope and state, polled every couple of minutes. Links open in the browser or copy.
 //
 // It lives in the side panel (the layout's panel-body stack, beside Files) because it's about the person, not a space:
@@ -9,7 +10,7 @@ import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popup } from "gpui-base";
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
-import { KINDS, STATES, DETAIL_QUERY, PAGE, REPOS_QUERY, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
+import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, homeRows, projectsOf, WIDE, DETAIL_W, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
   isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, listWidth, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, togglePin,
   sectionQuery, serialize } from "./model.js";
 
@@ -70,7 +71,8 @@ const stripComments = (s) => String(s ?? "").replace(/<!--[\s\S]*?-->/g, "").tri
 export default class GitHub extends View {
   init(_props, cx) {
     const p = props() ?? {};
-    this.prefs = { scope: "me", kind: "pr", state: "open", group: true, collapsed: [], pins: [] };
+    this.prefs = { scope: "me", view: "home", kind: "pr", state: "open", group: true, collapsed: [], pins: [] };
+    this.projects = new Map(); // "owner/name" -> [{ number, title, url, closed }] | "loading" | "error"
     this.checkouts = new Map(); // "owner/name" -> { root, on }: a local clone, found from the open terminals' folders
     this.probed = new Set(); this.scopeQuery = ""; this.wasShown = true;
     this.collapsed = new Set();
@@ -95,6 +97,8 @@ export default class GitHub extends View {
           if (c === "focus") this.handle.focus();
           else if (c === "reload") this.load(cx, true);
           else if (c === "scope") this.setPicking(!this.picking, cx);
+          else if (c === "home") this.goHome(cx);
+          else if (c === "next-pin") { const pins = this.prefs.pins ?? [], at = pins.indexOf(this.prefs.scope); if (pins.length) this.setScope(pins[(at + 1) % pins.length], cx); }
           else if (c === "copy" && item) this.copy(item.url, cx);
           else if (c === "browse" && item) cx.open_url(item.url);
         } catch (e) { console.warn("github: " + c + ": " + (e?.message ?? e)); }
@@ -107,7 +111,8 @@ export default class GitHub extends View {
     cx.spawn(async (cx) => {
       await this.restore();
       if (p.scope) this.prefs.scope = p.scope;
-      if (p.kind) this.prefs.kind = p.kind;
+      if (isRepoScope(this.prefs.scope)) this.fetchProjects(this.prefs.scope, cx);
+      if (p.kind) { this.prefs.kind = p.kind; if (this.prefs.scope === "me") this.prefs.view = "list"; }
       this.ready = true;
       cx.notify();
       this.load(cx);
@@ -128,8 +133,11 @@ export default class GitHub extends View {
   }
   savePrefs() { writeJson(cacheDir() + "/prefs.json", { ...this.prefs, collapsed: [...this.collapsed] }); }
   opts(timeout) { return { timeout }; }
-  cacheKey() { return this.prefs.scope + "|" + this.prefs.state; }
-  entry() { return this.ensure(this.prefs.scope, this.prefs.state); }
+  // Home is my open work, whatever the lists' state switch says.
+  isHome() { return this.prefs.scope === "me" && this.prefs.view !== "list"; }
+  state() { return this.isHome() ? "open" : this.prefs.state; }
+  cacheKey() { return this.prefs.scope + "|" + this.state(); }
+  entry() { return this.ensure(this.prefs.scope, this.state()); }
   result() { return this.entry().result; }
 
   // The cache entry for a scope and state: from memory, else from the cache files, else empty.
@@ -306,6 +314,7 @@ export default class GitHub extends View {
   // State
 
   rows() {
+    if (this.isHome()) return homeRows(this.result(), { query: this.query, collapsed: this.collapsed });
     return buildRows(this.result(), this.prefs.kind, { query: this.query, collapsed: this.collapsed, group: this.prefs.group && !isRepoScope(this.prefs.scope) });
   }
 
@@ -317,7 +326,30 @@ export default class GitHub extends View {
     if (scope === this.prefs.scope) return this.setPicking(false, cx);
     if (remember) this.history.push(this.prefs.scope);
     this.prefs.scope = scope; this.picking = false; this.selected = null; this.detailId = null;
+    if (scope === "me") this.prefs.view = "home";
+    else this.fetchProjects(scope, cx);
     this.handle.focus(); this.savePrefs(); this.load(cx); cx.notify();
+  }
+  // Home's "View all": the full sectioned list of my pull requests or issues; esc comes back.
+  viewAll(kind, cx) {
+    this.prefs.view = "list"; this.prefs.kind = kind; this.selected = null; this.detailId = null;
+    this.handle.focus(); this.savePrefs(); this.load(cx); cx.notify();
+  }
+  goHome(cx) {
+    if (this.prefs.scope !== "me") return this.setScope("me", cx);
+    this.prefs.view = "home"; this.selected = null; this.detailId = null; this.savePrefs(); this.load(cx); cx.notify();
+  }
+
+  // A repository's projects, asked once per pane: they're links out, so a stale list is fine.
+  fetchProjects(repo, cx) {
+    if (!isRepoScope(repo) || this.projects.has(repo) || checking()) return;
+    const [owner, name] = repo.split("/");
+    this.projects.set(repo, "loading");
+    cx.spawn(async (cx) => {
+      try { this.projects.set(repo, projectsOf((await graphql(PROJECTS_QUERY, { owner, name }, this.opts())).data)); }
+      catch { this.projects.set(repo, "error"); }
+      cx.notify();
+    });
   }
   setKind(kind, cx) { this.prefs.kind = kind; this.selected = null; this.detailId = null; this.savePrefs(); cx.notify(); }
   setState(state, cx) { this.prefs.state = state; this.selected = null; this.detailId = null; this.savePrefs(); this.load(cx); cx.notify(); }
@@ -334,7 +366,7 @@ export default class GitHub extends View {
 
   // Where the dropdown can go (see scopeOptions), narrowed by what's typed while it's open.
   scopes() {
-    const mine = this.ensure("me", this.prefs.state).result;
+    const mine = this.ensure("me", this.state()).result;
     return scopeOptions({ login: this.login, pins: this.prefs.pins ?? [], current: this.prefs.scope, counts: repoCounts(mine, this.prefs.kind), recent: this.recent, query: this.scopeQuery });
   }
 
@@ -385,12 +417,13 @@ export default class GitHub extends View {
       "c": () => item && this.copy(item.url, cx),
       "shift-c": () => item && this.copy(ref(item), cx),
       "d": () => this.review(item),
-      "1": () => this.setKind("pr", cx), "2": () => this.setKind("issue", cx),
-      "tab": () => this.setKind(this.prefs.kind === "pr" ? "issue" : "pr", cx),
-      "s": () => this.setState(STATES[(STATES.findIndex(s => s.id === this.prefs.state) + 1) % STATES.length].id, cx),
+      "1": () => this.isHome() ? this.viewAll("pr", cx) : this.setKind("pr", cx), "2": () => this.isHome() ? this.viewAll("issue", cx) : this.setKind("issue", cx),
+      "tab": () => !this.isHome() && this.setKind(this.prefs.kind === "pr" ? "issue" : "pr", cx),
+      "h": () => this.goHome(cx),
+      "s": () => !this.isHome() && this.setState(STATES[(STATES.findIndex(s => s.id === this.prefs.state) + 1) % STATES.length].id, cx),
       "g": () => this.toggleGroup(cx),
       "p": () => this.setPicking(!this.picking, cx),
-      "m": () => this.setScope("me", cx),
+      "m": () => this.goHome(cx),
       "P": () => actions["shift-p"](),
       "shift-p": () => { const repo = isRepoScope(this.prefs.scope) ? this.prefs.scope : item?.repo; if (repo) this.togglePin(repo, cx); },
       "R": () => item && this.setScope(item.repo, cx),
@@ -401,6 +434,7 @@ export default class GitHub extends View {
         if (this.picking) this.setPicking(false, cx);
         else if (this.detailId) this.close(cx);
         else if (this.query) { this.filter.set_value(""); this.query = ""; cx.notify(); }
+        else if (this.prefs.scope === "me" && this.prefs.view === "list") this.goHome(cx);
         else if (this.history.length) this.setScope(this.history.pop(), cx, false);
         else return false;
       },
@@ -457,10 +491,13 @@ export default class GitHub extends View {
       .child(svg(ICON("github")).size(15).flex_none().text_color(t.accent))
       .child(div().font_semibold().child("GitHub"))
       .child(this.scopeDropdown(t))
+      .when(this.prefs.scope === "me" && this.prefs.view === "list", el => el.child(div().text_color(t.dim).child("/"))
+        .child(div().flex_none().text_size(12).text_color(t.foreground).child(this.prefs.kind === "pr" ? "Pull requests" : "Issues")))
       .when(isRepoScope(this.prefs.scope), el => {
         const pinned = (this.prefs.pins ?? []).includes(this.prefs.scope);
         return el.child(this.iconButton("gh-pin", pinned ? "pin-off" : "pin", (pinned ? "Unpin " : "Pin ") + this.prefs.scope + " (P)", (cx) => this.togglePin(this.prefs.scope, cx), t, pinned))
-          .child(this.iconButton("gh-repo-web", "external", "Open the repository on GitHub", (cx) => cx.open_url(repoUrl(this.prefs.scope, this.prefs.kind)), t));
+          .child(this.iconButton("gh-repo-web", "external", "Open the repository on GitHub", (cx) => cx.open_url(repoUrl(this.prefs.scope, this.prefs.kind)), t))
+          .child(this.projectsMenu(t));
       })
       .child(div().flex_1())
       .when(this.entry().at > 0, el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Last refreshed").child(age(new Date(this.entry().at).toISOString()) + " ago")))
@@ -468,14 +505,39 @@ export default class GitHub extends View {
       .when(this.isLoading(), el => el.child(svg(ICON("reload")).size(12).flex_none().text_color(t.dim).spin(900)));
   }
 
+  // The repository's projects (they live on GitHub): a menu of links, open ones first.
+  projectsMenu(t) {
+    const repo = this.prefs.scope, list = this.projects.get(repo), open = this.projectsOpen === repo;
+    const trigger = h_flex().id("gh-projects").h(22).px(6).gap(4).flex_none().items_center().rounded(5).cursor_pointer().text_size(11.5)
+      .text_color(open ? t.foreground : t.dim).when(open, el => el.bg(t.hover)).hover(s => s.bg(t.hover).text_color(t.foreground)).tooltip("Projects on GitHub")
+      .on_click((_e, cx) => { this.projectsOpen = open ? null : repo; cx.notify(); })
+      .child(svg(ICON("project")).size(12)).child("Projects")
+      .when(Array.isArray(list) && list.some(p => !p.closed), el => el.child(div().text_color(t.dim).child(String(list.filter(p => !p.closed).length))));
+    const body = list === "loading" || list == null ? [h_flex().h(26).px(8).gap(6).items_center().text_size(12).text_color(t.dim).child(this.spinner(t)).child("Loading…")]
+      : list === "error" ? [div().px(8).py(6).text_size(12).text_color(t.blocked).child("Couldn't list projects.")]
+      : !list.length ? [div().px(8).py(6).text_size(12).text_color(t.dim).child("No projects are linked to " + repo + ".")]
+      : list.map(p => h_flex().id("gh-project-" + p.number).h(26).px(8).gap(6).items_center().rounded(5).cursor_pointer().text_size(12.5)
+          .text_color(p.closed ? t.dim : t.foreground).hover(st => st.bg(t.hover))
+          .on_click((_e, cx) => { this.projectsOpen = null; cx.open_url(p.url); cx.notify(); })
+          .child(svg(ICON("project")).size(12).flex_none().text_color(t.dim))
+          .child(div().flex_1().truncate().child(p.title))
+          .when(p.closed, el => el.child(div().flex_none().text_size(11).text_color(t.dim).child("closed")))
+          .child(svg(ICON("external")).size(11).flex_none().text_color(t.dim)));
+    return Select.new("gh-projects-select").flex_none().accessibility_label("Projects")
+      .open(open).on_open_change((o, cx) => { this.projectsOpen = o ? repo : null; cx.notify(); })
+      .child(Popup.new("gh-projects-list", trigger).anchor("top_left")
+        .when(open, el => el.content(v_flex().id("gh-projects-options").mt(4).p(4).gap(1).min_w(240).max_w(400).max_h(360).overflow_y_scrollbar()
+          .rounded(8).border_1().border_color(t.border).bg(t.popover).shadow_md().children(body))));
+  }
+
   scopeDropdown(t) {
     const scopes = this.scopes(), open = Boolean(this.picking);
-    const label = this.prefs.scope === "me" ? "All my work" : this.prefs.scope;
+    const label = this.prefs.scope === "me" ? "Home" : this.prefs.scope;
     const trigger = h_flex().id("gh-scope").h(22).px(7).gap(4).items_center().rounded(5).cursor_pointer().text_size(12).min_w(0)
       .text_color(open ? t.foreground : t.muted).when(open, el => el.bg(t.hover))
       .hover(s => s.bg(t.hover).text_color(t.foreground)).track_focus(this.scopeTrigger).tooltip("Scope (p)")
       .on_click((_e, cx) => this.setPicking(!this.picking, cx))
-      .child(svg(ICON(this.prefs.scope === "me" ? "layers" : "folder")).size(12).flex_none())
+      .child(svg(ICON(this.prefs.scope === "me" ? "home" : "folder")).size(12).flex_none())
       .child(div().truncate().child(label)).child(svg(ICON("chevron-down")).size(11).flex_none());
     const row = (s, i) => h_flex().id("gh-scope-" + s.id).h(26).px(8).gap(6).items_center().rounded(5).cursor_pointer().text_size(12.5)
       .bg(i === this.scopeHot ? t.selected : t.popover).hover(st => st.bg(t.hover))
@@ -517,7 +579,7 @@ export default class GitHub extends View {
           .children(items))));
   }
 
-  // All my work and each pinned repository, one click away; the current one is highlighted.
+  // Home and each pinned repository, one click away; the current one is highlighted.
   pinRow(t) {
     const chip = (id, label, icon, tip) => {
       const on = this.prefs.scope === id;
@@ -528,14 +590,14 @@ export default class GitHub extends View {
         .child(svg(ICON(icon)).size(11).flex_none()).child(div().max_w(150).truncate().child(label));
     };
     return h_flex().gap(5).flex_wrap().items_center()
-      .child(chip("me", "Mine", "layers", "All my work (m)"))
+      .child(chip("me", "Home", "home", "Home (h)"))
       .children((this.prefs.pins ?? []).map(p => chip(p, p.split("/")[1] ?? p, "pin", p)));
   }
 
   toolbar(t) {
-    const res = this.result(), scope = this.prefs.scope;
+    const res = this.result(), scope = this.prefs.scope, home = this.isHome();
     return v_flex().flex_none().px(10).py(8).gap(7).border_b(1).border_color(t.border)
-      .child(h_flex().gap(8).items_center().flex_wrap()
+      .when(!home, el => el.child(h_flex().gap(8).items_center().flex_wrap()
         .child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
           .children(KINDS.map((k, i) => this.segment("gh-kind-" + k.id, k.label, this.prefs.kind === k.id, (cx) => this.setKind(k.id, cx), t, !isLoaded(res) ? null : kindPending(res, k.id) ? this.spinner(t, 10, "Counting") : kindCount(res, k.id) + (kindHasMore(res, k.id) ? "+" : "")))))
         .child(h_flex().flex_none().rounded(6).border_1().border_color(t.border).overflow_hidden()
@@ -544,7 +606,7 @@ export default class GitHub extends View {
         .when(!isRepoScope(scope), el => el.child(div().id("gh-group").h(22).px(8).flex().items_center().gap(4).rounded(5).cursor_pointer().text_size(11.5)
           .text_color(this.prefs.group ? t.foreground : t.dim).when(this.prefs.group, el => el.bg(t.selected)).hover(s => s.bg(t.hover))
           .tooltip("Group by repository (g)").on_click((_e, cx) => this.toggleGroup(cx)).child(svg(ICON("folder")).size(12)).child("by repo")))
-      )
+      ))
       .when((this.prefs.pins ?? []).length > 0, el => el.child(this.pinRow(t)))
       .child(h_flex().h(28).px(8).gap(6).items_center().rounded(6).border_1().border_color(this.filtering ? t.accent : t.input).bg(t.surface)
         .child(svg(ICON("search")).size(13).flex_none().text_color(t.dim))
@@ -554,6 +616,23 @@ export default class GitHub extends View {
   }
 
   listRow(row, t, mono, cols) {
+    if (row.kind === "block") {
+      return h_flex().id("gh-row-" + row.key).h(30).flex_none().px(10).mt(6).gap(6).items_center().cursor_pointer()
+        .text_size(12).font_semibold().text_color(t.foreground).hover(s => s.text_color(t.foreground))
+        .on_click((_e, cx) => this.toggleCollapsed(row.key, cx))
+        .child(svg(ICON(row.collapsed ? "chevron-right" : "chevron-down")).size(11).text_color(t.dim))
+        .child(svg(ICON(row.id === "pr" ? "pr-open" : "issue-open")).size(13).text_color(t.dim))
+        .child(row.label)
+        .child(row.pending ? this.spinner(t, 10, "Loading") : div().text_size(11).font_normal().text_color(t.dim).child(row.count > row.shown ? row.shown + " of " + row.count + (row.more ? "+" : "") : String(row.count)))
+        .child(div().flex_1())
+        .child(div().id("gh-all-" + row.id).flex_none().px(6).h(20).flex().items_center().rounded(4).text_size(11.5).font_normal().text_color(t.accent)
+          .hover(s => s.bg(t.hover)).tooltip("Every section, with closed ones too (" + (row.id === "pr" ? "1" : "2") + ")")
+          .on_click((_e, cx) => { cx.stop_propagation(); this.viewAll(row.id, cx); }).child("View all →"));
+    }
+    if (row.kind === "note") {
+      return h_flex().id("gh-row-" + row.key).h(28).flex_none().pl(30).gap(6).items_center().text_size(12).text_color(t.dim)
+        .when(row.loading, el => el.child(this.spinner(t, 11)).child("Loading…")).when(!row.loading, el => el.child(row.text));
+    }
     if (row.kind === "section") {
       return h_flex().id("gh-row-" + row.key).h(28).flex_none().px(10).mt(4).gap(6).items_center().cursor_pointer()
         .text_size(11).font_semibold().text_color(t.muted).hover(s => s.text_color(t.foreground))
@@ -594,13 +673,14 @@ export default class GitHub extends View {
           .on_click((_e, cx) => { cx.stop_propagation(); this.setScope(row.repo, cx); }).child("open repo →"));
     }
     const i = row.item, selected = row.key === this.selected, shown = this.detailId === i.id;
-    const rv = this.reviewLook(i.review, t), repoName = isRepoScope(this.prefs.scope) ? null : this.prefs.group ? null : i.repo.split("/")[1];
+    const rv = this.reviewLook(i.review, t), repoName = row.showRepo ? i.repo.split("/")[1] : isRepoScope(this.prefs.scope) ? null : this.prefs.group ? null : i.repo.split("/")[1];
     return h_flex().id("gh-row-" + row.key).h(30).flex_none().pl(10 + row.depth * 16).pr(10).mx(4).gap(7).items_center().rounded(6).cursor_pointer()
       .when(selected, el => el.bg(shown ? t.selected : t.raised)).hover(s => s.bg(t.hover))
       .on_click((_e, cx) => { this.handle.focus(); this.open(row, cx); })
       .child(this.stateIcon(i, t))
       .child(div().flex_none().text_size(11.5).font_family(mono).text_color(t.dim).child("#" + i.number))
       .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(isClosed(i) ? t.muted : t.foreground).child(i.title))
+      .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
       .when(cols.labels, el => el.children(i.labels.slice(0, 2).map(l => this.chip(l.name, this.labelColor(l.color, t), t))))
       .when(Boolean(repoName) && cols.repo, el => el.child(div().flex_none().max_w(120).truncate().text_size(11).text_color(t.dim).child(repoName)))
       .when(i.conflicts && !isClosed(i), el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))

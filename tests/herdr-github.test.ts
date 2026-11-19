@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -181,5 +181,21 @@ describe("github model", () => {
     expect(after.at(-1)).toMatchObject({ kind: "more", loaded: 1, total: 40 });
     expect(after.at(-1).pending).toBeUndefined();
     expect(seedResult(plan("me", "all"), "all", [emptyResult(plan("me", "open"))])).toBe(null);
+  });
+  test("home lists my open work per kind: review requests first and tagged, then newest, a few each", () => {
+    const p = plan("me", "open");
+    const res = answer(p, { pr_review: [pr("R", "o/b", 1, { author: { login: "bob" } })], pr_mine: [pr("A", "o/a", 2), pr("B", "o/a", 5)], pr_involved: [pr("A", "o/a", 2), pr("R", "o/b", 1)] });
+    const rows = homeRows(res, { limit: 2 });
+    expect(rows.map(r => r.kind + ":" + (r.id ?? r.item?.id ?? r.key) + (r.tag ? ":" + r.tag : ""))).toEqual(["block:pr", "item:R:to review", "item:B", "block:issue", "note:note:issue"]);
+    expect(rows[0]).toMatchObject({ label: "Pull requests", count: 3, shown: 2, pending: false });
+    expect(rows.at(-1)).toMatchObject({ loading: false, text: "No open issues." });
+    expect(homeRows(res, { query: "o/a" }).filter(r => r.kind === "item").map(r => r.item.id)).toEqual(["B", "A"]);
+    expect(homeRows(res, { collapsed: new Set(["block:pr"]) }).map(r => r.kind)).toEqual(["block", "block", "note"]);
+    expect(homeRows(emptyResult(p)).find(r => r.kind === "note")).toMatchObject({ loading: true });
+  });
+
+  test("projects come open first, closed after", () => {
+    expect(projectsOf({ repository: { projectsV2: { nodes: [{ number: 1, title: "Old", url: "u1", closed: true }, { number: 2, title: "Tracker", url: "u2", closed: false }] } } }).map(p => p.title)).toEqual(["Tracker", "Old"]);
+    expect(projectsOf(null)).toEqual([]);
   });
 });

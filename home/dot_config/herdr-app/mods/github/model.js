@@ -52,6 +52,11 @@ export function sectionQuery() {
     + "  rateLimit { cost remaining resetAt }\n}";
 }
 
+// Projects (v2) linked to a repository, for links in its header: they live on GitHub.
+export const PROJECTS_QUERY = "query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { projectsV2(first: 20, orderBy: {field: UPDATED_AT, direction: DESC}) { nodes { number title url closed } } } }";
+export const projectsOf = (data) => (data?.repository?.projectsV2?.nodes ?? []).filter(Boolean)
+  .map(p => ({ number: p.number, title: p.title, url: p.url, closed: Boolean(p.closed) })).sort((x, y) => Number(x.closed) - Number(y.closed));
+
 export const REPOS_QUERY = "query { viewer { login repositories(first: 30, orderBy: {field: PUSHED_AT, direction: DESC}, affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } } } }";
 
 export const DETAIL_QUERY = `query($id: ID!) { node(id: $id) {
@@ -242,6 +247,31 @@ export function kindCount(result, kind, repo = null) {
 export const kindHasMore = (result, kind) => (result?.sections[kind] ?? []).some(s => s.hasMore);
 // Every section of a kind has its own answer (or failed): only then is an empty list really empty.
 export const kindSettled = (result, kind) => (result?.sections[kind] ?? []).every(s => (s.loaded && !s.seeded) || s.error);
+// Home: a block per kind with my open work in one list (review requests first, tagged; then newest first), its first
+// few items, and "View all" for the full list. A block with nothing yet says whether it's still loading.
+export const HOME_LIMIT = 8;
+export function homeRows(result, { query = "", collapsed = new Set(), limit = HOME_LIMIT } = {}) {
+  if (!result) return [];
+  const preds = parseQuery(query, result.login), rows = [];
+  for (const { id: kind } of KINDS) {
+    const seen = new Set(), review = [], rest = [];
+    for (const s of result.sections[kind] ?? []) for (const id of s.ids) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const i = result.items.get(id);
+      if (i && preds.every(p => p(i))) (s.id === "review" ? review : rest).push(i);
+    }
+    rest.sort((x, y) => time(y.updatedAt) - time(x.updatedAt));
+    const all = [...review, ...rest], key = "block:" + kind;
+    rows.push({ kind: "block", key, id: kind, label: kind === "pr" ? "Pull requests" : "Issues", count: all.length, shown: Math.min(limit, all.length),
+      more: kindHasMore(result, kind), pending: kindPending(result, kind) || !kindSettled(result, kind), collapsed: collapsed.has(key) });
+    if (collapsed.has(key)) continue;
+    if (!all.length) { rows.push({ kind: "note", key: "note:" + kind, loading: !kindSettled(result, kind), text: query ? "Nothing matches this filter." : kind === "pr" ? "No open pull requests." : "No open issues." }); continue; }
+    for (const i of all.slice(0, limit)) rows.push({ kind: "item", key: "home:" + i.id, section: "home-" + kind, item: i, depth: 0, tag: review.includes(i) ? "to review" : null, showRepo: true });
+  }
+  return rows;
+}
+
 // Some section still shows another state's items: its count isn't known yet.
 export const kindPending = (result, kind) => (result?.sections[kind] ?? []).some(s => s.seeded && !s.error);
 
@@ -280,7 +310,7 @@ export const REPO_NAME = /^[\w.-]+\/[\w.-]+$/;
 export function scopeOptions({ login = null, pins = [], current = "me", counts = [], recent = [], query = "" } = {}) {
   const out = [], seen = new Set();
   const add = (id, label, note, group) => { if (id && !seen.has(id)) { seen.add(id); out.push({ id, label, note, group, pinned: pins.includes(id) }); } };
-  add("me", "All my work", login ? "@" + login : "", "me");
+  add("me", "Home", login ? "@" + login : "", "me");
   const count = new Map(counts.map(c => [c.repo, c.count]));
   for (const p of pins) add(p, p, count.has(p) ? String(count.get(p)) : "", "pinned");
   if (isRepoScope(current)) add(current, current, count.has(current) ? String(count.get(current)) : "", "repos");
@@ -288,7 +318,7 @@ export function scopeOptions({ login = null, pins = [], current = "me", counts =
   for (const r of recent) add(r, r, "recent", "repos");
   const q = String(query ?? "").trim().toLowerCase();
   if (!q) return out;
-  const hits = out.filter(o => o.id.toLowerCase().includes(q) || (o.id === "me" && o.label.toLowerCase().includes(q)));
+  const hits = out.filter(o => o.id.toLowerCase().includes(q) || (o.id === "me" && "home · all my work · mine".includes(q)));
   if (REPO_NAME.test(q) && !out.some(o => o.id.toLowerCase() === q)) hits.push({ id: query.trim(), label: query.trim(), note: "open", group: "repos", pinned: false });
   return hits;
 }
