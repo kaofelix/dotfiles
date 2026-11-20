@@ -1052,12 +1052,13 @@ export default class GitHub extends View {
     return h_flex().id("gh-row-" + row.key).h(lay.height).flex_none().gap(7).items_center().pl(indent).pr(10).mx(6).my(2).rounded(7).cursor_pointer()
       .when(selected, el => el.bg(shown ? t.selected : t.raised)).hover(s => s.bg(t.hover))
       .on_click((_e, cx) => { this.handle.focus(); this.open(row, cx); })
-      .child(v_flex().flex_none().w(18).gap(5).items_center()
-        .child(this.stateIcon(i, t))
-        .child(place ?? div().h(17)))
+      // Each gutter cell is as tall as the line beside it, so the icon centres on the title and the robot on the labels.
+      .child(v_flex().flex_none().w(18).gap(4)
+        .child(h_flex().h(20).justify_center().items_center().child(this.stateIcon(i, t)))
+        .child(h_flex().h(17).justify_center().items_center().when(Boolean(place), el => el.child(place))))
       .child(v_flex().flex_1().min_w(0).gap(4)
         // Line 1: number and title; where, when and who on the right, the avatar last.
-        .child(h_flex().gap(7).items_center().min_w(0)
+        .child(h_flex().h(20).gap(7).items_center().min_w(0)
           .child(div().flex_none().text_size(11.5).font_family(mono).text_color(t.dim).child("#" + i.number))
           .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(closed ? t.muted : t.foreground).child(i.title))
           .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
