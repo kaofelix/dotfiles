@@ -1052,21 +1052,22 @@ export default class GitHub extends View {
       .when(Boolean(repoName) && cols.repo, el => el.child(div().id("gh-rp-" + row.key).flex_none().max_w(120).truncate().text_size(11).cursor_pointer()
         .text_color(hasToken(this.query, filterToken("repo", i.repo)) ? t.accent : t.dim).hover(s => s.text_color(t.foreground)).tooltip("Filter by repo:" + i.repo)
         .on_click((_e, cx) => { cx.stop_propagation(); this.toggleFilter(filterToken("repo", i.repo), cx); }).child(repoName)))
-      .when(i.conflicts && !isClosed(i), el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
+      .when(i.conflicts && !isClosed(i), el => el.child(div().id("gh-cf-" + row.key).flex_none().tooltip("Merge conflicts").child(svg(ICON("conflict")).size(12).text_color(t.blocked))))
       .when(Boolean(rv) && !isClosed(i), el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
       .when(i.kind === "pr" && !isClosed(i), el => { const c = this.placeChip("gh-place-" + row.key, i, t); return c ? el.child(c) : el; })
       .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))
       .when(cols.comments, el => el.child(h_flex().flex_none().w(30).gap(3).items_center().justify_end().text_size(11).text_color(t.dim)
         .when(i.comments > 0, el => el.child(svg(ICON("comment")).size(10)).child(String(i.comments)))))
       .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
-      .when(cols.author && !row.owner, el => el.child(h_flex().flex_none().w(24).justify_end().child(this.avatar("gh-au-" + row.key, i.author, t, 18, "Opened by " + i.author))))
+      // When, then who: the avatar (or owners) is the row's last element.
+      .child(div().flex_none().w(30).text_right().text_size(11).text_color(t.dim).tooltip("Updated").child(age(i.updatedAt)))
+      .when(cols.author && !row.owner, el => el.child(h_flex().flex_none().w(20).justify_end().child(this.avatar("gh-au-" + row.key, i.author, t, 18, "Opened by " + i.author))))
       .when(Boolean(row.owner), el => el.child(h_flex().flex_none().w(52).justify_end()
         .when(i.assignees.length > 0, el => el.child(this.avatars("gh-as-" + row.key, i.assignees, t, 18, "Assigned: " + i.assignees.join(", "))))
         // A pull request without assignees is owned by whoever opened it.
         .when(!i.assignees.length && i.kind === "pr", el => el.child(this.avatar("gh-as-" + row.key, i.author, t, 18, "Opened by " + i.author)))
         .when(!i.assignees.length && i.kind !== "pr", el => el.child(div().id("gh-as-" + row.key).text_size(11).text_color(t.working).tooltip("Nobody is assigned").child("unassigned")))))
-      .child(div().flex_none().w(30).text_right().text_size(11).text_color(t.dim).tooltip("Updated").child(age(i.updatedAt)));
-
+;
   }
 
   // Two lines per item (v): the title gets the first; labels and state the second.
@@ -1122,7 +1123,7 @@ export default class GitHub extends View {
             .border_color(t.border).text_color(t.dim).text_size(10.5).tooltip(hiddenNames.join(" · ")).child("+" + lay.hidden)))
           .child(div().flex_1().min_w(4))
           .when(Boolean(rv) && !closed, el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
-          .when(i.conflicts && !closed, el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
+          .when(i.conflicts && !closed, el => el.child(div().id("gh-cf-" + row.key).flex_none().tooltip("Merge conflicts").child(svg(ICON("conflict")).size(12).text_color(t.blocked))))
           .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
           .when(i.comments > 0, el => el.child(h_flex().flex_none().gap(3).items_center().text_size(11).text_color(t.dim).tooltip("Comments").child(svg(ICON("comment")).size(10)).child(String(i.comments))))
           .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))));
