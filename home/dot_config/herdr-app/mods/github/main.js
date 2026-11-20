@@ -118,6 +118,19 @@ export default class GitHub extends View {
           else if (c === "scope") this.setPicking(!this.picking, cx);
           else if (c === "home") this.goHome(cx);
           else if (c === "sidebar") this.toggleSidebar(cx);
+          // Opens a pull request or issue of the shown repository by number, listed or not (for keys and scripts).
+          else if (/^show-\d+$/.test(c) && isRepoScope(this.prefs.scope)) {
+            const n = Number(c.slice(5)), [owner, name] = this.prefs.scope.split("/");
+            cx.spawn(async (cx) => {
+              try {
+                const { data } = await graphql(nodesQuery([]).replace(/query \{[\s\S]*$/, "") + "query($owner: String!, $name: String!, $n: Int!) { repository(owner: $owner, name: $name) { issueOrPullRequest(number: $n) { ...PR ...IS } } }", { owner, name, n }, this.opts());
+                const node = data?.repository?.issueOrPullRequest;
+                if (!node) return;
+                const item = nodesOf({ nodes: [node] })[0];
+                this.shown = item; this.detailId = item.id; this.fetchDetail(item, cx); cx.notify();
+              } catch (e) { console.warn("github: show: " + (e?.message ?? e)); }
+            });
+          }
           else if (/^open-\d+$/.test(c)) { const n = Number(c.slice(5)); const row = this.rows().find(r => r.kind === "item" && r.item.number === n); if (row) this.open(row, cx); }
           else if (c === "pin-first") { const row = this.rows().find(r => r.kind === "item" && r.section !== "home-pinned"); if (row) this.toggleItemPin(row.item, cx); }
           else if (c === "open-first") { const row = this.rows().find(r => r.kind === "item"); if (row) this.open(row, cx); }
@@ -420,13 +433,14 @@ export default class GitHub extends View {
   current() { return this.detailId ? this.findItem(this.detailId) : null; }
   // An item by id wherever it was listed: the lists' results, then milestones' open work (and their epics' sub-issues).
   findItem(id) {
+    if (this.shown?.id === id) return this.shown;
     for (const e of this.cache.values()) { const i = e.result.items.get(id); if (i) return i; }
     for (const m of this.msItems.values()) {
       const i = m.issues?.find(x => x.id === id) ?? m.prs?.find(x => x.id === id);
       if (i) return i;
       for (const kids of m.subs?.values() ?? []) { const k = kids.find(x => x.id === id); if (k) return k; }
     }
-    return (this.prefs.pinnedItems ?? []).find(p => p.id === id) ?? null;
+    return (this.prefs.pinnedItems ?? []).find(p => p.id === id)  ?? null;
   }
   isLoading() { return this.loading.size > 0; }
 
@@ -1214,6 +1228,21 @@ export default class GitHub extends View {
       .child(body);
     const checksText = !detail ? "…" : !c.total ? "none" : [c.fail && c.fail + " failing", c.pending && c.pending + " running", c.pass + " passed"].filter(Boolean).join(" · ");
     const th = m.threads, ap = m.approvals;
+    // Merged or closed: one line, who/what/when, as GitHub shows it; nothing is left to check.
+    if (m.compact) {
+      const mg = m.merged;
+      return h_flex().rounded(7).border_1().border_color(t.border).px(10).py(9).gap(10).items_center()
+        .child(div().size(26).flex_none().rounded(13).flex().items_center().justify_center().bg(tone).text_color(t.background).child(svg(ICON(mark)).size(13)))
+        .child(v_flex().flex_1().min_w(0).gap(1)
+          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child(m.title))
+          .child(h_flex().gap(4).items_center().text_size(12).text_color(t.muted)
+            .when(Boolean(mg?.by), el => el.child(this.avatar("gh-mb-by", mg.by, t, 14)))
+            .child(div().child(m.text))
+            .when(Boolean(mg?.short), el => el.child(div().text_color(t.dim).child("in")).child(div().id("gh-mb-sha").font_family(settings().font_family ?? "JetBrains Mono").text_size(11.5)
+              .text_color(t.accent).cursor_pointer().hover(st => st.text_color(t.foreground)).tooltip("Open the merge commit").on_click((_e, cx) => cx.open_url(mg.url)).child(mg.short)))
+            .when(Boolean(mg?.at ?? i.closedAt), el => el.child(div().text_color(t.dim).child(age(mg?.at ?? i.closedAt) + " ago")))))
+        .when(m.tone === "merged" && Boolean(mg?.oid), el => el.child(this.textButton("gh-mb-copy", "Copy SHA", "Copy " + mg.oid, (cx) => this.copy(mg.oid, cx), t, "copy")));
+    }
     return v_flex().rounded(7).border_1().border_color(m.tone === "blocked" ? tone : t.border).overflow_hidden()
       .child(h_flex().px(10).py(9).gap(10).items_center()
         .child(div().size(26).flex_none().rounded(13).flex().items_center().justify_center().bg(tone).text_color(t.background)
@@ -1222,6 +1251,7 @@ export default class GitHub extends View {
           .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child(m.title))
           .child(div().text_size(12).text_color(t.muted).child(m.text)))
         .when(m.action === "conflicts", el => el.child(this.textButton("gh-resolve", "Resolve on GitHub", "Open GitHub's conflict editor", (cx) => cx.open_url(i.url + "/conflicts"), t, "external")))
+        .when(m.tone === "ready", el => el.child(this.textButton("gh-mb-merge", "Merge on GitHub", "Open it on GitHub to merge", (cx) => cx.open_url(i.url), t, "external")))
         .when(this.canReview(i) && !["merged", "closed"].includes(m.tone), el => el.child(this.textButton("gh-mb-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff"))))
       .child(h_flex().border_t(1).border_color(t.border).items_stretch()
         .child(cell("gh-mb-checks", "Checks", checksText,
@@ -1231,7 +1261,7 @@ export default class GitHub extends View {
         .child(cell("gh-mb-threads", "Conversations", !detail ? "…" : !th?.total ? "none" : th.unresolved ? th.unresolved + " of " + th.total + " open" : "all " + th.total + " resolved",
           bar(!th?.total ? [[1, detail ? t.border : t.raised]] : [[th.total - th.unresolved, t.done], [th.unresolved, t.working]])))
         .child(div().w(1).bg(t.border))
-        .child(cell("gh-mb-approvals", "Approvals", !detail ? "…" : ap.changes ? ap.changes + " requested changes" : ap.approved ? ap.approved + " approved" : ap.decision === "required" ? "required" : "none",
+        .child(cell("gh-mb-approvals", "Approvals", !detail ? "…" : [ap.changes && ap.changes + " requested changes", ap.approved && ap.approved + " approved", ap.pending && ap.pending + " pending"].filter(Boolean).join(" · ") || (ap.decision === "required" ? "required" : "none"),
           bar(ap.changes ? [[1, t.blocked]] : ap.approved ? [[1, t.done]] : [[1, ap.decision === "required" ? t.working : detail ? t.border : t.raised]]))));
   }
 

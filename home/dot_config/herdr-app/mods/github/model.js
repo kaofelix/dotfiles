@@ -162,7 +162,7 @@ export const projectsOf = (data) => (data?.repository?.projectsV2?.nodes ?? []).
 export const REPOS_QUERY = "query { viewer { login repositories(first: 30, orderBy: {field: PUSHED_AT, direction: DESC}, affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } } } }";
 
 export const DETAIL_QUERY = `query($id: ID!) { node(id: $id) {
-  ... on PullRequest { body mergeStateStatus mergeable reviewDecision
+  ... on PullRequest { body mergeStateStatus mergeable reviewDecision mergedAt mergedBy { login } mergeCommit { oid abbreviatedOid url }
     reviewThreads(first: 100) { totalCount nodes { isResolved } }
     comments(last: 10) { totalCount nodes { author { login } body createdAt url } }
     latestOpinionatedReviews(first: 20) { nodes { author { login } state submittedAt } }
@@ -502,6 +502,7 @@ export function normalizeDetail(node) {
   const seen = new Set();
   return {
     body: node.body ?? "", mergeState: node.mergeStateStatus ?? null, mergeable: node.mergeable ?? null,
+    merged: node.mergedAt ? { by: node.mergedBy?.login ?? null, at: node.mergedAt, oid: node.mergeCommit?.oid ?? null, short: node.mergeCommit?.abbreviatedOid ?? null, url: node.mergeCommit?.url ?? null } : null,
     threads: node.reviewThreads ? { total: node.reviewThreads.totalCount ?? 0, unresolved: (node.reviewThreads.nodes ?? []).filter(x => x && !x.isResolved).length } : null,
     commentCount: node.comments?.totalCount ?? 0,
     comments: (node.comments?.nodes ?? []).map(c => ({ author: c.author?.login ?? "ghost", body: c.body ?? "", createdAt: c.createdAt, url: c.url })),
@@ -521,10 +522,14 @@ export function mergeStatus(item, detail = null) {
   const threads = detail?.threads ?? null, state = detail?.mergeState ?? null;
   const conflicts = item.conflicts || detail?.mergeable === "CONFLICTING" || state === "DIRTY";
   const failing = sum.fail > 0 || (!checks.length && item.ci === "fail"), running = sum.pending > 0 || (!checks.length && item.ci === "pending");
-  const parts = { checks: { ...sum, total: checks.length, rollup: item.ci }, threads, approvals: { approved: approvals, changes, decision: item.review } };
+  // Reviewers asked who haven't answered yet: GitHub's "n pending".
+  const answered = new Set(reviews.map(r => r.author)), pending = (item.reviewers ?? []).filter(r => !answered.has(r)).length;
+  const parts = { checks: { ...sum, total: checks.length, rollup: item.ci }, threads, approvals: { approved: approvals, changes, pending, decision: item.review } };
   const say = (tone, title, text, action = null) => ({ tone, title, text, action, ...parts });
-  if (item.state === "merged") return say("merged", "Merged", "Merged into " + (item.base ?? "its base branch") + ".");
-  if (item.state === "closed") return say("closed", "Closed", "Closed without merging.");
+  // Merged: who, which commit and when, on one line (GitHub drops the cells here).
+  // The details are fresher than the list a stale item came from: merged there means merged.
+  if (item.state === "merged" || detail?.merged) return { ...say("merged", "Merged", (detail?.merged?.by ?? "Someone") + " merged into " + (item.base ?? "its base branch")), merged: detail?.merged ?? { at: item.closedAt }, compact: true };
+  if (item.state === "closed") return { ...say("closed", "Closed", "Closed without merging."), compact: true };
   if (conflicts) return say("blocked", "Merge conflicts", "Resolve the merge conflicts before this can merge.", "conflicts");
   if (item.state === "draft") return say("draft", "Draft", "Still a work in progress; mark it ready for review to merge.");
   if (failing) return say("blocked", "Checks failing", (sum.fail || "Some") + " check" + (sum.fail === 1 ? "" : "s") + " failed.", "checks");
@@ -536,7 +541,7 @@ export function mergeStatus(item, detail = null) {
   if (state === "BLOCKED") return say("blocked", "Blocked", "A branch rule is blocking the merge.");
   if (state === "UNSTABLE") return say("ready", "Ready to merge", "Some checks that aren't required failed.");
   if (state === "UNKNOWN" || (!detail && item.ci == null)) return say("pending", "Checking", "GitHub is still working out whether this can merge.");
-  return say("ready", "Ready to merge", "No conflicts with " + (item.base ?? "the base branch") + ".");
+  return say("ready", "Ready to merge", "All requirements are met.");
 }
 
 // Markdown in pieces: plain runs and <details> blocks (with their <summary>), nested ones inside, so each block can be

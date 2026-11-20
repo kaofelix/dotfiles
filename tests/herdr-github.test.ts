@@ -287,7 +287,12 @@ describe("github model", () => {
     const d = (extra) => normalizeDetail({ mergeStateStatus: "CLEAN", mergeable: "MERGEABLE", reviewThreads: { totalCount: 0, nodes: [] }, ...extra });
     const fail = { commits: { nodes: [{ commit: { statusCheckRollup: { contexts: { nodes: [{ __typename: "CheckRun", name: "lint", status: "COMPLETED", conclusion: "FAILURE" }, { __typename: "CheckRun", name: "test", status: "COMPLETED", conclusion: "SUCCESS" }] } } } }] } };
     expect(mergeStatus(normalize(issue("I", "o/r", 2)))).toBe(null);
-    expect(mergeStatus(base, d({}))).toMatchObject({ tone: "ready", title: "Ready to merge" });
+    expect(mergeStatus(base, d({}))).toMatchObject({ tone: "ready", title: "Ready to merge", text: "All requirements are met." });
+    expect(mergeStatus({ ...base, reviewers: ["ann", "bob"] }, d({ latestOpinionatedReviews: { nodes: [{ author: { login: "ann" }, state: "COMMENTED" }] } })).approvals.pending).toBe(1);
+    const merged = mergeStatus({ ...base, state: "merged" }, d({ mergedAt: "2026-01-01T00:00:00Z", mergedBy: { login: "cv" }, mergeCommit: { oid: "74ccd7aff", abbreviatedOid: "74ccd7a", url: "mu" } }));
+    expect(merged).toMatchObject({ tone: "merged", compact: true, text: "cv merged into main", merged: { by: "cv", short: "74ccd7a", url: "mu" } });
+    // An item from an older list still says open; the details know better.
+    expect(mergeStatus(base, d({ mergedAt: "2026-01-01T00:00:00Z", mergedBy: { login: "cv" } })).tone).toBe("merged");
     expect(mergeStatus({ ...base, conflicts: true }, d(fail))).toMatchObject({ tone: "blocked", title: "Merge conflicts", action: "conflicts" });
     expect(mergeStatus(base, d({ mergeStateStatus: "DIRTY", mergeable: "CONFLICTING" })).title).toBe("Merge conflicts");
     expect(mergeStatus(base, d(fail))).toMatchObject({ title: "Checks failing", text: "1 check failed.", checks: { pass: 1, fail: 1, total: 2 } });

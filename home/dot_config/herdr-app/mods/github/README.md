@@ -33,6 +33,8 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   Pins are kept with their last-seen state and refreshed by id, so closed or merged ones stay until unpinned. Pinned rows elsewhere show a pin.
 - **Merge box** (a pull request's details, at the top, as on GitHub's new PR page): what stands between it and merging, in GitHub's order
   (merge conflicts, draft, failing checks, changes requested, out of date, review required, running checks, open conversations), else ready to merge,
+  Ready to merge offers **Merge on GitHub**; merged and closed ones get a single line instead (who merged it, the merge commit, when, **Copy SHA**),
+  and a list that still says open is corrected by the details. Approvals counts requested reviewers who haven't answered as pending.
   with **Resolve on GitHub** (its conflict editor) for conflicts and **Review diff** whenever the repository is cloned in an open terminal. Under it, **Checks**, **Conversations** (review threads) and
   **Approvals**, each with a bar; clicking Checks lists them all.
 - **Activity** (a pull request's details, after its description): the timeline as GitHub draws it, newest first (the latest 100 entries).
