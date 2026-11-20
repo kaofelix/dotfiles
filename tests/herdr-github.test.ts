@@ -301,7 +301,7 @@ describe("github model", () => {
     expect(mergeStatus(base, d({ reviewThreads: { totalCount: 3, nodes: [{ isResolved: true }, { isResolved: false }, { isResolved: false }] } }))).toMatchObject({ title: "Unresolved conversations", threads: { total: 3, unresolved: 2 } });
     expect(mergeStatus(base, d({ latestOpinionatedReviews: { nodes: [{ author: { login: "a" }, state: "APPROVED" }] } })).approvals).toMatchObject({ approved: 1 });
     expect(mergeStatus({ ...base, state: "merged" }).tone).toBe("merged");
-    expect(mergeStatus({ ...base, state: "draft" }, d({})).tone).toBe("draft");
+    expect(mergeStatus({ ...base, state: "draft" }, d({}))).toMatchObject({ tone: "draft", action: "ready" });
   });
   test("markdown splits into plain runs and folded <details> blocks, nested ones too", () => {
     const md = "Intro\n\n<details>\n<!-- note -->\n<summary>Authoring <b>session</b></summary>\n\n| a |\n| - |\n<details open><summary>Inner</summary>deep</details>\n</details>\n\nAfter";

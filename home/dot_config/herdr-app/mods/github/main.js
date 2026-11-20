@@ -386,6 +386,24 @@ export default class GitHub extends View {
     });
   }
 
+  // The one write action so far: marking a draft ready for review, as GitHub's draft box offers (undone on GitHub
+  // with "Convert to draft"). Then the item, its details and the lists refresh.
+  markReady(item, cx) {
+    if (this.readying) return;
+    this.readying = item.id; this.actionError = null; cx.notify();
+    cx.spawn(async (cx) => {
+      try {
+        const r = await gh(["pr", "ready", String(item.number), "-R", item.repo], this.opts(30000));
+        if (r.code !== 0) throw new Error((r.stderr || r.stdout || "gh pr ready failed").trim().split("\n")[0]);
+        item.state = "open";
+        for (const m of [this.details, this.timelines]) { const x = m.get(item.id); if (x) x.stale = true; }
+        this.fetchDetail(item, cx);
+        this.load(cx, true); this.refreshPinned(cx, true);
+      } catch (e) { this.actionError = { id: item.id, msg: String(e?.message ?? e) }; }
+      finally { this.readying = null; cx.notify(); }
+    });
+  }
+
   // A pull request's activity, newest first (the last 100 entries), refetched when it changes.
   fetchTimeline(item, cx) {
     if (item.kind !== "pr" || checking()) return;
@@ -1249,7 +1267,11 @@ export default class GitHub extends View {
           .child(m.tone === "pending" ? svg(ICON(mark)).size(13).spin(1600) : svg(ICON(mark)).size(13)))
         .child(v_flex().flex_1().min_w(0).gap(1)
           .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child(m.title))
-          .child(div().text_size(12).text_color(t.muted).child(m.text)))
+          .child(div().text_size(12).text_color(t.muted).child(m.text))
+          .when(this.actionError?.id === i.id, el => el.child(div().text_size(11.5).text_color(t.blocked).child(this.actionError.msg))))
+        .when(m.action === "ready", el => el.child(this.readying === i.id
+          ? h_flex().h(24).px(8).gap(5).flex_none().items_center().text_size(12).text_color(t.dim).child(this.spinner(t, 12)).child("Marking ready…")
+          : this.textButton("gh-mb-ready", "Ready for review", "Mark it ready for review (gh pr ready)", (cx) => this.markReady(i, cx), t, "pr-open")))
         .when(m.action === "conflicts", el => el.child(this.textButton("gh-resolve", "Resolve on GitHub", "Open GitHub's conflict editor", (cx) => cx.open_url(i.url + "/conflicts"), t, "external")))
         .when(m.tone === "ready", el => el.child(this.textButton("gh-mb-merge", "Merge on GitHub", "Open it on GitHub to merge", (cx) => cx.open_url(i.url), t, "external")))
         .when(this.canReview(i) && !["merged", "closed"].includes(m.tone), el => el.child(this.textButton("gh-mb-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff"))))

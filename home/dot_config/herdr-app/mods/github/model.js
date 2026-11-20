@@ -531,7 +531,7 @@ export function mergeStatus(item, detail = null) {
   if (item.state === "merged" || detail?.merged) return { ...say("merged", "Merged", (detail?.merged?.by ?? "Someone") + " merged into " + (item.base ?? "its base branch")), merged: detail?.merged ?? { at: item.closedAt }, compact: true };
   if (item.state === "closed") return { ...say("closed", "Closed", "Closed without merging."), compact: true };
   if (conflicts) return say("blocked", "Merge conflicts", "Resolve the merge conflicts before this can merge.", "conflicts");
-  if (item.state === "draft") return say("draft", "Draft", "Still a work in progress; mark it ready for review to merge.");
+  if (item.state === "draft") return say("draft", "Draft", "Still a work in progress; draft pull requests can't be merged.", "ready");
   if (failing) return say("blocked", "Checks failing", (sum.fail || "Some") + " check" + (sum.fail === 1 ? "" : "s") + " failed.", "checks");
   if (item.review === "changes" || changes) return say("blocked", "Changes requested", "A reviewer asked for changes before this can merge.");
   if (state === "BEHIND") return say("blocked", "Out of date", "This branch is behind " + (item.base ?? "its base") + "; update it before merging.");
