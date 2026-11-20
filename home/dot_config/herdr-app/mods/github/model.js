@@ -161,15 +161,15 @@ export const projectsOf = (data) => (data?.repository?.projectsV2?.nodes ?? []).
 
 export const REPOS_QUERY = "query { viewer { login repositories(first: 30, orderBy: {field: PUSHED_AT, direction: DESC}, affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } } } }";
 
-export const DETAIL_QUERY = `query($id: ID!) { node(id: $id) {
+export const DETAIL_QUERY = `query($id: ID!, $number: Int!) { node(id: $id) {
   ... on PullRequest { body mergeStateStatus mergeable reviewDecision mergedAt mergedBy { login } mergeCommit { oid abbreviatedOid url }
     reviewThreads(first: 100) { totalCount nodes { isResolved } }
     comments(last: 10) { totalCount nodes { author { login } body createdAt url } }
     latestOpinionatedReviews(first: 20) { nodes { author { login } state submittedAt } }
     closingIssuesReferences(first: 10) { nodes { number title url state stateReason repository { nameWithOwner } } }
     commits(last: 1) { nodes { commit { oid statusCheckRollup { state contexts(first: 80) { nodes { __typename
-      ... on CheckRun { name status conclusion detailsUrl checkSuite { workflowRun { workflow { name } } } }
-      ... on StatusContext { context state targetUrl } } } } } } } }
+      ... on CheckRun { name status conclusion detailsUrl isRequired(pullRequestNumber: $number) checkSuite { workflowRun { event workflow { name } } } }
+      ... on StatusContext { context state targetUrl isRequired(pullRequestNumber: $number) } } } } } } } }
   ... on Issue { body
     comments(last: 10) { totalCount nodes { author { login } body createdAt url } }
     timelineItems(itemTypes: [CROSS_REFERENCED_EVENT, CONNECTED_EVENT], last: 15) { nodes {
@@ -507,12 +507,15 @@ function checkState(c) {
 const linkOf = (n) => n && n.number ? { kind: n.__typename === "Issue" ? "issue" : "pr", repo: n.repository?.nameWithOwner ?? "", number: n.number, title: n.title ?? "", url: n.url, state: stateOf({ ...n, __typename: n.__typename ?? "Issue" }) } : null;
 
 // What the detail view adds to an item: body, checks (failing first), latest reviews, comments and linked work.
+// Bumped when details gain fields, so saved ones from before are fetched again.
+export const DETAIL_V = 2;
 export function normalizeDetail(node) {
   if (!node) return null;
   const contexts = node.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts?.nodes ?? [];
   const checks = contexts.map(c => ({
-    name: c.__typename === "StatusContext" ? c.context : [c.checkSuite?.workflowRun?.workflow?.name, c.name].filter(Boolean).join(" / "),
-    state: checkState(c), url: c.detailsUrl ?? c.targetUrl ?? null,
+    // As GitHub writes it: "Workflow / job (event)".
+    name: c.__typename === "StatusContext" ? c.context : [c.checkSuite?.workflowRun?.workflow?.name, c.name].filter(Boolean).join(" / ") + (c.checkSuite?.workflowRun?.event ? " (" + c.checkSuite.workflowRun.event + ")" : ""),
+    state: checkState(c), url: c.detailsUrl ?? c.targetUrl ?? null, required: Boolean(c.isRequired), job: c.__typename === "StatusContext" ? c.context : c.name,
   })).sort((a, b) => CHECK_ORDER[a.state] - CHECK_ORDER[b.state] || a.name.localeCompare(b.name));
   const linked = [];
   for (const n of node.closingIssuesReferences?.nodes ?? []) linked.push(linkOf({ ...n, __typename: "Issue" }));
@@ -527,6 +530,7 @@ export function normalizeDetail(node) {
     reviews: (node.latestOpinionatedReviews?.nodes ?? []).map(r => ({ author: r.author?.login ?? "ghost", state: lower(r.state), at: r.submittedAt })),
     checks, linked: linked.filter(l => l && !seen.has(l.url) && seen.add(l.url)),
     headOid: node.commits?.nodes?.[0]?.commit?.oid ?? null,
+    v: DETAIL_V,
   };
 }
 
@@ -546,11 +550,14 @@ const RUN = { success: "pass", failure: "fail", timed_out: "fail", startup_failu
 const STATUS = { success: "pass", failure: "fail", error: "fail", pending: "pending" };
 // The same entries normalizeDetail makes, failing first. Workflow names come from the checks already shown, matched by run name.
 export function checksOf(runs, statuses, known = []) {
-  const prefix = new Map();
-  for (const k of known) { const i = k.name.lastIndexOf(" / "); if (i > 0) prefix.set(k.name.slice(i + 3), k.name.slice(0, i)); }
+  // REST doesn't say a run's workflow, event or whether it's required: those carry over from the checks already known, by job name.
+  const byJob = new Map();
+  // Older entries have no job: it's their name less the workflow prefix and the "(event)" suffix.
+  for (const k of known) byJob.set(k.job ?? k.name.replace(/ \([a-z_]+\)$/, "").split(" / ").slice(-2).join(" / "), k);
+  for (const k of known) if (!k.job) byJob.set(k.name.replace(/ \([a-z_]+\)$/, "").split(" / ").pop(), k);
   const out = [
-    ...(runs?.check_runs ?? []).map(r => ({ name: prefix.has(r.name) ? prefix.get(r.name) + " / " + r.name : r.name, state: r.status !== "completed" ? "pending" : RUN[r.conclusion] ?? "pending", url: r.html_url ?? r.details_url ?? null })),
-    ...(statuses?.statuses ?? []).map(s => ({ name: s.context, state: STATUS[s.state] ?? "pending", url: s.target_url ?? null })),
+    ...(runs?.check_runs ?? []).map(r => { const k = byJob.get(r.name); return { name: k?.name ?? r.name, job: r.name, state: r.status !== "completed" ? "pending" : RUN[r.conclusion] ?? "pending", url: r.html_url ?? r.details_url ?? null, required: Boolean(k?.required) }; }),
+    ...(statuses?.statuses ?? []).map(s => ({ name: s.context, job: s.context, state: STATUS[s.state] ?? "pending", url: s.target_url ?? null, required: Boolean(byJob.get(s.context)?.required) })),
   ];
   return out.sort((x, y) => CHECK_ORDER[x.state] - CHECK_ORDER[y.state] || x.name.localeCompare(y.name));
 }
@@ -572,7 +579,10 @@ export function mergeStatus(item, detail = null) {
   const approvals = reviews.filter(r => r.state === "approved").length, changes = reviews.filter(r => r.state === "changes_requested").length;
   const threads = detail?.threads ?? null, state = detail?.mergeState ?? null;
   const conflicts = item.conflicts || detail?.mergeable === "CONFLICTING" || state === "DIRTY";
-  const failing = sum.fail > 0 || (!checks.length && item.ci === "fail"), running = sum.pending > 0 || (!checks.length && item.ci === "pending");
+  // Only required checks block a merge, as on GitHub; a failing optional one leaves it "able to merge".
+  const anyRequired = checks.some(c => c.required), requiredFail = checks.filter(c => c.state === "fail" && (c.required || !anyRequired && state !== "UNSTABLE")).length;
+  const optionalFail = sum.fail - requiredFail;
+  const failing = requiredFail > 0 || (!checks.length && item.ci === "fail"), running = sum.pending > 0 || (!checks.length && item.ci === "pending");
   // Reviewers asked who haven't answered yet: GitHub's "n pending".
   const answered = new Set(reviews.map(r => r.author)), pending = (item.reviewers ?? []).filter(r => !answered.has(r)).length;
   const parts = { checks: { ...sum, total: checks.length, rollup: item.ci }, threads, approvals: { approved: approvals, changes, pending, decision: item.review } };
@@ -583,15 +593,15 @@ export function mergeStatus(item, detail = null) {
   if (item.state === "closed") return { ...say("closed", "Closed", "Closed without merging."), compact: true };
   if (conflicts) return say("blocked", "Merge conflicts", "Resolve the merge conflicts before this can merge.", "conflicts");
   if (item.state === "draft") return say("draft", "Draft", "Still a work in progress; draft pull requests can't be merged.", "ready");
-  if (failing) return say("blocked", "Checks failing", (sum.fail || "Some") + " check" + (sum.fail === 1 ? "" : "s") + " failed.", "checks");
+  if (failing) return say("blocked", "Checks failing", (requiredFail || "Some") + (anyRequired ? " required" : "") + " check" + (requiredFail === 1 ? "" : "s") + " failed.", "checks");
   if (item.review === "changes" || changes) return say("blocked", "Changes requested", "A reviewer asked for changes before this can merge.");
   if (state === "BEHIND") return say("blocked", "Out of date", "This branch is behind " + (item.base ?? "its base") + "; update it before merging.");
   if (item.review === "required") return say("pending", "Review required", "An approving review is required before this can merge.");
   if (running) return say("pending", "Checks running", sum.pending ? sum.pending + " check" + (sum.pending === 1 ? " is" : "s are") + " still running." : "Checks are still running.", "checks");
   if (threads?.unresolved) return say("pending", "Unresolved conversations", threads.unresolved + " review thread" + (threads.unresolved === 1 ? "" : "s") + " still open.");
   if (state === "BLOCKED") return say("blocked", "Blocked", "A branch rule is blocking the merge.");
-  if (state === "UNSTABLE") return say("ready", "Ready to merge", "Some checks that aren't required failed.");
   if (state === "UNKNOWN" || (!detail && item.ci == null)) return say("pending", "Checking", "GitHub is still working out whether this can merge.");
+  if (optionalFail > 0 || state === "UNSTABLE") return say("able", "Able to merge", "Some non-required checks are failing.");
   return say("ready", "Ready to merge", "All requirements are met.");
 }
 

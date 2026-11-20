@@ -367,6 +367,23 @@ describe("github model", () => {
     const done = timelineOf({ node: { timelineItems: { nodes: [node("ClosedEvent", 1, { stateReason: "COMPLETED", closer: { __typename: "PullRequest", number: 9, title: "P", url: "p", state: "MERGED", repository: { nameWithOwner: "o/r" } } })] } } });
     expect(done.events[0]).toMatchObject({ text: "closed this as completed in", icon: "closed", link: { number: 9 } });
   });
+  test("only required checks block a merge; optional failures leave it able to merge, as GitHub says", () => {
+    const pr = { kind: "pr", state: "open", ci: "fail", review: null, reviewers: [] };
+    const chk = (name, state, required) => ({ name, state, required, url: "" });
+    const opt = mergeStatus(pr, { mergeState: "UNSTABLE", checks: [chk("a", "pass", true), chk("Live / station / x (push)", "fail", false)], reviews: [] });
+    expect([opt.tone, opt.title, opt.text]).toEqual(["able", "Able to merge", "Some non-required checks are failing."]);
+    const req = mergeStatus(pr, { mergeState: "BLOCKED", checks: [chk("a", "fail", true), chk("b", "fail", false)], reviews: [] });
+    expect([req.tone, req.title, req.text]).toEqual(["blocked", "Checks failing", "1 required check failed."]);
+    // Without requirement data (none marked required), a failure blocks unless GitHub says UNSTABLE.
+    expect(mergeStatus(pr, { mergeState: "BLOCKED", checks: [chk("a", "fail", false)], reviews: [] }).title).toBe("Checks failing");
+    const d = normalizeDetail({ commits: { nodes: [{ commit: { oid: "o", statusCheckRollup: { contexts: { nodes: [
+      { __typename: "CheckRun", name: "station / dgx", status: "COMPLETED", conclusion: "FAILURE", detailsUrl: "u", isRequired: false, checkSuite: { workflowRun: { event: "push", workflow: { name: "Live / V1 PR hardware" } } } },
+      { __typename: "StatusContext", context: "coverage", state: "SUCCESS", targetUrl: "c", isRequired: true },
+    ] } } } }] } });
+    expect(d.checks.map(k => k.name + ":" + k.required)).toEqual(["Live / V1 PR hardware / station / dgx (push):false", "coverage:true"]);
+    const live = checksOf({ check_runs: [{ name: "station / dgx", status: "completed", conclusion: "success", html_url: "u" }] }, null, d.checks);
+    expect(live[0]).toMatchObject({ name: "Live / V1 PR hardware / station / dgx (push)", state: "pass", required: false });
+  });
   test("live checks: gh -i output parses, REST runs and statuses become the same entries, and roll up", () => {
     const ok = parseHttp('HTTP/2.0 200 OK\r\nEtag: W/"abc"\r\nX-Ratelimit-Used: 3\r\n\r\n{"total_count":1}');
     expect(ok).toEqual({ status: 200, headers: { etag: 'W/"abc"', "x-ratelimit-used": "3" }, body: '{"total_count":1}' });
@@ -377,7 +394,7 @@ describe("github model", () => {
       { name: "lint", status: "completed", conclusion: "failure", html_url: "l" },
       { name: "docs", status: "completed", conclusion: "skipped", html_url: "d" },
     ] };
-    const known = [{ name: "CI / build", state: "pending", url: "" }];
+    const known = [{ name: "CI / build", job: "build", state: "pending", url: "" }];
     const got = checksOf(runs, { statuses: [{ context: "coverage", state: "success", target_url: "c" }] }, known);
     expect(got.map(k => k.name + ":" + k.state)).toEqual(["lint:fail", "e2e:pending", "CI / build:pass", "coverage:pass", "docs:skipped"]);
     expect(rollupOf(got)).toBe("fail");

@@ -11,7 +11,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces, run } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows, parseHttp, checksOf, rollupOf, checkRunsPath, statusesPath,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows, parseHttp, checksOf, rollupOf, DETAIL_V, checkRunsPath, statusesPath,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -122,6 +122,7 @@ export default class GitHub extends View {
           else if (c === "home") this.goHome(cx);
           else if (c === "sidebar") this.toggleSidebar(cx);
           else if (c === "cards") this.toggleCards(cx);
+          else if (c === "all-checks") { this.expandedChecks = this.detailId; cx.notify(); }
           // Opens a pull request or issue of the shown repository by number, listed or not (for keys and scripts).
           else if (/^show-\d+$/.test(c) && isRepoScope(this.prefs.scope)) {
             const n = Number(c.slice(5)), [owner, name] = this.prefs.scope.split("/");
@@ -473,12 +474,14 @@ export default class GitHub extends View {
   fetchDetail(item, cx) {
     this.fetchTimeline(item, cx);
     const have = this.details.get(item.id);
-    if (have && have.updatedAt === item.updatedAt && !have.stale) return;
+    // Details saved by an older version are fetched again once.
+    const old = Boolean(have?.detail) && have.detail.v !== DETAIL_V;
+    if (have && have.updatedAt === item.updatedAt && !have.stale && !old) return;
     if (this.fetching?.has(item.id)) return;
     (this.fetching ??= new Set()).add(item.id);
     cx.spawn(async (cx) => {
       try {
-        const { data } = await graphql(DETAIL_QUERY, { id: item.id }, this.opts());
+        const { data } = await graphql(DETAIL_QUERY, { id: item.id, number: item.number }, this.opts());
         // Re-inserted so the most recently opened are the ones kept.
         this.details.delete(item.id);
         this.details.set(item.id, { updatedAt: item.updatedAt, detail: normalizeDetail(data.node) });
@@ -1325,7 +1328,10 @@ export default class GitHub extends View {
           .children((showAll ? checks : notable).map((c, n) => h_flex().id("gh-check-" + n).h(22).px(6).gap(6).items_center().rounded(4).text_size(12)
             .when(Boolean(c.url), el => el.cursor_pointer().hover(s => s.bg(t.hover)).on_click((_e, cx) => cx.open_url(c.url)))
             .child(div().size(7).flex_none().rounded(4).bg(this.ciColor(c.state, t)))
-            .child(div().flex_1().min_w(0).truncate().text_color(c.state === "fail" ? t.foreground : t.muted).child(c.name)))), t)))
+            // As GitHub has it: the full name, then "Required" right after it.
+            .child(div().min_w(0).truncate().text_color(c.state === "fail" ? t.foreground : t.muted).child(c.name))
+            .when(Boolean(c.required), el => el.child(div().flex_none().px(5).h(16).flex().items_center().rounded(4).border_1().border_color(t.border).text_size(10).text_color(t.dim).child("Required")))
+            .child(div().flex_1()))), t)))
         .when(i.kind !== "pr" && (detail?.reviews ?? []).length > 0, el => el.child(this.section("Reviews", v_flex().gap(2).children(detail.reviews.map(r => h_flex().gap(8).text_size(12)
           .child(h_flex().w(130).flex_none().gap(6).items_center().child(this.avatar("gh-rv-av-" + r.author, r.author, t, 16)).child(div().min_w(0).truncate().text_color(t.muted).child(r.author)))
           .child(div().flex_1().text_color({ approved: t.done, changes_requested: t.blocked }[r.state] ?? t.dim).child(r.state.replace("_", " ")))
@@ -1409,8 +1415,8 @@ export default class GitHub extends View {
   mergeBox(i, detail, t) {
     const m = mergeStatus(i, detail);
     if (!m) return div();
-    const tone = { blocked: t.blocked, pending: t.working, ready: t.done, draft: t.dim, merged: t.ansi5, closed: t.ansi1 }[m.tone] ?? t.muted;
-    const mark = { blocked: "x", pending: "reload", ready: "check", draft: "pr-draft", merged: "pr-merged", closed: "pr-closed" }[m.tone];
+    const tone = { blocked: t.blocked, pending: t.working, ready: t.done, able: t.muted, draft: t.dim, merged: t.ansi5, closed: t.ansi1 }[m.tone] ?? t.muted;
+    const mark = { blocked: "x", pending: "reload", ready: "check", able: "check", draft: "pr-draft", merged: "pr-merged", closed: "pr-closed" }[m.tone];
     const c = m.checks, done = c.pass + c.fail + c.skipped + c.cancelled;
     const bar = (parts) => h_flex().h(5).w_full().rounded(3).overflow_hidden().bg(t.border)
       .children(parts.filter(([n]) => n > 0).map(([n, color]) => div().h_full().flex_grow(n).flex_basis(0).bg(color)));
@@ -1449,7 +1455,7 @@ export default class GitHub extends View {
           ? h_flex().h(24).px(8).gap(5).flex_none().items_center().text_size(12).text_color(t.dim).child(this.spinner(t, 12)).child("Marking ready…")
           : this.textButton("gh-mb-ready", "Ready for review", "Mark it ready for review (gh pr ready)", (cx) => this.markReady(i, cx), t, "pr-open")))
         .when(m.action === "conflicts", el => el.child(this.textButton("gh-resolve", "Resolve on GitHub", "Open GitHub's conflict editor", (cx) => cx.open_url(i.url + "/conflicts"), t, "external")))
-        .when(m.tone === "ready", el => el.child(this.textButton("gh-mb-merge", "Merge on GitHub", "Open it on GitHub to merge", (cx) => cx.open_url(i.url), t, "external")))
+        .when(m.tone === "ready" || m.tone === "able", el => el.child(this.textButton("gh-mb-merge", "Merge on GitHub", "Open it on GitHub to merge", (cx) => cx.open_url(i.url), t, "external")))
         .when(this.canReview(i) && !["merged", "closed"].includes(m.tone), el => el.child(this.textButton("gh-mb-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff"))))
       .child(h_flex().border_t(1).border_color(t.border).items_stretch()
         .child(cell("gh-mb-checks", "Checks", checksText,
