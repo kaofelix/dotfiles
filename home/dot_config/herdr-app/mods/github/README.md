@@ -33,7 +33,7 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   Pins are kept with their last-seen state and refreshed by id, so closed or merged ones stay until unpinned. Pinned rows elsewhere show a pin.
 - **Merge box** (a pull request's details, at the top, as on GitHub's new PR page): what stands between it and merging, in GitHub's order
   (merge conflicts, draft, failing checks, changes requested, out of date, review required, running checks, open conversations), else ready to merge,
-  with **Resolve on GitHub** (its conflict editor) and **Review diff** for conflicts. Under it, **Checks**, **Conversations** (review threads) and
+  with **Resolve on GitHub** (its conflict editor) for conflicts and **Review diff** whenever the repository is cloned in an open terminal. Under it, **Checks**, **Conversations** (review threads) and
   **Approvals**, each with a bar; clicking Checks lists them all.
 - **Activity** (a pull request's details, after its description): the timeline as GitHub draws it, newest first (the latest 100 entries).
   Comments and reviews are cards (approvals and requested changes coloured), commits and events one line each on a rail: labels (clickable),
@@ -43,7 +43,7 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   nested ones too, as on GitHub; click to open.
 - **Details:** state, review and CI chips, labels, branch and size, assignees and requested reviewers; failing and running checks (all on request, each opens its run),
   linked issues and pull requests and the description; for issues, the latest reviews and comments, for pull requests the Activity.
-  **Open** opens it in the browser and **Copy link** copies its URL. A pull request whose repository is cloned in a folder an open terminal is in also gets **Review diff**, which opens it in the Changes dialog.
+  **Open** opens it in the browser and **Copy link** copies its URL. **Review diff** (in the merge box, or `d`) opens it in the Changes dialog when its repository is cloned in a folder an open terminal is in.
 - **Commands:** `github.reload`, `github.scope`, `github.home`, `github.sidebar`, `github.next-pin`, `github.milestones`, `github.focus-next-milestone`, `github.copy` and `github.browse` (from keys.json or `herdr-app do`).
 - **Keys:** `j`/`k` move, `enter` opens, `o` opens on GitHub, `c` copies the URL, `C` copies `owner/repo#N`, `d` reviews the diff,
   `R` narrows to the item's repo, `P` pins the repository, `x` pins the item, `h` (or `m`) Home, `/` filters, `r` reloads.

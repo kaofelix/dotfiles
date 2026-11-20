@@ -1119,7 +1119,6 @@ export default class GitHub extends View {
           .child(h_flex().gap(6).flex_wrap().pt(2)
             .child(this.textButton("gh-open", "Open", "Open on GitHub (o)", (cx) => cx.open_url(i.url), t, "external"))
             .child(this.textButton("gh-copy-link", "Copy link", "Copy the URL (c)", (cx) => this.copy(i.url, cx), t, "copy"))
-            .when(this.canReview(i), el => el.child(this.textButton("gh-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff")))
             .when(this.prefs.scope !== i.repo, el => el.child(this.textButton("gh-scope-repo", i.repo.split("/")[1], "Everything in " + i.repo + " (R)", (cx) => this.setScope(i.repo, cx), t, "folder")))))
         .when(i.kind === "pr", el => el.child(this.mergeBox(i, detail, t)))
         .child(v_flex().gap(3).children(facts.map(([k, v]) => this.kv(k, v, t, null, { Author: [i.author], Assignees: i.assignees, Reviewers: i.reviewers.filter(r => !r.startsWith("@")) }[k]))))
@@ -1223,7 +1222,7 @@ export default class GitHub extends View {
           .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child(m.title))
           .child(div().text_size(12).text_color(t.muted).child(m.text)))
         .when(m.action === "conflicts", el => el.child(this.textButton("gh-resolve", "Resolve on GitHub", "Open GitHub's conflict editor", (cx) => cx.open_url(i.url + "/conflicts"), t, "external")))
-        .when(m.action === "conflicts" && this.canReview(i), el => el.child(this.textButton("gh-mb-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff"))))
+        .when(this.canReview(i) && !["merged", "closed"].includes(m.tone), el => el.child(this.textButton("gh-mb-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff"))))
       .child(h_flex().border_t(1).border_color(t.border).items_stretch()
         .child(cell("gh-mb-checks", "Checks", checksText,
           !detail || !c.total ? bar([[1, detail ? t.border : t.raised]]) : bar([[c.pass, t.done], [c.fail, t.blocked], [c.pending, t.working], [c.skipped + c.cancelled, t.dim]]),
