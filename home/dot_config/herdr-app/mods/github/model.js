@@ -476,6 +476,24 @@ export const avatarFile = (login) => String(login ?? "").replace(/[^A-Za-z0-9._-
 export const avatarUrl = (login) => "https://github.com/" + encodeURIComponent(String(login ?? "").replace(/\[bot\]$/, "")) + ".png?size=64";
 export const initials = (login) => String(login ?? "?").replace(/\[bot\]$/, "").split(/[-_.]/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase() || "?";
 
+// Where a pull request is being worked on: the panes whose folder is a clone of its repository on its head branch.
+// places: [{ repo, branch, pane, tab, space, spaceName, tabName, status, focused, active, changedAt }] (one per pane,
+// from Herdr's panes and the folders' remotes). Grouped per tab, the shown/most recently changed first.
+const STATUS_RANK = { blocked: 0, done: 1, working: 2, idle: 3 };
+export function workPlaces(item, places) {
+  if (item?.kind !== "pr" || !item.head) return [];
+  const tabs = new Map();
+  for (const p of places ?? []) {
+    if (p.repo !== item.repo || p.branch !== item.head) continue;
+    const t = tabs.get(p.tab) ?? { ...p, panes: [] };
+    t.panes.push(p.pane);
+    if ((STATUS_RANK[p.status] ?? 9) < (STATUS_RANK[t.status] ?? 9)) t.status = p.status;
+    t.focused = t.focused || p.focused; t.changedAt = Math.max(t.changedAt ?? 0, p.changedAt ?? 0);
+    tabs.set(p.tab, t);
+  }
+  return [...tabs.values()].sort((x, y) => Number(y.focused) - Number(x.focused) || Number(y.active) - Number(x.active) || (y.changedAt ?? 0) - (x.changedAt ?? 0));
+}
+
 export const ref = (item) => item.repo + "#" + item.number;
 export const searchUrl = (search, kind) => "https://github.com/search?q=" + encodeURIComponent(search) + "&type=" + (kind === "pr" ? "pullrequests" : "issues");
 export const repoUrl = (repo, kind) => "https://github.com/" + repo + (kind === "issue" ? "/issues" : "/pulls");

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -326,5 +326,15 @@ describe("github model", () => {
     expect(timelineRows(tl.events).map(r => r.kind + (r.count ? r.count : ""))).toEqual(["commit", "event", "comment", "commit", "fold2"]);
     expect(timelineRows(tl.events, { expanded: new Set(["run:a3"]) }).map(r => r.kind)).toEqual(["commit", "event", "comment", "commit", "commit", "commit"]);
     expect(tl.events[1]).toMatchObject({ text: "added", label: { name: "v1" } });
+  });
+  test("a pull request's work places are panes on its repository and head branch, a tab once, shown first", () => {
+    const item = normalize(pr("P", "o/r", 1, { headRefName: "fix/x" }));
+    const at = (pane, tab, extra) => ({ repo: "o/r", branch: "fix/x", pane, tab, space: "S", spaceName: "fix-x", tabName: "t" + tab, status: "idle", focused: false, active: false, changedAt: 0, ...extra });
+    const places = [at("p1", "A", { changedAt: 5 }), at("p2", "A", { status: "working" }), at("p3", "B", { changedAt: 9 }), at("p4", "C", { active: true }),
+      { ...at("p5", "D"), branch: "main" }, { ...at("p6", "E"), repo: "o/other" }];
+    const got = workPlaces(item, places);
+    expect(got.map(p => p.tab + ":" + p.panes.join(",") + ":" + p.status)).toEqual(["C:p4:idle", "B:p3:idle", "A:p1,p2:working"]);
+    expect(workPlaces(normalize(issue("I", "o/r", 2)), places)).toEqual([]);
+    expect(workPlaces({ ...item, head: null }, places)).toEqual([]);
   });
 });

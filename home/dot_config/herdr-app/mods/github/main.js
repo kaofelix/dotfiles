@@ -8,10 +8,10 @@
 // Props (optional, e.g. as a pane): { scope: "me" | "owner/name" } starts there; { kind: "pr" | "issue" } picks the list.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popup, Avatar, AvatarImage, AvatarFallback } from "gpui-base";
-import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
+import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces, run } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -83,6 +83,7 @@ export default class GitHub extends View {
     this.avatarQueue = [];
     this.msItems = new Map(); // "owner/name#number" -> { issues, prs, issueTotal, prTotal, at, loading, error }
     this.checkouts = new Map(); // "owner/name" -> { root, on }: a local clone, found from the open terminals' folders
+    this.folderRepos = new Map(); // "machine|folder" -> "owner/name", for matching panes to pull requests
     this.probed = new Set(); this.scopeQuery = ""; this.wasShown = true;
     this.collapsed = new Set();
     this.cache = new Map(); // "scope|state" -> { result, at }: at is the last refresh of first pages
@@ -288,12 +289,13 @@ export default class GitHub extends View {
     }
     if (!todo.length || checking()) return;
     cx.spawn(async (cx) => {
-      for (const { cwd, on, here } of todo.slice(0, 12)) {
+      for (const { cwd, on, here } of todo.slice(0, 40)) {
         const [root, remotes] = await Promise.all([
           exec("git", ["-C", cwd, "rev-parse", "--show-toplevel"], { on, timeout: 5000 }).catch(() => null),
           exec("git", ["-C", cwd, "remote", "-v"], { on, timeout: 5000 }).catch(() => null)]);
         if (root?.code !== 0 || remotes?.code !== 0) continue;
         const repo = repoFromRemotes(remotes.stdout.split("\n").filter(l => l.includes("(fetch)")));
+        if (repo) this.folderRepos.set((on ?? "") + "|" + cwd, repo);
         if (repo && (here || !this.checkouts.has(repo))) this.checkouts.set(repo, { root: root.stdout.trim(), on });
       }
       cx.notify();
@@ -637,6 +639,43 @@ export default class GitHub extends View {
 
   copy(text, cx) { cx.write_to_clipboard(text); this.copied = text; cx.notify(); cx.timer.after(1500, (cx) => { if (this.copied === text) { this.copied = null; cx.notify(); } }); }
 
+  // Every terminal pane with a folder on a known repository and branch, from Herdr's live panes (branches update as
+  // they're switched) and the remotes scanned once per folder.
+  places() {
+    const sp = spaces(), out = [];
+    for (const p of panes()) {
+      if (!p.cwd || !p.branch || p.mod) continue;
+      const space = sp.find(x => x.tabs?.some(t => t.id === p.tab)), tab = space?.tabs.find(t => t.id === p.tab);
+      const repo = this.folderRepos.get((space?.machine ?? "") + "|" + p.cwd);
+      if (!repo || !space) continue;
+      out.push({ repo, branch: p.branch, pane: p.pane, tab: p.tab, space: space.id, spaceName: space.name, tabName: tab?.name ?? "", tabIndex: tab?.index ?? 0,
+        status: p.status ?? "idle", focused: p.focused, active: space.active && Boolean(tab?.active), changedAt: tab?.changed_at ?? 0, machine: space.machine });
+    }
+    return out;
+  }
+  workPlaces(item) { return workPlaces(item, this.places()); }
+  // Show that space and tab, and focus the pane there.
+  jump(place) {
+    run("space.select", { id: place.space });
+    run("tab.select", { id: place.tab });
+    run("pane.focus", { pane: place.panes?.[0] ?? place.pane });
+  }
+  placeLabel(p) { return p.spaceName + (p.tabName && p.tabName !== p.spaceName && !/^\d+$/.test(p.tabName) ? " · " + p.tabName : ""); }
+  statusColor(status, t) { return { blocked: t.blocked, done: t.done, working: t.working }[status] ?? t.dim; }
+  // A chip naming where the pull request is open (the best place, "+n" for more); a click goes there.
+  placeChip(id, item, t) {
+    const all = this.workPlaces(item);
+    if (!all.length) return null;
+    const p = all[0];
+    return h_flex().id(id).flex_none().max_w(170).h(18).px(6).gap(4).items_center().rounded(9).cursor_pointer()
+      .bg(t.raised).border_1().border_color(p.focused ? t.accent : t.border).text_size(10.5).text_color(t.foreground)
+      .hover(s => s.bg(t.hover)).tooltip("Go to " + all.map(x => this.placeLabel(x)).join(", "))
+      .on_click((_e, cx) => { cx.stop_propagation(); this.jump(p); })
+      .child(div().size(6).flex_none().rounded(3).bg(this.statusColor(p.status, t)))
+      .child(div().min_w(0).truncate().child(p.spaceName))
+      .when(all.length > 1, el => el.child(div().flex_none().text_color(t.dim).child("+" + (all.length - 1))));
+  }
+
   // A pull request with a local clone open in some terminal can be reviewed in the Changes dialog, as pr-picker does.
   canReview(item) { return item?.kind === "pr" && this.checkouts.has(item.repo); }
   review(item) {
@@ -664,6 +703,8 @@ export default class GitHub extends View {
       "o": () => { const r = this.rows().find(r => r.key === this.selected); if (r?.kind === "milestone") cx.open_url(r.milestone.url); else if (item) cx.open_url(item.url); },
       "c": () => item && this.copy(item.url, cx),
       "x": () => item && this.toggleItemPin(item, cx),
+      "J": () => actions["shift-j"](),
+      "shift-j": () => { const p = item && this.workPlaces(item)[0]; if (p) this.jump(p); },
       "shift-c": () => item && this.copy(ref(item), cx),
       "d": () => this.review(item),
       "1": () => this.isHome() ? this.viewAll("pr", cx) : this.setKind("pr", cx), "2": () => this.isHome() ? this.viewAll("issue", cx) : this.setKind("issue", cx),
@@ -995,6 +1036,7 @@ export default class GitHub extends View {
       .when(Boolean(row.epic) || (Boolean(i.type) && Boolean(row.owner) && i.type !== "Task"), el => el.child(this.filterChip("gh-ty-" + row.key, i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, filterToken("type", i.type ?? "Epic"), t)))
       .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(isClosed(i) ? t.muted : t.foreground).child(i.title))
       .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
+      .when(i.kind === "pr" && !isClosed(i), el => { const c = this.placeChip("gh-place-" + row.key, i, t); return c ? el.child(c) : el; })
       .when(this.isItemPinned(i.id) && row.section !== "home-pinned", el => el.child(svg(ICON("pin")).size(11).flex_none().text_color(t.accent)))
       .when(Boolean(i.borrowed), el => el.child(div().flex_none().text_size(10.5).text_color(t.dim).tooltip("A sub-issue of this epic, not itself in the milestone").child("sub")))
       .when(cols.labels, el => el.children(i.labels.slice(0, 2).map((l, n) => this.filterChip("gh-lb-" + row.key + "-" + n, l.name, this.labelColor(l.color, t), filterToken("label", l.name), t))))
@@ -1153,6 +1195,7 @@ export default class GitHub extends View {
             .child(this.textButton("gh-copy-link", "Copy link", "Copy the URL (c)", (cx) => this.copy(i.url, cx), t, "copy"))
             .when(this.prefs.scope !== i.repo, el => el.child(this.textButton("gh-scope-repo", i.repo.split("/")[1], "Everything in " + i.repo + " (R)", (cx) => this.setScope(i.repo, cx), t, "folder")))))
         .when(i.kind === "pr", el => el.child(this.mergeBox(i, detail, t)))
+        .when(i.kind === "pr" && this.workPlaces(i).length > 0, el => el.child(this.openIn(i, t)))
         .child(v_flex().gap(3).children(facts.map(([k, v]) => this.kv(k, v, t, null, { Author: [i.author], Assignees: i.assignees, Reviewers: i.reviewers.filter(r => !r.startsWith("@")) }[k]))))
         .when(i.kind === "pr" && checks.length > 0, el => el.child(this.section("Checks", v_flex().gap(2)
           .child(h_flex().gap(8).text_size(12).flex_wrap()
@@ -1227,6 +1270,21 @@ export default class GitHub extends View {
         .child(div().flex_1()).child(when(e.at)));
     });
     return this.section(head, v_flex().gap(0).children(items), t);
+  }
+
+  // Where this pull request's branch is open, each with its agent's state, to jump to.
+  openIn(i, t) {
+    const all = this.workPlaces(i);
+    return h_flex().gap(8).items_start()
+      .child(div().w(84).flex_none().pt(3).text_size(12).text_color(t.dim).child("Open in"))
+      .child(h_flex().flex_1().min_w(0).gap(6).flex_wrap().children(all.map((p, n) => h_flex().id("gh-openin-" + n).h(24).px(8).gap(6).items_center().rounded(5).cursor_pointer()
+        .border_1().border_color(p.focused ? t.accent : t.border).bg(t.surface).text_size(12).hover(s => s.bg(t.hover))
+        .tooltip("Go to this " + (p.panes.length > 1 ? p.panes.length + "-pane tab" : "tab") + (p.machine ? " on " + p.machine : "") + " (J)")
+        .on_click((_e, cx) => this.jump(p))
+        .child(div().size(7).flex_none().rounded(4).bg(this.statusColor(p.status, t)))
+        .child(div().text_color(t.foreground).child(this.placeLabel(p)))
+        .when(p.status !== "idle", el => el.child(div().text_size(11).text_color(this.statusColor(p.status, t)).child(p.status)))
+        .child(svg(ICON("arrow-right")).size(11).text_color(t.dim)))));
   }
 
   // GitHub's merge box: a status (conflicts first) and three cells, checks, conversations and approvals.

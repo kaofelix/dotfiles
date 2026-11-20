@@ -31,6 +31,9 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   it's highlighted while it's there, and a second click takes it away.
 - **Pinned items:** `x` or the pin in an item's details pins a pull request or issue; Home then starts with a **Pinned** block (only while something is pinned).
   Pins are kept with their last-seen state and refreshed by id, so closed or merged ones stay until unpinned. Pinned rows elsewhere show a pin.
+- **Where it's open:** a pull request whose head branch is checked out in a terminal (a clone of its repository, matched by remote
+  and Herdr's live branch) gets a chip on its row with that space's name and its agent's state (`+n` for more); click it, or `J`, to go
+  there (space, tab and pane). Its details list every such place under **Open in**. Folders are asked for their remote once each.
 - **Merge box** (a pull request's details, at the top, as on GitHub's new PR page): what stands between it and merging, in GitHub's order
   (merge conflicts, draft, failing checks, changes requested, out of date, review required, running checks, open conversations), else ready to merge,
   A draft offers **Ready for review** (runs `gh pr ready`; the panel's first write action, undone on GitHub with Convert to draft).
