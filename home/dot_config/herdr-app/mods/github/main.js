@@ -11,7 +11,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces, run } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -119,6 +119,7 @@ export default class GitHub extends View {
           else if (c === "scope") this.setPicking(!this.picking, cx);
           else if (c === "home") this.goHome(cx);
           else if (c === "sidebar") this.toggleSidebar(cx);
+          else if (c === "cards") this.toggleCards(cx);
           // Opens a pull request or issue of the shown repository by number, listed or not (for keys and scripts).
           else if (/^show-\d+$/.test(c) && isRepoScope(this.prefs.scope)) {
             const n = Number(c.slice(5)), [owner, name] = this.prefs.scope.split("/");
@@ -180,6 +181,7 @@ export default class GitHub extends View {
     const saved = await Promise.all(files.map(n => readJson(cacheDir() + "/" + n)));
     for (const x of saved) if (x?.key && x.result) this.saved.set(x.key, x);
   }
+  toggleCards(cx) { this.prefs.cards = !this.prefs.cards; this.savePrefs(); cx.notify(); }
   savePrefs() { writeJson(cacheDir() + "/prefs.json", { ...this.prefs, collapsed: [...this.collapsed] }); }
   opts(timeout) { return { timeout }; }
   // Home is my open work, whatever the lists' state switch says.
@@ -716,6 +718,7 @@ export default class GitHub extends View {
       "s": () => !this.isHome() && this.setState(STATES[(STATES.findIndex(s => s.id === this.prefs.state) + 1) % STATES.length].id, cx),
       "g": () => this.toggleGroup(cx),
       "b": () => this.toggleSidebar(cx),
+      "v": () => this.toggleCards(cx),
       "p": () => this.setPicking(!this.picking, cx),
       "m": () => this.goHome(cx),
       "P": () => actions["shift-p"](),
@@ -783,6 +786,7 @@ export default class GitHub extends View {
   header(t) {
     return h_flex().h(34).flex_none().px(10).gap(8).items_center().border_b(1).border_color(t.border)
       .child(this.iconButton("gh-sidebar", "sidebar", (this.prefs.sidebar ? "Hide" : "Show") + " the sidebar (b)", (cx) => this.toggleSidebar(cx), t, Boolean(this.prefs.sidebar)))
+      .child(this.iconButton("gh-cards", "cards", this.prefs.cards ? "One line per item (v)" : "Two lines per item (v)", (cx) => this.toggleCards(cx), t, Boolean(this.prefs.cards)))
       .child(svg(ICON("github")).size(15).flex_none().text_color(t.accent))
       .child(div().font_semibold().child("GitHub"))
       .child(this.scopeDropdown(t))
@@ -1026,6 +1030,47 @@ export default class GitHub extends View {
           .hover(s => s.bg(t.border).text_color(t.foreground)).tooltip("Everything in " + row.repo)
           .on_click((_e, cx) => { cx.stop_propagation(); this.setScope(row.repo, cx); }).child("open repo →"));
     }
+    return this.prefs.cards ? this.cardRow(row, t, mono, cols) : this.compactRow(row, t, mono, cols);
+  }
+
+  // One line per item (the default): optional columns drop as the list narrows.
+  compactRow(row, t, mono, cols) {
+    const i = row.item, selected = row.key === this.selected, shown = this.detailId === i.id;
+    const rv = this.reviewLook(i.review, t), repoName = row.showRepo ? i.repo.split("/")[1] : isRepoScope(this.prefs.scope) ? null : this.prefs.group ? null : i.repo.split("/")[1];
+    return h_flex().id("gh-row-" + row.key).h(30).flex_none().pl(10 + row.depth * 16).pr(10).mx(4).gap(7).items_center().rounded(6).cursor_pointer()
+      .when(selected, el => el.bg(shown ? t.selected : t.raised)).hover(s => s.bg(t.hover))
+      .on_click((_e, cx) => { this.handle.focus(); this.open(row, cx); })
+      .child(this.stateIcon(i, t))
+      .child(div().flex_none().text_size(11.5).font_family(mono).text_color(t.dim).child("#" + i.number))
+      .when(Boolean(row.epic) || (Boolean(i.type) && Boolean(row.owner) && i.type !== "Task"), el => el.child(this.filterChip("gh-ty-" + row.key, i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, filterToken("type", i.type ?? "Epic"), t)))
+      .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(isClosed(i) ? t.muted : t.foreground).child(i.title))
+      .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
+      .when(this.isItemPinned(i.id) && row.section !== "home-pinned", el => el.child(svg(ICON("pin")).size(11).flex_none().text_color(t.accent)))
+      .when(Boolean(i.borrowed), el => el.child(div().flex_none().text_size(10.5).text_color(t.dim).tooltip("A sub-issue of this epic, not itself in the milestone").child("sub")))
+      .when(cols.labels, el => el.children(i.labels.slice(0, 2).map((l, n) => this.filterChip("gh-lb-" + row.key + "-" + n, l.name, this.labelColor(l.color, t), filterToken("label", l.name), t))))
+      .when(cols.labels && Boolean(i.milestone) && !row.owner, el => el.child(this.filterChip("gh-ms-" + row.key, "◆ " + i.milestone.title.replace(/^Roadmap:\s*/i, ""), t.muted, filterToken("milestone", i.milestone.title), t)))
+      .when(Boolean(repoName) && cols.repo, el => el.child(div().id("gh-rp-" + row.key).flex_none().max_w(120).truncate().text_size(11).cursor_pointer()
+        .text_color(hasToken(this.query, filterToken("repo", i.repo)) ? t.accent : t.dim).hover(s => s.text_color(t.foreground)).tooltip("Filter by repo:" + i.repo)
+        .on_click((_e, cx) => { cx.stop_propagation(); this.toggleFilter(filterToken("repo", i.repo), cx); }).child(repoName)))
+      .when(i.conflicts && !isClosed(i), el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
+      .when(Boolean(rv) && !isClosed(i), el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
+      .when(i.kind === "pr" && !isClosed(i), el => { const c = this.placeChip("gh-place-" + row.key, i, t); return c ? el.child(c) : el; })
+      .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))
+      .when(cols.comments, el => el.child(h_flex().flex_none().w(30).gap(3).items_center().justify_end().text_size(11).text_color(t.dim)
+        .when(i.comments > 0, el => el.child(svg(ICON("comment")).size(10)).child(String(i.comments)))))
+      .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
+      .when(cols.author && !row.owner, el => el.child(h_flex().flex_none().w(24).justify_end().child(this.avatar("gh-au-" + row.key, i.author, t, 18, "Opened by " + i.author))))
+      .when(Boolean(row.owner), el => el.child(h_flex().flex_none().w(52).justify_end()
+        .when(i.assignees.length > 0, el => el.child(this.avatars("gh-as-" + row.key, i.assignees, t, 18, "Assigned: " + i.assignees.join(", "))))
+        // A pull request without assignees is owned by whoever opened it.
+        .when(!i.assignees.length && i.kind === "pr", el => el.child(this.avatar("gh-as-" + row.key, i.author, t, 18, "Opened by " + i.author)))
+        .when(!i.assignees.length && i.kind !== "pr", el => el.child(div().id("gh-as-" + row.key).text_size(11).text_color(t.working).tooltip("Nobody is assigned").child("unassigned")))))
+      .child(div().flex_none().w(30).text_right().text_size(11).text_color(t.dim).tooltip("Updated").child(age(i.updatedAt)));
+
+  }
+
+  // Two lines per item (v): the title gets the first; labels and state the second.
+  cardRow(row, t, mono, cols) {
     const i = row.item, selected = row.key === this.selected, shown = this.detailId === i.id;
     const rv = this.reviewLook(i.review, t), repoName = row.showRepo ? i.repo.split("/")[1] : isRepoScope(this.prefs.scope) ? null : this.prefs.group ? null : i.repo.split("/")[1];
     const closed = isClosed(i), place = i.kind === "pr" && !closed ? this.placeChip("gh-place-" + row.key, i, t, 15) : null;
@@ -1105,7 +1150,7 @@ export default class GitHub extends View {
   }
 
   list(t, mono) {
-    const rows = this.rows(), cols = { width: this.width - (this.prefs.sidebar ? SIDEBAR_W : 0) };
+    const w = this.width - (this.prefs.sidebar ? SIDEBAR_W : 0), rows = this.rows(), cols = { ...rowColumns(w), width: w };
     if (!rows.length && this.isMilestones()) {
       const ms = this.milestones.get(this.prefs.scope);
       return div().flex_1().p(16).text_size(12.5).text_color(ms?.error ? t.blocked : t.dim)

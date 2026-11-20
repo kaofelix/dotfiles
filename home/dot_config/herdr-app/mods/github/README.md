@@ -24,7 +24,8 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   not listed opens that repository. `cmd-p` there pins the highlighted one. `esc` goes back to the previous scope.
 - **Lists:** PRs / Issues (`tab`, `1`, `2`) and Open / Closed / All (`s`). Each section loads its 25 most recently updated items; **Load more** at its end (or `enter` on it) fetches the next 25, and `of N ↗` opens the full GitHub search. A count with `+` has more to load.
   Rows show state, number, title, labels, repository, conflicts, review decision, CI (green, red, yellow), comments, author and last update.
-- **Cards:** each item is two lines beside a gutter holding its state icon and, under it, a robot when its branch is open in Herdr.
+- **Rows** are one line by default, with optional columns dropping as the list narrows. **Cards** (`v`, or the header's two-box button; kept) are
+  an alternative to try: each item is two lines beside a gutter holding its state icon and, under it, a robot when its branch is open in Herdr.
   The first line has its number and title, then the repository, age and author's avatar (or owners), the avatar last. The second has the
   milestone and labels on the left (what doesn't fit folds into `+n`, whose tooltip names the rest) and its state as icons on the right:
   review, conflicts (⚠), sub-issues, comments and the CI dot.

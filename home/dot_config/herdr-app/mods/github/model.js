@@ -674,6 +674,11 @@ export function checkSummary(checks) {
 }
 
 // The list's width and which optional columns fit, as in beads: columns only drop as the pane narrows.
+// Compact rows: optional columns only drop as the list narrows.
+export function rowColumns(width) {
+  return { repo: width >= 360, comments: width >= 480, author: width >= 540, labels: width >= 700 };
+}
+
 // A list card, always two lines: the title on the first; labels on the second, left, beside the status icons on its right.
 // Labels that don't fit the room left fold into a "+n" chip.
 export const CARD_H = 50;
