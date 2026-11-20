@@ -11,7 +11,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -114,6 +114,7 @@ export default class GitHub extends View {
           else if (c === "scope") this.setPicking(!this.picking, cx);
           else if (c === "home") this.goHome(cx);
           else if (c === "sidebar") this.toggleSidebar(cx);
+          else if (/^open-\d+$/.test(c)) { const n = Number(c.slice(5)); const row = this.rows().find(r => r.kind === "item" && r.item.number === n); if (row) this.open(row, cx); }
           else if (c === "pin-first") { const row = this.rows().find(r => r.kind === "item" && r.section !== "home-pinned"); if (row) this.toggleItemPin(row.item, cx); }
           else if (c === "open-first") { const row = this.rows().find(r => r.kind === "item"); if (row) this.open(row, cx); }
           else if (c === "milestones") { if (isRepoScope(this.prefs.scope)) this.setKind("milestone", cx); }
@@ -1087,6 +1088,7 @@ export default class GitHub extends View {
             .child(this.textButton("gh-copy-link", "Copy link", "Copy the URL (c)", (cx) => this.copy(i.url, cx), t, "copy"))
             .when(this.canReview(i), el => el.child(this.textButton("gh-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff")))
             .when(this.prefs.scope !== i.repo, el => el.child(this.textButton("gh-scope-repo", i.repo.split("/")[1], "Everything in " + i.repo + " (R)", (cx) => this.setScope(i.repo, cx), t, "folder")))))
+        .when(i.kind === "pr", el => el.child(this.mergeBox(i, detail, t)))
         .child(v_flex().gap(3).children(facts.map(([k, v]) => this.kv(k, v, t, null, { Author: [i.author], Assignees: i.assignees, Reviewers: i.reviewers.filter(r => !r.startsWith("@")) }[k]))))
         .when(i.kind === "pr" && checks.length > 0, el => el.child(this.section("Checks", v_flex().gap(2)
           .child(h_flex().gap(8).text_size(12).flex_wrap()
@@ -1112,6 +1114,44 @@ export default class GitHub extends View {
             .child(h_flex().gap(6).items_center().text_size(11).text_color(t.dim).child(this.avatar("gh-cm-av-" + n, m.author, t, 16)).child(div().font_semibold().text_color(t.muted).child(m.author)).child(age(m.createdAt) + " ago")
               .child(div().flex_1()).child(div().id("gh-c-web-" + n).cursor_pointer().hover(s => s.text_color(t.foreground)).on_click((_e, cx) => cx.open_url(m.url)).child("↗")))
             .child(this.markdown("gh-c-" + i.id + "-" + n, stripComments(m.body).slice(0, 8000), t)))), t))));
+  }
+
+  // GitHub's merge box: a status (conflicts first) and three cells, checks, conversations and approvals.
+  mergeBox(i, detail, t) {
+    const m = mergeStatus(i, detail);
+    if (!m) return div();
+    const tone = { blocked: t.blocked, pending: t.working, ready: t.done, draft: t.dim, merged: t.ansi5, closed: t.ansi1 }[m.tone] ?? t.muted;
+    const mark = { blocked: "x", pending: "reload", ready: "check", draft: "pr-draft", merged: "pr-merged", closed: "pr-closed" }[m.tone];
+    const c = m.checks, done = c.pass + c.fail + c.skipped + c.cancelled;
+    const bar = (parts) => h_flex().h(5).w_full().rounded(3).overflow_hidden().bg(t.border)
+      .children(parts.filter(([n]) => n > 0).map(([n, color]) => div().h_full().flex_grow(n).flex_basis(0).bg(color)));
+    const cell = (id, title, value, body, onClick) => v_flex().id(id).flex_1().min_w(0).px(10).py(7).gap(5)
+      .when(Boolean(onClick), el => el.cursor_pointer().hover(s => s.bg(t.hover)).on_click((_e, cx) => onClick(cx)))
+      .child(h_flex().gap(5).items_center().text_size(11.5)
+        .child(div().font_semibold().text_color(t.foreground).child(title))
+        .child(div().flex_1().min_w(0).truncate().text_color(t.dim).child(value)))
+      .child(body);
+    const checksText = !detail ? "…" : !c.total ? "none" : [c.fail && c.fail + " failing", c.pending && c.pending + " running", c.pass + " passed"].filter(Boolean).join(" · ");
+    const th = m.threads, ap = m.approvals;
+    return v_flex().rounded(7).border_1().border_color(m.tone === "blocked" ? tone : t.border).overflow_hidden()
+      .child(h_flex().px(10).py(9).gap(10).items_center()
+        .child(div().size(26).flex_none().rounded(13).flex().items_center().justify_center().bg(tone).text_color(t.background)
+          .child(m.tone === "pending" ? svg(ICON(mark)).size(13).spin(1600) : svg(ICON(mark)).size(13)))
+        .child(v_flex().flex_1().min_w(0).gap(1)
+          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child(m.title))
+          .child(div().text_size(12).text_color(t.muted).child(m.text)))
+        .when(m.action === "conflicts", el => el.child(this.textButton("gh-resolve", "Resolve on GitHub", "Open GitHub's conflict editor", (cx) => cx.open_url(i.url + "/conflicts"), t, "external")))
+        .when(m.action === "conflicts" && this.canReview(i), el => el.child(this.textButton("gh-mb-diff", "Review diff", "Open the diff in Changes (d)", () => this.review(i), t, "diff"))))
+      .child(h_flex().border_t(1).border_color(t.border).items_stretch()
+        .child(cell("gh-mb-checks", "Checks", checksText,
+          !detail || !c.total ? bar([[1, detail ? t.border : t.raised]]) : bar([[c.pass, t.done], [c.fail, t.blocked], [c.pending, t.working], [c.skipped + c.cancelled, t.dim]]),
+          detail && c.total ? (cx) => { this.expandedChecks = this.expandedChecks === i.id ? null : i.id; cx.notify(); } : null))
+        .child(div().w(1).bg(t.border))
+        .child(cell("gh-mb-threads", "Conversations", !detail ? "…" : !th?.total ? "none" : th.unresolved ? th.unresolved + " of " + th.total + " open" : "all " + th.total + " resolved",
+          bar(!th?.total ? [[1, detail ? t.border : t.raised]] : [[th.total - th.unresolved, t.done], [th.unresolved, t.working]])))
+        .child(div().w(1).bg(t.border))
+        .child(cell("gh-mb-approvals", "Approvals", !detail ? "…" : ap.changes ? ap.changes + " requested changes" : ap.approved ? ap.approved + " approved" : ap.decision === "required" ? "required" : "none",
+          bar(ap.changes ? [[1, t.blocked]] : ap.approved ? [[1, t.done]] : [[1, ap.decision === "required" ? t.working : detail ? t.border : t.raised]]))));
   }
 
   message(t, title, body) {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -281,5 +281,21 @@ describe("github model", () => {
     expect(homeRows(res, { pinned: [pin], query: "o/a" }).slice(0, 2).map(r => r.kind)).toEqual(["block", "note"]);
     expect(nodesQuery(["X", "Y"])).toContain('nodes(ids: ["X","Y"]) { ...PR ...IS }');
     expect(nodesOf({ nodes: [issue("X", "o/z", 9), null] }).map(i => i.id)).toEqual(["X"]);
+  });
+  test("the merge box names what stands in the way, conflicts first", () => {
+    const base = normalize(pr("P", "o/r", 1, { baseRefName: "main", commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS" } } }] } }));
+    const d = (extra) => normalizeDetail({ mergeStateStatus: "CLEAN", mergeable: "MERGEABLE", reviewThreads: { totalCount: 0, nodes: [] }, ...extra });
+    const fail = { commits: { nodes: [{ commit: { statusCheckRollup: { contexts: { nodes: [{ __typename: "CheckRun", name: "lint", status: "COMPLETED", conclusion: "FAILURE" }, { __typename: "CheckRun", name: "test", status: "COMPLETED", conclusion: "SUCCESS" }] } } } }] } };
+    expect(mergeStatus(normalize(issue("I", "o/r", 2)))).toBe(null);
+    expect(mergeStatus(base, d({}))).toMatchObject({ tone: "ready", title: "Ready to merge" });
+    expect(mergeStatus({ ...base, conflicts: true }, d(fail))).toMatchObject({ tone: "blocked", title: "Merge conflicts", action: "conflicts" });
+    expect(mergeStatus(base, d({ mergeStateStatus: "DIRTY", mergeable: "CONFLICTING" })).title).toBe("Merge conflicts");
+    expect(mergeStatus(base, d(fail))).toMatchObject({ title: "Checks failing", text: "1 check failed.", checks: { pass: 1, fail: 1, total: 2 } });
+    expect(mergeStatus({ ...base, review: "required" }, d({})).title).toBe("Review required");
+    expect(mergeStatus(base, d({ mergeStateStatus: "BEHIND" })).title).toBe("Out of date");
+    expect(mergeStatus(base, d({ reviewThreads: { totalCount: 3, nodes: [{ isResolved: true }, { isResolved: false }, { isResolved: false }] } }))).toMatchObject({ title: "Unresolved conversations", threads: { total: 3, unresolved: 2 } });
+    expect(mergeStatus(base, d({ latestOpinionatedReviews: { nodes: [{ author: { login: "a" }, state: "APPROVED" }] } })).approvals).toMatchObject({ approved: 1 });
+    expect(mergeStatus({ ...base, state: "merged" }).tone).toBe("merged");
+    expect(mergeStatus({ ...base, state: "draft" }, d({})).tone).toBe("draft");
   });
 });

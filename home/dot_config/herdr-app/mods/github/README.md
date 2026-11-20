@@ -31,6 +31,10 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   it's highlighted while it's there, and a second click takes it away.
 - **Pinned items:** `x` or the pin in an item's details pins a pull request or issue; Home then starts with a **Pinned** block (only while something is pinned).
   Pins are kept with their last-seen state and refreshed by id, so closed or merged ones stay until unpinned. Pinned rows elsewhere show a pin.
+- **Merge box** (a pull request's details, at the top, as on GitHub's new PR page): what stands between it and merging, in GitHub's order
+  (merge conflicts, draft, failing checks, changes requested, out of date, review required, running checks, open conversations), else ready to merge,
+  with **Resolve on GitHub** (its conflict editor) and **Review diff** for conflicts. Under it, **Checks**, **Conversations** (review threads) and
+  **Approvals**, each with a bar; clicking Checks lists them all.
 - **Details:** state, review and CI chips, labels, branch and size, assignees and requested reviewers; failing and running checks (all on request, each opens its run),
   the latest reviews, linked issues and pull requests, the description and the latest comments.
   **Open** opens it in the browser and **Copy link** copies its URL. A pull request whose repository is cloned in a folder an open terminal is in also gets **Review diff**, which opens it in the Changes dialog.

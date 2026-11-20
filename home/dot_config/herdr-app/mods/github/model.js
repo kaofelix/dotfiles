@@ -162,7 +162,8 @@ export const projectsOf = (data) => (data?.repository?.projectsV2?.nodes ?? []).
 export const REPOS_QUERY = "query { viewer { login repositories(first: 30, orderBy: {field: PUSHED_AT, direction: DESC}, affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) { nodes { nameWithOwner } } } }";
 
 export const DETAIL_QUERY = `query($id: ID!) { node(id: $id) {
-  ... on PullRequest { body mergeStateStatus
+  ... on PullRequest { body mergeStateStatus mergeable reviewDecision
+    reviewThreads(first: 100) { totalCount nodes { isResolved } }
     comments(last: 10) { totalCount nodes { author { login } body createdAt url } }
     latestOpinionatedReviews(first: 20) { nodes { author { login } state submittedAt } }
     closingIssuesReferences(first: 10) { nodes { number title url state stateReason repository { nameWithOwner } } }
@@ -500,12 +501,42 @@ export function normalizeDetail(node) {
   for (const e of node.timelineItems?.nodes ?? []) linked.push(linkOf(e.source ?? e.subject));
   const seen = new Set();
   return {
-    body: node.body ?? "", mergeState: node.mergeStateStatus ?? null,
+    body: node.body ?? "", mergeState: node.mergeStateStatus ?? null, mergeable: node.mergeable ?? null,
+    threads: node.reviewThreads ? { total: node.reviewThreads.totalCount ?? 0, unresolved: (node.reviewThreads.nodes ?? []).filter(x => x && !x.isResolved).length } : null,
     commentCount: node.comments?.totalCount ?? 0,
     comments: (node.comments?.nodes ?? []).map(c => ({ author: c.author?.login ?? "ghost", body: c.body ?? "", createdAt: c.createdAt, url: c.url })),
     reviews: (node.latestOpinionatedReviews?.nodes ?? []).map(r => ({ author: r.author?.login ?? "ghost", state: lower(r.state), at: r.submittedAt })),
     checks, linked: linked.filter(l => l && !seen.has(l.url) && seen.add(l.url)),
   };
+}
+
+// The merge box at the top of a pull request, as GitHub's new PR page has it: what stands between it and merging
+// (conflicts first, as GitHub orders them), then checks, review threads and approvals. Works from the list's item alone
+// until its details arrive. tone: "blocked" | "pending" | "ready" | "draft" | "merged" | "closed".
+export function mergeStatus(item, detail = null) {
+  if (item?.kind !== "pr") return null;
+  const checks = detail?.checks ?? [], sum = checkSummary(checks);
+  const reviews = detail?.reviews ?? [];
+  const approvals = reviews.filter(r => r.state === "approved").length, changes = reviews.filter(r => r.state === "changes_requested").length;
+  const threads = detail?.threads ?? null, state = detail?.mergeState ?? null;
+  const conflicts = item.conflicts || detail?.mergeable === "CONFLICTING" || state === "DIRTY";
+  const failing = sum.fail > 0 || (!checks.length && item.ci === "fail"), running = sum.pending > 0 || (!checks.length && item.ci === "pending");
+  const parts = { checks: { ...sum, total: checks.length, rollup: item.ci }, threads, approvals: { approved: approvals, changes, decision: item.review } };
+  const say = (tone, title, text, action = null) => ({ tone, title, text, action, ...parts });
+  if (item.state === "merged") return say("merged", "Merged", "Merged into " + (item.base ?? "its base branch") + ".");
+  if (item.state === "closed") return say("closed", "Closed", "Closed without merging.");
+  if (conflicts) return say("blocked", "Merge conflicts", "Resolve the merge conflicts before this can merge.", "conflicts");
+  if (item.state === "draft") return say("draft", "Draft", "Still a work in progress; mark it ready for review to merge.");
+  if (failing) return say("blocked", "Checks failing", (sum.fail || "Some") + " check" + (sum.fail === 1 ? "" : "s") + " failed.", "checks");
+  if (item.review === "changes" || changes) return say("blocked", "Changes requested", "A reviewer asked for changes before this can merge.");
+  if (state === "BEHIND") return say("blocked", "Out of date", "This branch is behind " + (item.base ?? "its base") + "; update it before merging.");
+  if (item.review === "required") return say("pending", "Review required", "An approving review is required before this can merge.");
+  if (running) return say("pending", "Checks running", sum.pending ? sum.pending + " check" + (sum.pending === 1 ? " is" : "s are") + " still running." : "Checks are still running.", "checks");
+  if (threads?.unresolved) return say("pending", "Unresolved conversations", threads.unresolved + " review thread" + (threads.unresolved === 1 ? "" : "s") + " still open.");
+  if (state === "BLOCKED") return say("blocked", "Blocked", "A branch rule is blocking the merge.");
+  if (state === "UNSTABLE") return say("ready", "Ready to merge", "Some checks that aren't required failed.");
+  if (state === "UNKNOWN" || (!detail && item.ci == null)) return say("pending", "Checking", "GitHub is still working out whether this can merge.");
+  return say("ready", "Ready to merge", "No conflicts with " + (item.base ?? "the base branch") + ".");
 }
 
 export function checkSummary(checks) {
