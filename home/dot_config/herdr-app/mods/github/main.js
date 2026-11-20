@@ -11,7 +11,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces, run } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows, parseHttp, checksOf, rollupOf, DETAIL_V, checkRunsPath, statusesPath,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows, parseHttp, checksOf, rollupOf, DETAIL_V, requiredQuery, requiredOf, ciLook, checkRunsPath, statusesPath,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -154,6 +154,7 @@ export default class GitHub extends View {
     });
     cx.timer.every(TICK_MS, (cx) => this.poll(cx));
     this.live = new Map(); // path -> etag and what it last said, so an unchanged answer is a 304
+    this.optional = new Map(); // pr id -> { oid, optional }: whether its head's failures are all in checks that aren't required
     cx.timer.every(CHECKS_MS, (cx) => this.pollChecks(cx));
     this.scanCheckouts(cx);
     // What the last pane showed comes first; loading starts after, so it refreshes the cache rather than replacing it.
@@ -176,7 +177,8 @@ export default class GitHub extends View {
   }
 
   async restore() {
-    const [prefs, details, names, ms] = await Promise.all([readJson(cacheDir() + "/prefs.json"), readJson(cacheDir() + "/details.json"), readdir(cacheDir()).catch(() => []), readJson(cacheDir() + "/milestones.json")]);
+    const [prefs, details, names, ms, optional] = await Promise.all([readJson(cacheDir() + "/prefs.json"), readJson(cacheDir() + "/details.json"), readdir(cacheDir()).catch(() => []), readJson(cacheDir() + "/milestones.json"), readJson(cacheDir() + "/optional.json")]);
+    if (Array.isArray(optional)) this.optional = new Map(optional);
     for (const n of await readdir(appHome() + "/" + AVATAR_DIR).catch(() => [])) if (n.endsWith(".png")) this.avatarState.set("file:" + n, "ready");
     for (const [k, v] of ms?.lists ?? []) this.milestones.set(k, { ...v, loading: false, error: null });
     for (const [k, v] of ms?.items ?? []) this.msItems.set(k, { ...v, subs: v.subs ? new Map(v.subs) : null, loading: false, error: null });
@@ -327,6 +329,7 @@ export default class GitHub extends View {
     if (Date.now() - e.at >= POLL_MS) this.load(cx);
     const item = this.current();
     if (item) this.fetchDetail(item, cx);
+    this.learnOptional(this.rows().map(r => r.item).filter(Boolean), cx);
   }
 
   // Refreshes the first page of every section (later pages stay), a few at a time; each lands as it comes.
@@ -368,6 +371,7 @@ export default class GitHub extends View {
       data = (await graphql(sectionQuery(), { ...vars, first: Math.ceil(PAGE / 3) }, this.opts(30000))).data;
     }
     applyPage(entry.result, sectionKey, data, more);
+    this.learnOptional([...entry.result.items.values()], cx);
     this.login = entry.result.login ?? this.login;
     this.status = "ready"; this.error = null;
   }
@@ -800,6 +804,48 @@ export default class GitHub extends View {
     return { open: ["issue-open", t.ansi2], completed: ["issue-closed", t.ansi5], not_planned: ["issue-skip", t.dim], duplicate: ["issue-skip", t.dim] }[item.state] ?? ["issue-open", t.muted];
   }
   stateIcon(item, t, size = 14) { const [icon, color] = this.stateLook(item, t); return svg(ICON(icon)).size(size).flex_none().text_color(color); }
+  // The CI dot. Failing only in checks that aren't required is green ringed in red: it can still merge.
+  ciDot(id, item, t) {
+    const look = this.ciOf(item);
+    if (look !== "optional") return div().id(id).size(7).flex_none().rounded(4).bg(this.ciColor(look, t)).tooltip("CI: " + (look ?? "none"));
+    // Halves don't clip round at this size, so it's a green dot in a red ring.
+    return div().id(id).size(9).flex_none().rounded(5).border_2().border_color(t.blocked).bg(t.done).tooltip("CI: only checks that aren't required are failing");
+  }
+  // An item's CI look: details (fresher, with required flags) win; else what the light query learned for its head.
+  ciOf(item) {
+    if (item?.kind !== "pr") return null;
+    const d = this.details.get(item.id)?.detail;
+    if (d?.checks?.length && d.headOid && (!item.headOid || d.headOid === item.headOid) && d.checks.some(c => "required" in c)) {
+      const fail = d.checks.filter(c => c.state === "fail");
+      return ciLook(item.ci, fail.length > 0 && d.checks.some(c => c.required) && fail.every(c => !c.required));
+    }
+    const k = this.optional.get(item.id);
+    return ciLook(item.ci, Boolean(k?.optional) && (!item.headOid || k.oid === item.headOid));
+  }
+  // Failing pull requests in view are asked, in one request, whether their failures are only optional checks; each head once.
+  learnOptional(items, cx) {
+    if (checking() || this.learning) return;
+    const ask = [];
+    for (const i of items) {
+      if (i?.kind !== "pr" || i.ci !== "fail" || isClosed(i) || !i.headOid) continue;
+      if (this.optional.get(i.id)?.oid === i.headOid) continue;
+      const d = this.details.get(i.id)?.detail;
+      if (d?.headOid === i.headOid && d.checks?.some(c => "required" in c)) continue;
+      if (!ask.some(x => x.id === i.id)) ask.push(i);
+      if (ask.length >= 20) break;
+    }
+    if (!ask.length) return;
+    this.learning = true;
+    cx.spawn(async (cx) => {
+      try {
+        const { data } = await graphql(requiredQuery(ask), {}, this.opts());
+        for (const [id, v] of requiredOf(data, ask)) this.optional.set(id, v);
+        writeJson(cacheDir() + "/optional.json", [...this.optional.entries()].slice(-200));
+        cx.notify();
+      } catch (e) { console.warn("github: required checks: " + (e?.message ?? e)); }
+      finally { this.learning = false; }
+    });
+  }
   ciColor(ci, t) { return { pass: t.done, fail: t.blocked, pending: t.working, skipped: t.dim, cancelled: t.dim }[ci] ?? t.dim; }
   reviewLook(review, t) { return { approved: ["approved", t.done], changes: ["changes", t.blocked], required: ["review", t.working] }[review] ?? null; }
   labelColor(hex, t) { return /^[0-9a-f]{6}$/i.test(hex ?? "") ? "#" + hex : t.muted; }
@@ -1106,7 +1152,7 @@ export default class GitHub extends View {
       .when(i.conflicts && !isClosed(i), el => el.child(div().id("gh-cf-" + row.key).flex_none().tooltip("Merge conflicts").child(svg(ICON("conflict")).size(12).text_color(t.blocked))))
       .when(Boolean(rv) && !isClosed(i), el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
       .when(i.kind === "pr" && !isClosed(i), el => { const c = this.placeChip("gh-place-" + row.key, i, t); return c ? el.child(c) : el; })
-      .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))
+      .when(i.kind === "pr", el => el.child(this.ciDot("gh-ci-" + row.key, i, t)))
       .when(cols.comments, el => el.child(h_flex().flex_none().w(30).gap(3).items_center().justify_end().text_size(11).text_color(t.dim)
         .when(i.comments > 0, el => el.child(svg(ICON("comment")).size(10)).child(String(i.comments)))))
       .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
@@ -1177,7 +1223,7 @@ export default class GitHub extends View {
           .when(i.conflicts && !closed, el => el.child(div().id("gh-cf-" + row.key).flex_none().tooltip("Merge conflicts").child(svg(ICON("conflict")).size(12).text_color(t.blocked))))
           .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
           .when(i.comments > 0, el => el.child(h_flex().flex_none().gap(3).items_center().text_size(11).text_color(t.dim).tooltip("Comments").child(svg(ICON("comment")).size(10)).child(String(i.comments))))
-          .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))));
+          .when(i.kind === "pr", el => el.child(this.ciDot("gh-ci-" + row.key, i, t)))));
   }
 
   milestoneRow(row, t) {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseHttp, checksOf, rollupOf, checkRunsPath, workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, cardLayout, chipWidth, CARD_H, rowColumns, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { requiredQuery, requiredOf, ciLook, parseHttp, checksOf, rollupOf, checkRunsPath, workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, cardLayout, chipWidth, CARD_H, rowColumns, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -383,6 +383,19 @@ describe("github model", () => {
     expect(d.checks.map(k => k.name + ":" + k.required)).toEqual(["Live / V1 PR hardware / station / dgx (push):false", "coverage:true"]);
     const live = checksOf({ check_runs: [{ name: "station / dgx", status: "completed", conclusion: "success", html_url: "u" }] }, null, d.checks);
     expect(live[0]).toMatchObject({ name: "Live / V1 PR hardware / station / dgx (push)", state: "pass", required: false });
+  });
+  test("a failing pull request whose failures are all optional gets the 'optional' dot", () => {
+    const prs = [{ id: "A", number: 1 }, { id: "B", number: 2 }];
+    expect(requiredQuery(prs)).toContain('p1: node(id: "B")');
+    expect(requiredQuery(prs)).toContain("isRequired(pullRequestNumber: 2)");
+    const ctx = (nodes) => ({ commits: { nodes: [{ commit: { oid: "o", statusCheckRollup: { contexts: { nodes } } } }] } });
+    const got = requiredOf({ p0: ctx([{ conclusion: "FAILURE", isRequired: false }, { conclusion: "SUCCESS", isRequired: true }]), p1: ctx([{ conclusion: "FAILURE", isRequired: true }, { state: "ERROR", isRequired: false }]) }, prs);
+    expect(got.get("A")).toEqual({ oid: "o", optional: true });
+    expect(got.get("B")).toEqual({ oid: "o", optional: false });
+    expect(ciLook("fail", true)).toBe("optional");
+    expect(ciLook("fail", false)).toBe("fail");
+    expect(ciLook("pass", true)).toBe("pass");
+    expect(ciLook(null)).toBe(null);
   });
   test("live checks: gh -i output parses, REST runs and statuses become the same entries, and roll up", () => {
     const ok = parseHttp('HTTP/2.0 200 OK\r\nEtag: W/"abc"\r\nX-Ratelimit-Used: 3\r\n\r\n{"total_count":1}');

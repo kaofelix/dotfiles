@@ -39,6 +39,8 @@ A read-only dashboard of your pull requests and issues across repositories, or o
 - **Where it's open:** a pull request whose head branch is checked out in a terminal (a clone of its repository, matched by remote
   and Herdr's live branch) gets a robot on its row, after its chips, tinted by its agent's state (a count when in several places; hover names them); click it, or `J`, to go
   there (space, tab and pane). Its details list every such place under **Open in**. Folders are asked for their remote once each.
+- **CI dot:** green, red, yellow (running), or green ringed in red when only checks that aren't required fail (it can still merge).
+  Lists ask that of their failing pull requests in one small request, once per head commit; opened details answer it too.
 - **Live checks:** an open pull request's checks are asked for every 3 s while any is running (every 30 s once they've settled), over REST
   with the last ETag, so an unchanged answer is a bodiless 304; a change updates the merge box, the checks list and its CI dot in every list.
   Only for the one open in details, and only while the panel is shown.

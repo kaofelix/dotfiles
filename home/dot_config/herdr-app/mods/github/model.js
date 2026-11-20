@@ -41,7 +41,7 @@ fragment PR on PullRequest { __typename id number title url state isDraft create
   reviewDecision mergeable comments { totalCount } milestone { number title }
   labels(first: 8) { nodes { name color } } assignees(first: 5) { nodes { login } }
   reviewRequests(first: 8) { nodes { requestedReviewer { ... on User { login } ... on Team { slug } } } }
-  commits(last: 1) { nodes { commit { statusCheckRollup { state } } } } }
+  commits(last: 1) { nodes { commit { oid statusCheckRollup { state } } } } }
 fragment IS on Issue { __typename id number title url state stateReason createdAt updatedAt closedAt
   author { login } repository { nameWithOwner isPrivate } comments { totalCount } milestone { number title }
   labels(first: 8) { nodes { name color } } assignees(first: 5) { nodes { login } } }`;
@@ -196,7 +196,7 @@ export function normalize(n) {
     labels: (n.labels?.nodes ?? []).map(l => ({ name: l.name, color: l.color })),
     assignees: (n.assignees?.nodes ?? []).map(a => a.login),
     reviewers: (n.reviewRequests?.nodes ?? []).map(r => r.requestedReviewer?.login ?? (r.requestedReviewer?.slug && "@" + r.requestedReviewer.slug)).filter(Boolean),
-    ci: CI[n.commits?.nodes?.[0]?.commit?.statusCheckRollup?.state] ?? null,
+    ci: CI[n.commits?.nodes?.[0]?.commit?.statusCheckRollup?.state] ?? null, headOid: n.commits?.nodes?.[0]?.commit?.oid ?? null,
     review: REVIEW[n.reviewDecision] ?? null, conflicts: n.mergeable === "CONFLICTING",
     comments: n.comments?.totalCount ?? 0, additions: n.additions ?? null, deletions: n.deletions ?? null, files: n.changedFiles ?? null,
     head: n.headRefName ?? null, base: n.baseRefName ?? null,
@@ -561,6 +561,23 @@ export function checksOf(runs, statuses, known = []) {
   ];
   return out.sort((x, y) => CHECK_ORDER[x.state] - CHECK_ORDER[y.state] || x.name.localeCompare(y.name));
 }
+// Whether a failing pull request's failures are only in checks that aren't required: by id, at its head, for up to 20 at once.
+export const requiredQuery = (prs) => "query {\n" + prs.map((p, k) => "  p" + k + ": node(id: " + JSON.stringify(p.id) + ") { ... on PullRequest { commits(last: 1) { nodes { commit { oid statusCheckRollup { contexts(first: 100) { nodes { __typename ... on CheckRun { conclusion isRequired(pullRequestNumber: " + p.number + ") } ... on StatusContext { state isRequired(pullRequestNumber: " + p.number + ") } } } } } } } } }").join("\n") + "\n}";
+const FAILED = new Set(["FAILURE", "ERROR", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED"]);
+// For each asked pull request: { oid, optional } where optional means every failing check isn't required.
+export function requiredOf(data, prs) {
+  const out = new Map();
+  prs.forEach((p, k) => {
+    const commit = data?.["p" + k]?.commits?.nodes?.[0]?.commit;
+    if (!commit) return;
+    const bad = (commit.statusCheckRollup?.contexts?.nodes ?? []).filter(x => FAILED.has(x.conclusion ?? x.state));
+    out.set(p.id, { oid: commit.oid ?? null, optional: bad.length > 0 && bad.every(x => !x.isRequired) });
+  });
+  return out;
+}
+// The CI dot: pass, fail, pending, or "optional" (failing, but only checks that aren't required, so it can still merge).
+export function ciLook(ci, optionalOnly = false) { return ci === "fail" && optionalOnly ? "optional" : ci ?? null; }
+
 // The list's CI dot from the checks: failing beats running beats passed; none is none.
 export function rollupOf(checks) {
   if (!checks.length) return null;
