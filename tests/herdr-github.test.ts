@@ -125,21 +125,15 @@ describe("github model", () => {
     expect(d.commentCount).toBe(3);
   });
 
-  test("cards take a third line only for labels that don't fit beside the facts, folding the rest into +n", () => {
+  test("cards keep two lines, fitting labels into what's left and folding the rest into +n", () => {
     const labels = ["bug", "area: onboarding", "priority: high", "needs-triage"].map(name => ({ name }));
-    expect(cardLayout([], { width: 400, facts: 200 })).toMatchObject({ lines: 2, shown: 0, height: CARD_H.two });
-    expect(cardLayout(labels.slice(0, 1), { width: 600, facts: 200 })).toMatchObject({ lines: 2, inline: 1, hidden: 0 });
-    const narrow = cardLayout(labels, { width: 300, facts: 220, milestone: "GTC DC 2026" });
-    expect(narrow).toMatchObject({ lines: 3, inline: 0, height: CARD_H.three });
+    expect(cardLayout([], { width: 400, used: 100 })).toEqual({ shown: 0, hidden: 0, height: CARD_H });
+    expect(cardLayout(labels, { width: 900, used: 100, milestone: "GTC DC 2026" })).toMatchObject({ shown: 5, hidden: 0 });
+    const narrow = cardLayout(labels, { width: 300, used: 120, milestone: "GTC DC 2026" });
     expect(narrow.shown + narrow.hidden).toBe(5);
     expect(narrow.hidden).toBeGreaterThan(0);
-    // Wider never shows fewer, and never needs more lines.
-    let prev = null;
-    for (let w = 200; w <= 1200; w += 20) {
-      const l = cardLayout(labels, { width: w, facts: 220, milestone: "GTC DC 2026" });
-      if (prev) { expect(l.lines).toBeLessThanOrEqual(prev.lines); if (l.lines === prev.lines) expect(l.shown).toBeGreaterThanOrEqual(prev.shown); }
-      prev = l;
-    }
+    let prev = -1;
+    for (let w = 200; w <= 1200; w += 20) { const l = cardLayout(labels, { width: w, used: 120 }); expect(l.shown).toBeGreaterThanOrEqual(prev); expect(l.height).toBe(CARD_H); prev = l.shown; }
     expect(chipWidth("bug")).toBeLessThan(chipWidth("area: onboarding"));
   });
   test("the scope list puts all my work, then pins, then repos, and a typed owner/name opens any repo", () => {

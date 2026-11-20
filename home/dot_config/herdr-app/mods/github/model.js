@@ -674,30 +674,20 @@ export function checkSummary(checks) {
 }
 
 // The list's width and which optional columns fit, as in beads: columns only drop as the pane narrows.
-// A list card: line 1 the title, line 2 the facts (number, repository, people, state), and labels after them when they
-// fit, else on a third line. Fixed heights, so a list keeps a steady rhythm; labels beyond what fits fold into "+n".
-export const CARD_H = { two: 50, three: 70 };
+// A list card, always two lines: the title on the first; labels on the second, left, beside the status icons on its right.
+// Labels that don't fit the room left fold into a "+n" chip.
+export const CARD_H = 50;
 const CHAR_W = 6.2, CHIP_PAD = 14, CHIP_GAP = 5;
 export const chipWidth = (text) => Math.ceil(String(text ?? "").length * CHAR_W) + CHIP_PAD;
-// widths: the card's inner width and the room the facts on line 2 already take.
-export function cardLayout(labels, { width, facts = 0, milestone = null } = {}) {
-  const names = [...(milestone ? ["◆ " + milestone] : []), ...labels.map(l => l.name ?? l)];
-  const fit = (room) => {
-    let used = 0, n = 0;
-    for (const name of names) {
-      const w = chipWidth(name) + (n ? CHIP_GAP : 0), rest = names.length - n - 1, more = rest > 0 ? chipWidth("+" + rest) + CHIP_GAP : 0;
-      if (used + w + more > room) break;
-      used += w; n++;
-    }
-    return n;
-  };
-  if (!names.length) return { lines: 2, inline: 0, shown: 0, hidden: 0, height: CARD_H.two };
-  const inlineRoom = width - facts - 12;
-  // Everything fits beside the facts: two lines.
-  if (fit(inlineRoom) === names.length) return { lines: 2, inline: names.length, shown: names.length, hidden: 0, height: CARD_H.two };
-  // Otherwise a third line of their own, with what doesn't fit folded.
-  const shown = Math.max(1, fit(width));
-  return { lines: 3, inline: 0, shown, hidden: names.length - shown, height: CARD_H.three };
+export function cardLayout(labels, { width, used = 0, milestone = null } = {}) {
+  const names = [...(milestone ? ["◆ " + milestone] : []), ...labels.map(l => l.name ?? l)], room = width - used;
+  let taken = 0, shown = 0;
+  for (const name of names) {
+    const w = chipWidth(name) + (shown ? CHIP_GAP : 0), rest = names.length - shown - 1, more = rest > 0 ? chipWidth("+" + rest) + CHIP_GAP : 0;
+    if (taken + w + more > room) break;
+    taken += w; shown++;
+  }
+  return { shown, hidden: names.length - shown, height: CARD_H };
 }
 
 // "45s", "12m", "3h", "5d", "6w", "4mo", "2y" since an ISO time.
