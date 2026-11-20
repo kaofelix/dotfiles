@@ -664,16 +664,16 @@ export default class GitHub extends View {
   statusColor(status, t) { return { blocked: t.blocked, done: t.done, working: t.working }[status] ?? t.dim; }
   // A robot where the pull request's branch is open in a terminal, tinted by its agent's state (a count when in more
   // than one place); hover names the places, a click goes to the best one. Only there when it's open somewhere.
-  placeChip(id, item, t) {
+  placeChip(id, item, t, size = 13) {
     const all = this.workPlaces(item);
     if (!all.length) return null;
     const p = all[0], color = p.status === "idle" ? t.muted : this.statusColor(p.status, t);
-    return h_flex().id(id).flex_none().h(18).px(3).gap(2).items_center().rounded(4).cursor_pointer()
+    return h_flex().id(id).flex_none().h(size + 4).px(2).gap(1).items_center().rounded(4).cursor_pointer()
       .text_color(color).hover(s => s.bg(t.hover).text_color(t.foreground))
       .tooltip("Open in " + all.map(x => this.placeLabel(x) + (x.status !== "idle" ? " (" + x.status + ")" : "")).join(", ") + ": go there (J)")
       .on_click((_e, cx) => { cx.stop_propagation(); this.jump(p); })
-      .child(svg(ICON("robot")).size(13))
-      .when(all.length > 1, el => el.child(div().text_size(10).child(String(all.length))));
+      .child(svg(ICON("robot")).size(size))
+      .when(all.length > 1, el => el.child(div().text_size(9.5).child(String(all.length))));
   }
 
   // A pull request with a local clone open in some terminal can be reviewed in the Changes dialog, as pr-picker does.
@@ -1028,13 +1028,13 @@ export default class GitHub extends View {
     }
     const i = row.item, selected = row.key === this.selected, shown = this.detailId === i.id;
     const rv = this.reviewLook(i.review, t), repoName = row.showRepo ? i.repo.split("/")[1] : isRepoScope(this.prefs.scope) ? null : this.prefs.group ? null : i.repo.split("/")[1];
-    const closed = isClosed(i), place = i.kind === "pr" && !closed ? this.placeChip("gh-place-" + row.key, i, t) : null;
+    const closed = isClosed(i), place = i.kind === "pr" && !closed ? this.placeChip("gh-place-" + row.key, i, t, 15) : null;
     const milestone = i.milestone && !row.owner ? i.milestone.title.replace(/^Roadmap:\s*/i, "") : null;
     const typeChip = Boolean(row.epic) || (Boolean(i.type) && Boolean(row.owner) && i.type !== "Task");
-    // Line 2: what's on its left before the labels, and the status icons on its right, leave the labels their room.
-    const indent = 10 + row.depth * 16, inner = cols.width - indent - 10 - 12 - 24 - 21;
-    const left = (repoName ? Math.min(110, repoName.length * 6.2) + 8 : 0) + (typeChip ? 56 : 0) + (i.borrowed ? 26 : 0);
-    const right = (rv && !closed ? 78 : 0) + (i.conflicts && !closed ? 18 : 0) + (i.kind === "pr" ? 14 : 0) + (i.comments ? 34 : 0) + (i.subs ? 38 : 0) + (place ? 30 : 0);
+    // Line 2 leaves the labels what its status icons don't take.
+    const indent = 10 + row.depth * 16, inner = cols.width - indent - 10 - 12 - 26;
+    const left = (typeChip ? 56 : 0) + (i.borrowed ? 26 : 0);
+    const right = (rv && !closed ? 78 : 0) + (i.conflicts && !closed ? 18 : 0) + (i.kind === "pr" ? 14 : 0) + (i.comments ? 34 : 0) + (i.subs ? 38 : 0);
     const lay = cardLayout(i.labels, { width: inner, used: left + right + 16, milestone });
     const chips = [
       ...(milestone ? [this.filterChip("gh-ms-" + row.key, "◆ " + milestone, t.muted, filterToken("milestone", i.milestone.title), t)] : []),
@@ -1048,35 +1048,38 @@ export default class GitHub extends View {
         : div().id("gh-as-" + row.key).flex_none().text_size(11).text_color(t.working).tooltip("Nobody is assigned").child("unassigned"))
       : this.avatar("gh-au-" + row.key, i.author, t, 16, "Opened by " + i.author);
     // Plain cards: space between them keeps them apart; the hover and selection fill shows each one's extent.
-    return v_flex().id("gh-row-" + row.key).h(lay.height).flex_none().justify_center().gap(4).pl(indent).pr(10).mx(6).my(2).rounded(7).cursor_pointer()
+    // A gutter on the left holds the state icon over where it's open (a robot), the same width with or without one.
+    return h_flex().id("gh-row-" + row.key).h(lay.height).flex_none().gap(7).items_center().pl(indent).pr(10).mx(6).my(2).rounded(7).cursor_pointer()
       .when(selected, el => el.bg(shown ? t.selected : t.raised)).hover(s => s.bg(t.hover))
       .on_click((_e, cx) => { this.handle.focus(); this.open(row, cx); })
-      // Line 1: state, number and title; who and when on the right.
-      .child(h_flex().gap(7).items_center().min_w(0)
+      .child(v_flex().flex_none().w(18).gap(5).items_center()
         .child(this.stateIcon(i, t))
-        .child(div().flex_none().text_size(11.5).font_family(mono).text_color(t.dim).child("#" + i.number))
-        .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(closed ? t.muted : t.foreground).child(i.title))
-        .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
-        .when(this.isItemPinned(i.id) && row.section !== "home-pinned", el => el.child(svg(ICON("pin")).size(11).flex_none().text_color(t.accent)))
-        .child(people)
-        .child(div().flex_none().w(24).text_right().text_size(11).text_color(t.dim).tooltip("Updated").child(age(i.updatedAt))))
-      // Line 2: where and what it's tagged with on the left; its state, as icons, on the right.
-      .child(h_flex().gap(5).items_center().min_w(0).pl(21).overflow_hidden()
-        .when(Boolean(repoName), el => el.child(div().id("gh-rp-" + row.key).flex_none().max_w(110).truncate().text_size(11).cursor_pointer().mr(3)
-          .text_color(hasToken(this.query, filterToken("repo", i.repo)) ? t.accent : t.muted).hover(s => s.text_color(t.foreground)).tooltip("Filter by repo:" + i.repo)
-          .on_click((_e, cx) => { cx.stop_propagation(); this.toggleFilter(filterToken("repo", i.repo), cx); }).child(repoName)))
-        .when(typeChip, el => el.child(this.filterChip("gh-ty-" + row.key, i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, filterToken("type", i.type ?? "Epic"), t)))
-        .when(Boolean(i.borrowed), el => el.child(div().flex_none().text_size(10.5).text_color(t.dim).tooltip("A sub-issue of this epic, not itself in the milestone").child("sub")))
-        .children(chips.slice(0, lay.shown))
-        .when(lay.hidden > 0, el => el.child(div().id("gh-lbmore-" + row.key).flex_none().px(5).h(17).flex().items_center().rounded(4).border_1()
-          .border_color(t.border).text_color(t.dim).text_size(10.5).tooltip(hiddenNames.join(" · ")).child("+" + lay.hidden)))
-        .child(div().flex_1().min_w(4))
-        .when(Boolean(rv) && !closed, el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
-        .when(i.conflicts && !closed, el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
-        .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
-        .when(i.comments > 0, el => el.child(h_flex().flex_none().gap(3).items_center().text_size(11).text_color(t.dim).tooltip("Comments").child(svg(ICON("comment")).size(10)).child(String(i.comments))))
-        .when(Boolean(place), el => el.child(place))
-        .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none")))));
+        .child(place ?? div().h(17)))
+      .child(v_flex().flex_1().min_w(0).gap(4)
+        // Line 1: number and title; where, when and who on the right, the avatar last.
+        .child(h_flex().gap(7).items_center().min_w(0)
+          .child(div().flex_none().text_size(11.5).font_family(mono).text_color(t.dim).child("#" + i.number))
+          .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(closed ? t.muted : t.foreground).child(i.title))
+          .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
+          .when(this.isItemPinned(i.id) && row.section !== "home-pinned", el => el.child(svg(ICON("pin")).size(11).flex_none().text_color(t.accent)))
+          .when(Boolean(repoName), el => el.child(div().id("gh-rp-" + row.key).flex_none().max_w(110).truncate().text_size(11).cursor_pointer()
+            .text_color(hasToken(this.query, filterToken("repo", i.repo)) ? t.accent : t.dim).hover(s => s.text_color(t.foreground)).tooltip("Filter by repo:" + i.repo)
+            .on_click((_e, cx) => { cx.stop_propagation(); this.toggleFilter(filterToken("repo", i.repo), cx); }).child(repoName)))
+          .child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Updated").child(age(i.updatedAt)))
+          .child(people))
+        // Line 2: what it's tagged with on the left; its state, as icons, on the right.
+        .child(h_flex().gap(5).items_center().min_w(0).h(17).overflow_hidden()
+          .when(typeChip, el => el.child(this.filterChip("gh-ty-" + row.key, i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, filterToken("type", i.type ?? "Epic"), t)))
+          .when(Boolean(i.borrowed), el => el.child(div().flex_none().text_size(10.5).text_color(t.dim).tooltip("A sub-issue of this epic, not itself in the milestone").child("sub")))
+          .children(chips.slice(0, lay.shown))
+          .when(lay.hidden > 0, el => el.child(div().id("gh-lbmore-" + row.key).flex_none().px(5).h(17).flex().items_center().rounded(4).border_1()
+            .border_color(t.border).text_color(t.dim).text_size(10.5).tooltip(hiddenNames.join(" · ")).child("+" + lay.hidden)))
+          .child(div().flex_1().min_w(4))
+          .when(Boolean(rv) && !closed, el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
+          .when(i.conflicts && !closed, el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
+          .when(Boolean(i.subs), el => el.child(div().flex_none().text_size(11).text_color(t.dim).tooltip("Sub-issues done").child(i.subs.completed + "/" + i.subs.total)))
+          .when(i.comments > 0, el => el.child(h_flex().flex_none().gap(3).items_center().text_size(11).text_color(t.dim).tooltip("Comments").child(svg(ICON("comment")).size(10)).child(String(i.comments))))
+          .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))));
   }
 
   milestoneRow(row, t) {
