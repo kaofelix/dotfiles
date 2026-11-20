@@ -46,14 +46,15 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   and a list that still says open is corrected by the details. Approvals counts requested reviewers who haven't answered as pending.
   with **Resolve on GitHub** (its conflict editor) for conflicts and **Review diff** whenever the repository is cloned in an open terminal. Under it, **Checks**, **Conversations** (review threads) and
   **Approvals**, each with a bar; clicking Checks lists them all.
-- **Activity** (a pull request's details, after its description): the timeline as GitHub draws it, newest first (the latest 100 entries).
+- **Activity** (a pull request's or issue's details, after its description): the timeline as GitHub draws it, newest first (the latest 100 entries).
   Comments and reviews are cards (approvals and requested changes coloured), commits and events one line each on a rail: labels (clickable),
-  review requests, force-pushes, renames, milestones, assignments, mentions, merge and close. Three or more commits in a row by one author fold
+  review requests, force-pushes, renames, milestones, assignments, mentions, merge and close; for issues also their type, sub-issues and
+  parent, duplicates, commits that reference them, and how they closed (completed, not planned, by which pull request). Three or more commits in a row by one author fold
   into "n more commits by …"; a commit's short SHA copies the full one.
 - **Collapsible sections:** `<details>`/`<summary>` in any description, comment or review is drawn folded with its summary (open if it says `open`),
   nested ones too, as on GitHub; click to open.
 - **Details:** state, review and CI chips, labels, branch and size, assignees and requested reviewers; failing and running checks (all on request, each opens its run),
-  linked issues and pull requests and the description; for issues, the latest reviews and comments, for pull requests the Activity.
+  linked issues and pull requests, the description and the Activity.
   **Open** opens it in the browser and **Copy link** copies its URL. **Review diff** (in the merge box, or `d`) opens it in the Changes dialog when its repository is cloned in a folder an open terminal is in.
 - **Commands:** `github.reload`, `github.scope`, `github.home`, `github.sidebar`, `github.next-pin`, `github.milestones`, `github.focus-next-milestone`, `github.copy` and `github.browse` (from keys.json or `herdr-app do`).
 - **Keys:** `j`/`k` move, `enter` opens, `o` opens on GitHub, `c` copies the URL, `C` copies `owner/repo#N`, `d` reviews the diff,

@@ -590,7 +590,9 @@ export function markdownBlocks(text) {
 
 // A pull request's activity, as GitHub's timeline shows it: commits (runs of them by one author folded), comments,
 // reviews and events, newest first.
-export const TIMELINE_QUERY = `query($id: ID!, $last: Int!) { node(id: $id) { ... on PullRequest { timelineItems(last: $last) { totalCount nodes { __typename
+// The timeline of a pull request or issue: GitHub's own events, each kind with what it needs to read as a sentence.
+export const TIMELINE_QUERY = `query($id: ID!, $last: Int!) { node(id: $id) {
+  ... on PullRequest { timelineItems(last: $last) { totalCount nodes { __typename
   ... on PullRequestCommit { commit { oid abbreviatedOid messageHeadline committedDate url author { user { login } name } } }
   ... on IssueComment { id author { login } body createdAt url authorAssociation }
   ... on PullRequestReview { id author { login } state body createdAt url comments { totalCount } }
@@ -601,7 +603,7 @@ export const TIMELINE_QUERY = `query($id: ID!, $last: Int!) { node(id: $id) { ..
   ... on HeadRefForcePushedEvent { createdAt actor { login } beforeCommit { abbreviatedOid } afterCommit { abbreviatedOid } }
   ... on BaseRefChangedEvent { createdAt actor { login } previousRefName currentRefName }
   ... on MergedEvent { createdAt actor { login } mergeRefName commit { abbreviatedOid } }
-  ... on ClosedEvent { createdAt actor { login } }
+  ... on ClosedEvent { createdAt actor { login } stateReason closer { ... on PullRequest { __typename number title url state isDraft repository { nameWithOwner } } } }
   ... on ReopenedEvent { createdAt actor { login } }
   ... on ReadyForReviewEvent { createdAt actor { login } }
   ... on ConvertToDraftEvent { createdAt actor { login } }
@@ -613,6 +615,29 @@ export const TIMELINE_QUERY = `query($id: ID!, $last: Int!) { node(id: $id) { ..
   ... on UnassignedEvent { createdAt actor { login } assignee { ... on User { login } } }
   ... on AutoMergeEnabledEvent { createdAt actor { login } }
   ... on AutoMergeDisabledEvent { createdAt actor { login } }
+} } }
+  ... on Issue { timelineItems(last: $last) { totalCount nodes { __typename
+  ... on IssueComment { id author { login } body createdAt url authorAssociation }
+  ... on LabeledEvent { createdAt actor { login } label { name color } }
+  ... on UnlabeledEvent { createdAt actor { login } label { name color } }
+  ... on ClosedEvent { createdAt actor { login } stateReason closer { ... on PullRequest { __typename number title url state isDraft repository { nameWithOwner } } } }
+  ... on ReopenedEvent { createdAt actor { login } }
+  ... on CrossReferencedEvent { createdAt actor { login } source { ... on Issue { __typename number title url state stateReason repository { nameWithOwner } } ... on PullRequest { __typename number title url state isDraft repository { nameWithOwner } } } }
+  ... on RenamedTitleEvent { createdAt actor { login } previousTitle currentTitle }
+  ... on MilestonedEvent { createdAt actor { login } milestoneTitle }
+  ... on DemilestonedEvent { createdAt actor { login } milestoneTitle }
+  ... on AssignedEvent { createdAt actor { login } assignee { ... on User { login } } }
+  ... on UnassignedEvent { createdAt actor { login } assignee { ... on User { login } } }
+
+  ... on IssueTypeAddedEvent { createdAt actor { login } issueType { name } }
+  ... on IssueTypeChangedEvent { createdAt actor { login } issueType { name } prevIssueType { name } }
+  ... on IssueTypeRemovedEvent { createdAt actor { login } issueType { name } }
+  ... on SubIssueAddedEvent { createdAt actor { login } subIssue { __typename number title url state stateReason repository { nameWithOwner } } }
+  ... on SubIssueRemovedEvent { createdAt actor { login } subIssue { __typename number title url state stateReason repository { nameWithOwner } } }
+  ... on ParentIssueAddedEvent { createdAt actor { login } parent { __typename number title url state stateReason repository { nameWithOwner } } }
+  ... on ParentIssueRemovedEvent { createdAt actor { login } parent { __typename number title url state stateReason repository { nameWithOwner } } }
+  ... on MarkedAsDuplicateEvent { createdAt actor { login } canonical { ... on Issue { __typename number title url state stateReason repository { nameWithOwner } } } }
+  ... on ReferencedEvent { createdAt actor { login } commit { abbreviatedOid messageHeadline url } }
 } } } } }`;
 const who = (x) => x?.login ?? x?.slug ?? null;
 export function timelineOf(data) {
@@ -631,14 +656,27 @@ export function timelineOf(data) {
       case "HeadRefForcePushedEvent": ev("force-pushed " + (n.beforeCommit?.abbreviatedOid ?? "?") + " → " + (n.afterCommit?.abbreviatedOid ?? "?"), { icon: "push" }); break;
       case "BaseRefChangedEvent": ev("changed the base from " + n.previousRefName + " to " + n.currentRefName, { icon: "push" }); break;
       case "MergedEvent": ev("merged " + (n.commit?.abbreviatedOid ?? "") + " into " + (n.mergeRefName ?? "the base"), { icon: "merged" }); break;
-      case "ClosedEvent": ev("closed this", { icon: "closed" }); break;
+      case "ClosedEvent": {
+        const how = { completed: "closed this as completed", not_planned: "closed this as not planned", duplicate: "closed this as a duplicate" }[lower(n.stateReason)] ?? "closed this";
+        ev(n.closer?.number ? how + " in" : how, { icon: lower(n.stateReason) === "not_planned" || lower(n.stateReason) === "duplicate" ? "skip" : "closed", ...(n.closer?.number ? { link: linkOf(n.closer) } : {}) });
+        break;
+      }
+      case "IssueTypeAddedEvent": ev("added the " + (n.issueType?.name ?? "?") + " type", { icon: "tag" }); break;
+      case "IssueTypeChangedEvent": ev("changed the type from " + (n.prevIssueType?.name ?? "?") + " to " + (n.issueType?.name ?? "?"), { icon: "tag" }); break;
+      case "IssueTypeRemovedEvent": ev("removed the " + (n.issueType?.name ?? "?") + " type", { icon: "tag" }); break;
+      case "SubIssueAddedEvent": if (n.subIssue?.number) ev("added a sub-issue", { icon: "link", link: linkOf(n.subIssue) }); break;
+      case "SubIssueRemovedEvent": if (n.subIssue?.number) ev("removed a sub-issue", { icon: "link", link: linkOf(n.subIssue) }); break;
+      case "ParentIssueAddedEvent": if (n.parent?.number) ev("added this as a sub-issue of", { icon: "link", link: linkOf(n.parent) }); break;
+      case "ParentIssueRemovedEvent": if (n.parent?.number) ev("removed this as a sub-issue of", { icon: "link", link: linkOf(n.parent) }); break;
+      case "MarkedAsDuplicateEvent": if (n.canonical?.number) ev("marked this as a duplicate of", { icon: "skip", link: linkOf(n.canonical) }); break;
+      case "ReferencedEvent": if (n.commit) ev("referenced this in a commit", { icon: "commit", commit: { short: n.commit.abbreviatedOid, title: n.commit.messageHeadline, url: n.commit.url } }); break;
       case "ReopenedEvent": ev("reopened this", { icon: "open" }); break;
       case "ReadyForReviewEvent": ev("marked this ready for review", { icon: "open" }); break;
       case "ConvertToDraftEvent": ev("marked this as a draft", { icon: "draft" }); break;
       case "CrossReferencedEvent": if (n.source?.number) ev("mentioned this in", { icon: "link", link: linkOf(n.source) }); break;
       case "RenamedTitleEvent": ev("changed the title from “" + n.previousTitle + "” to “" + n.currentTitle + "”", { icon: "edit" }); break;
-      case "MilestonedEvent": ev("added this to " + n.milestoneTitle, { icon: "milestone" }); break;
-      case "DemilestonedEvent": ev("removed this from " + n.milestoneTitle, { icon: "milestone" }); break;
+      case "MilestonedEvent": ev("added this to the " + n.milestoneTitle + " milestone", { icon: "milestone" }); break;
+      case "DemilestonedEvent": ev("removed this from the " + n.milestoneTitle + " milestone", { icon: "milestone" }); break;
       case "AssignedEvent": ev(n.assignee?.login === n.actor?.login ? "self-assigned this" : "assigned " + (n.assignee?.login ?? "someone"), { icon: "person" }); break;
       case "UnassignedEvent": ev("unassigned " + (n.assignee?.login ?? "someone"), { icon: "person" }); break;
       case "AutoMergeEnabledEvent": ev("enabled auto-merge", { icon: "merged" }); break;

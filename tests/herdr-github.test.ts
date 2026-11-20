@@ -346,4 +346,25 @@ describe("github model", () => {
     expect(workPlaces(normalize(issue("I", "o/r", 2)), places)).toEqual([]);
     expect(workPlaces({ ...item, head: null }, places)).toEqual([]);
   });
+  test("an issue's timeline reads its own events: types, sub-issues, duplicates, commit references and how it closed", () => {
+    const at = (h) => "2026-11-0" + h + "T00:00:00Z";
+    const node = (__typename, h, rest = {}) => ({ __typename, createdAt: at(h), actor: { login: "kao" }, ...rest });
+    const ref = (n) => ({ __typename: "Issue", number: n, title: "T" + n, url: "u" + n, state: "OPEN", repository: { nameWithOwner: "o/r" } });
+    const { events } = timelineOf({ node: { timelineItems: { totalCount: 7, nodes: [
+      node("IssueTypeAddedEvent", 1, { issueType: { name: "Bug" } }),
+      node("SubIssueAddedEvent", 2, { subIssue: ref(5) }),
+      node("ParentIssueAddedEvent", 3, { parent: ref(4) }),
+      node("ReferencedEvent", 4, { commit: { abbreviatedOid: "abc1234", messageHeadline: "fix it", url: "cu" } }),
+      node("MarkedAsDuplicateEvent", 5, { canonical: ref(2) }),
+      node("MilestonedEvent", 6, { milestoneTitle: "GTC DC" }),
+      node("ClosedEvent", 7, { stateReason: "NOT_PLANNED" }),
+    ] } } });
+    expect(events.map(e => e.text)).toEqual(["closed this as not planned", "added this to the GTC DC milestone", "marked this as a duplicate of",
+      "referenced this in a commit", "added this as a sub-issue of", "added a sub-issue", "added the Bug type"]);
+    expect(events[0].icon).toBe("skip");
+    expect(events[3].commit).toEqual({ short: "abc1234", title: "fix it", url: "cu" });
+    expect(events[2].link.number).toBe(2);
+    const done = timelineOf({ node: { timelineItems: { nodes: [node("ClosedEvent", 1, { stateReason: "COMPLETED", closer: { __typename: "PullRequest", number: 9, title: "P", url: "p", state: "MERGED", repository: { nameWithOwner: "o/r" } } })] } } });
+    expect(done.events[0]).toMatchObject({ text: "closed this as completed in", icon: "closed", link: { number: 9 } });
+  });
 });

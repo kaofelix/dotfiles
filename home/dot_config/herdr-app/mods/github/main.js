@@ -410,7 +410,7 @@ export default class GitHub extends View {
 
   // A pull request's activity, newest first (the last 100 entries), refetched when it changes.
   fetchTimeline(item, cx) {
-    if (item.kind !== "pr" || checking()) return;
+    if (checking()) return;
     const have = this.timelines.get(item.id);
     if (have?.loading || (have?.events && have.updatedAt === item.updatedAt && !have.stale)) return;
     this.timelines.set(item.id, { ...(have ?? {}), loading: true, error: null });
@@ -1240,7 +1240,7 @@ export default class GitHub extends View {
     const body = stripComments(detail?.body);
     return v_flex().id("gh-detail").flex_1().min_h(0).min_w(0).overflow_y_scrollbar().track_scroll(this.detailScroll)
       .child(v_flex().p(14).gap(14)
-        .when(this.activityFirst && i.kind === "pr", el => el.child(this.activity(i, t, mono)))
+        .when(this.activityFirst, el => el.child(this.activity(i, t, mono)))
         .child(v_flex().gap(6)
           .child(h_flex().gap(6).items_center()
             .child(this.iconButton("gh-back", "arrow-left", "Close (esc)", (cx) => this.close(cx), t))
@@ -1286,12 +1286,8 @@ export default class GitHub extends View {
         .child(this.section("Description", d ? (d.error ? div().text_size(12).text_color(t.blocked).child(d.error)
           : body ? this.markdown("gh-body-" + i.id, body.length > 20000 ? body.slice(0, 20000) + "\n\n…" : body, t) : div().text_size(12).text_color(t.dim).child("No description."))
           : div().text_size(12).text_color(t.dim).child("Loading…"), t))
-        .when(i.kind === "pr" && !this.activityFirst, el => el.child(this.activity(i, t, mono)))
-        .when(i.kind !== "pr" && (detail?.comments ?? []).length > 0, el => el.child(this.section("Comments (" + detail.commentCount + ")" + (detail.commentCount > detail.comments.length ? " · latest " + detail.comments.length : ""),
-          v_flex().gap(8).children(detail.comments.map((m, n) => v_flex().gap(3).p(8).rounded(6).bg(t.surface).border_1().border_color(t.border)
-            .child(h_flex().gap(6).items_center().text_size(11).text_color(t.dim).child(this.avatar("gh-cm-av-" + n, m.author, t, 16)).child(div().font_semibold().text_color(t.muted).child(m.author)).child(age(m.createdAt) + " ago")
-              .child(div().flex_1()).child(div().id("gh-c-web-" + n).cursor_pointer().hover(s => s.text_color(t.foreground)).on_click((_e, cx) => cx.open_url(m.url)).child("↗")))
-            .child(this.markdown("gh-c-" + i.id + "-" + n, stripComments(m.body).slice(0, 8000), t)))), t))));
+        // Pull requests and issues alike end with their activity, newest first.
+        .when(!this.activityFirst, el => el.child(this.activity(i, t, mono))));
   }
 
   // A pull request's activity as GitHub's timeline: comments and reviews as cards, commits and events as one-line
@@ -1330,11 +1326,15 @@ export default class GitHub extends View {
         .on_click((_e, cx) => { this.folds.add(e.key); cx.notify(); })
         .child(div().w(22).flex_none().flex().justify_center().child(svg(ICON("chevron-down")).size(11).text_color(t.dim)))
         .child(div().text_size(12).text_color(t.muted).child(e.count + " more commit" + (e.count === 1 ? "" : "s") + " by " + e.actor));
-      const icon = { label: "tag", push: "commit", merged: "pr-merged", closed: "pr-closed", open: "pr-open", draft: "pr-draft", link: "link", edit: "edit", milestone: "milestone", person: "person", review: "eye" }[e.icon] ?? "dot";
-      return rail(icon, e.icon === "merged" ? t.ansi5 : e.icon === "closed" ? t.ansi1 : null, h_flex().flex_1().min_w(0).gap(5).items_center()
+      // Issues close as done (purple check) or not planned (grey slash); pull requests merge or close.
+      const issue = i.kind !== "pr";
+      const icon = { label: "tag", tag: "tag", push: "commit", commit: "commit", merged: "pr-merged", closed: issue ? "issue-closed" : "pr-closed", skip: "issue-skip", open: issue ? "issue-open" : "pr-open", draft: "pr-draft", link: "link", edit: "edit", milestone: "milestone", person: "person", review: "eye" }[e.icon] ?? "dot";
+      return rail(icon, e.icon === "merged" || (e.icon === "closed" && issue) ? t.ansi5 : e.icon === "closed" ? t.ansi1 : null, h_flex().flex_1().min_w(0).gap(5).items_center()
         .child(this.avatar("gh-tl-eav-" + n, e.actor, t, 16)).child(div().flex_none().font_semibold().text_color(t.foreground).child(e.actor ?? "someone"))
         .child(div().min_w(0).truncate().child(e.text))
         .when(Boolean(e.label), el => el.child(this.filterChip("gh-tl-lb-" + n, e.label.name, this.labelColor(e.label.color, t), filterToken("label", e.label.name), t)))
+        .when(Boolean(e.commit), el => el.child(div().id("gh-tl-cm-" + n).min_w(0).truncate().cursor_pointer().on_click((_e, cx) => cx.open_url(e.commit.url))
+          .child(h_flex().gap(5).child(div().flex_none().font_family(mono).text_color(t.accent).child(e.commit.short)).child(div().min_w(0).truncate().text_color(t.muted).child(e.commit.title)))))
         .when(Boolean(e.link), el => el.child(div().id("gh-tl-ln-" + n).min_w(0).truncate().text_color(t.accent).cursor_pointer().on_click((_e, cx) => cx.open_url(e.link.url))
           .child((e.link.repo !== i.repo ? e.link.repo : "") + "#" + e.link.number + " " + e.link.title)))
         .child(div().flex_1()).child(when(e.at)));
