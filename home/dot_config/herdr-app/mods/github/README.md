@@ -24,6 +24,9 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   not listed opens that repository. `cmd-p` there pins the highlighted one. `esc` goes back to the previous scope.
 - **Lists:** PRs / Issues (`tab`, `1`, `2`) and Open / Closed / All (`s`). Each section loads its 25 most recently updated items; **Load more** at its end (or `enter` on it) fetches the next 25, and `of N ↗` opens the full GitHub search. A count with `+` has more to load.
   Rows show state, number, title, labels, repository, conflicts, review decision, CI (green, red, yellow), comments, author and last update.
+- **Cards:** each item takes two lines: the title alone on the first (with the age), and under it the number, repository, author (or owners),
+  type, review, conflicts, CI, comments, sub-issues and where it's open, then the milestone and labels when they fit beside those. When they
+  don't, they get a third line of their own; what still doesn't fit folds into a `+n` chip whose tooltip names the rest.
 - **Filter:** free text (title, repository, author, branch, labels; quote to keep spaces), `repo:`, `org:`, `@author` (`@me`), `assignee:`, `#label` or `label:"area: ci"`, a number,
   `milestone:"GTC DC"`, `type:epic`, `no:milestone|assignee|label`,
   `is:open|draft|merged|closed|completed|not_planned|private|conflict`, `ci:pass|fail|pending`, `review:approved|changes|required|none`, and `-` to negate.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, cardLayout, chipWidth, CARD_H, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -125,15 +125,22 @@ describe("github model", () => {
     expect(d.commentCount).toBe(3);
   });
 
-  test("row columns only drop as the pane narrows", () => {
-    for (const detail of [false, true]) {
-      let previous = null;
-      for (let width = 1600; width >= 200; width -= 10) {
-        const shown = rowColumns(listWidth(width, detail));
-        if (previous) for (const [k, on] of Object.entries(shown)) if (on) expect([k, previous[k]]).toEqual([k, true]);
-        previous = shown;
-      }
+  test("cards take a third line only for labels that don't fit beside the facts, folding the rest into +n", () => {
+    const labels = ["bug", "area: onboarding", "priority: high", "needs-triage"].map(name => ({ name }));
+    expect(cardLayout([], { width: 400, facts: 200 })).toMatchObject({ lines: 2, shown: 0, height: CARD_H.two });
+    expect(cardLayout(labels.slice(0, 1), { width: 600, facts: 200 })).toMatchObject({ lines: 2, inline: 1, hidden: 0 });
+    const narrow = cardLayout(labels, { width: 300, facts: 220, milestone: "GTC DC 2026" });
+    expect(narrow).toMatchObject({ lines: 3, inline: 0, height: CARD_H.three });
+    expect(narrow.shown + narrow.hidden).toBe(5);
+    expect(narrow.hidden).toBeGreaterThan(0);
+    // Wider never shows fewer, and never needs more lines.
+    let prev = null;
+    for (let w = 200; w <= 1200; w += 20) {
+      const l = cardLayout(labels, { width: w, facts: 220, milestone: "GTC DC 2026" });
+      if (prev) { expect(l.lines).toBeLessThanOrEqual(prev.lines); if (l.lines === prev.lines) expect(l.shown).toBeGreaterThanOrEqual(prev.shown); }
+      prev = l;
     }
+    expect(chipWidth("bug")).toBeLessThan(chipWidth("area: onboarding"));
   });
   test("the scope list puts all my work, then pins, then repos, and a typed owner/name opens any repo", () => {
     const opts = scopeOptions({ login: "me", pins: ["o/p"], current: "o/c", counts: [{ repo: "o/a", count: 3 }, { repo: "o/p", count: 1 }], recent: ["o/a", "o/r"] });
