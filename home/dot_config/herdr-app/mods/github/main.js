@@ -662,18 +662,18 @@ export default class GitHub extends View {
   }
   placeLabel(p) { return p.spaceName + (p.tabName && p.tabName !== p.spaceName && !/^\d+$/.test(p.tabName) ? " · " + p.tabName : ""); }
   statusColor(status, t) { return { blocked: t.blocked, done: t.done, working: t.working }[status] ?? t.dim; }
-  // A chip naming where the pull request is open (the best place, "+n" for more); a click goes there.
+  // A robot where the pull request's branch is open in a terminal, tinted by its agent's state (a count when in more
+  // than one place); hover names the places, a click goes to the best one. Only there when it's open somewhere.
   placeChip(id, item, t) {
     const all = this.workPlaces(item);
     if (!all.length) return null;
-    const p = all[0];
-    return h_flex().id(id).flex_none().max_w(170).h(18).px(6).gap(4).items_center().rounded(9).cursor_pointer()
-      .bg(t.raised).border_1().border_color(p.focused ? t.accent : t.border).text_size(10.5).text_color(t.foreground)
-      .hover(s => s.bg(t.hover)).tooltip("Go to " + all.map(x => this.placeLabel(x)).join(", "))
+    const p = all[0], color = p.status === "idle" ? t.muted : this.statusColor(p.status, t);
+    return h_flex().id(id).flex_none().h(18).px(3).gap(2).items_center().rounded(4).cursor_pointer()
+      .text_color(color).hover(s => s.bg(t.hover).text_color(t.foreground))
+      .tooltip("Open in " + all.map(x => this.placeLabel(x) + (x.status !== "idle" ? " (" + x.status + ")" : "")).join(", ") + ": go there (J)")
       .on_click((_e, cx) => { cx.stop_propagation(); this.jump(p); })
-      .child(div().size(6).flex_none().rounded(3).bg(this.statusColor(p.status, t)))
-      .child(div().min_w(0).truncate().child(p.spaceName))
-      .when(all.length > 1, el => el.child(div().flex_none().text_color(t.dim).child("+" + (all.length - 1))));
+      .child(svg(ICON("robot")).size(13))
+      .when(all.length > 1, el => el.child(div().text_size(10).child(String(all.length))));
   }
 
   // A pull request with a local clone open in some terminal can be reviewed in the Changes dialog, as pr-picker does.
@@ -1036,7 +1036,6 @@ export default class GitHub extends View {
       .when(Boolean(row.epic) || (Boolean(i.type) && Boolean(row.owner) && i.type !== "Task"), el => el.child(this.filterChip("gh-ty-" + row.key, i.type ?? "Epic", row.epic ? t.ansi5 : t.dim, filterToken("type", i.type ?? "Epic"), t)))
       .child(div().flex_1().min_w(0).truncate().text_size(13).text_color(isClosed(i) ? t.muted : t.foreground).child(i.title))
       .when(Boolean(row.tag), el => el.child(this.chip(row.tag, t.accent, t)))
-      .when(i.kind === "pr" && !isClosed(i), el => { const c = this.placeChip("gh-place-" + row.key, i, t); return c ? el.child(c) : el; })
       .when(this.isItemPinned(i.id) && row.section !== "home-pinned", el => el.child(svg(ICON("pin")).size(11).flex_none().text_color(t.accent)))
       .when(Boolean(i.borrowed), el => el.child(div().flex_none().text_size(10.5).text_color(t.dim).tooltip("A sub-issue of this epic, not itself in the milestone").child("sub")))
       .when(cols.labels, el => el.children(i.labels.slice(0, 2).map((l, n) => this.filterChip("gh-lb-" + row.key + "-" + n, l.name, this.labelColor(l.color, t), filterToken("label", l.name), t))))
@@ -1046,6 +1045,7 @@ export default class GitHub extends View {
         .on_click((_e, cx) => { cx.stop_propagation(); this.toggleFilter(filterToken("repo", i.repo), cx); }).child(repoName)))
       .when(i.conflicts && !isClosed(i), el => el.child(div().flex_none().text_size(11).text_color(t.blocked).tooltip("Merge conflicts").child("⚠")))
       .when(Boolean(rv) && !isClosed(i), el => el.child(this.filterChip("gh-rv-" + row.key, rv[0], rv[1], filterToken("review", i.review), t)))
+      .when(i.kind === "pr" && !isClosed(i), el => { const c = this.placeChip("gh-place-" + row.key, i, t); return c ? el.child(c) : el; })
       .when(i.kind === "pr", el => el.child(div().size(7).flex_none().rounded(4).bg(this.ciColor(i.ci, t)).tooltip("CI: " + (i.ci ?? "none"))))
       .when(cols.comments, el => el.child(h_flex().flex_none().w(30).gap(3).items_center().justify_end().text_size(11).text_color(t.dim)
         .when(i.comments > 0, el => el.child(svg(ICON("comment")).size(10)).child(String(i.comments)))))
@@ -1281,7 +1281,7 @@ export default class GitHub extends View {
         .border_1().border_color(p.focused ? t.accent : t.border).bg(t.surface).text_size(12).hover(s => s.bg(t.hover))
         .tooltip("Go to this " + (p.panes.length > 1 ? p.panes.length + "-pane tab" : "tab") + (p.machine ? " on " + p.machine : "") + " (J)")
         .on_click((_e, cx) => this.jump(p))
-        .child(div().size(7).flex_none().rounded(4).bg(this.statusColor(p.status, t)))
+        .child(svg(ICON("robot")).size(13).flex_none().text_color(p.status === "idle" ? t.muted : this.statusColor(p.status, t)))
         .child(div().text_color(t.foreground).child(this.placeLabel(p)))
         .when(p.status !== "idle", el => el.child(div().text_size(11).text_color(this.statusColor(p.status, t)).child(p.status)))
         .child(svg(ICON("arrow-right")).size(11).text_color(t.dim)))));
