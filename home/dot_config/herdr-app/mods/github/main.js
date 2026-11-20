@@ -804,6 +804,11 @@ export default class GitHub extends View {
     return { open: ["issue-open", t.ansi2], completed: ["issue-closed", t.ansi5], not_planned: ["issue-skip", t.dim], duplicate: ["issue-skip", t.dim] }[item.state] ?? ["issue-open", t.muted];
   }
   stateIcon(item, t, size = 14) { const [icon, color] = this.stateLook(item, t); return svg(ICON(icon)).size(size).flex_none().text_color(color); }
+  // Where an owner's avatar would be when there's none: an empty dashed circle of the same size, so the column stays aligned.
+  nobody(id, t, size) {
+    return div().id(id).size(size).flex_none().rounded(size / 2).border_1().border_dashed().border_color(t.working).tooltip("Nobody is assigned");
+  }
+
   // The CI dot. Failing only in checks that aren't required is green ringed in red: it can still merge.
   ciDot(id, item, t) {
     const look = this.ciOf(item);
@@ -1163,7 +1168,7 @@ export default class GitHub extends View {
         .when(i.assignees.length > 0, el => el.child(this.avatars("gh-as-" + row.key, i.assignees, t, 18, "Assigned: " + i.assignees.join(", "))))
         // A pull request without assignees is owned by whoever opened it.
         .when(!i.assignees.length && i.kind === "pr", el => el.child(this.avatar("gh-as-" + row.key, i.author, t, 18, "Opened by " + i.author)))
-        .when(!i.assignees.length && i.kind !== "pr", el => el.child(div().id("gh-as-" + row.key).text_size(11).text_color(t.working).tooltip("Nobody is assigned").child("unassigned")))))
+        .when(!i.assignees.length && i.kind !== "pr", el => el.child(this.nobody("gh-as-" + row.key, t, 18)))))
 ;
   }
 
@@ -1188,7 +1193,7 @@ export default class GitHub extends View {
       ? (i.assignees.length > 0 ? this.avatars("gh-as-" + row.key, i.assignees, t, 16, "Assigned: " + i.assignees.join(", "))
         // A pull request without assignees is owned by whoever opened it.
         : i.kind === "pr" ? this.avatar("gh-as-" + row.key, i.author, t, 16, "Opened by " + i.author)
-        : div().id("gh-as-" + row.key).flex_none().text_size(11).text_color(t.working).tooltip("Nobody is assigned").child("unassigned"))
+        : this.nobody("gh-as-" + row.key, t, 16))
       : this.avatar("gh-au-" + row.key, i.author, t, 16, "Opened by " + i.author);
     // Plain cards: space between them keeps them apart; the hover and selection fill shows each one's extent.
     // A gutter on the left holds the state icon over where it's open (a robot), the same width with or without one.
