@@ -35,8 +35,14 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   (merge conflicts, draft, failing checks, changes requested, out of date, review required, running checks, open conversations), else ready to merge,
   with **Resolve on GitHub** (its conflict editor) and **Review diff** for conflicts. Under it, **Checks**, **Conversations** (review threads) and
   **Approvals**, each with a bar; clicking Checks lists them all.
+- **Activity** (a pull request's details, after its description): the timeline as GitHub draws it, newest first (the latest 100 entries).
+  Comments and reviews are cards (approvals and requested changes coloured), commits and events one line each on a rail: labels (clickable),
+  review requests, force-pushes, renames, milestones, assignments, mentions, merge and close. Three or more commits in a row by one author fold
+  into "n more commits by …"; a commit's short SHA copies the full one.
+- **Collapsible sections:** `<details>`/`<summary>` in any description, comment or review is drawn folded with its summary (open if it says `open`),
+  nested ones too, as on GitHub; click to open.
 - **Details:** state, review and CI chips, labels, branch and size, assignees and requested reviewers; failing and running checks (all on request, each opens its run),
-  the latest reviews, linked issues and pull requests, the description and the latest comments.
+  linked issues and pull requests and the description; for issues, the latest reviews and comments, for pull requests the Activity.
   **Open** opens it in the browser and **Copy link** copies its URL. A pull request whose repository is cloned in a folder an open terminal is in also gets **Review diff**, which opens it in the Changes dialog.
 - **Commands:** `github.reload`, `github.scope`, `github.home`, `github.sidebar`, `github.next-pin`, `github.milestones`, `github.focus-next-milestone`, `github.copy` and `github.browse` (from keys.json or `herdr-app do`).
 - **Keys:** `j`/`k` move, `enter` opens, `o` opens on GitHub, `c` copies the URL, `C` copies `owner/repo#N`, `d` reviews the diff,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, rowColumns, listWidth, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -297,5 +297,29 @@ describe("github model", () => {
     expect(mergeStatus(base, d({ latestOpinionatedReviews: { nodes: [{ author: { login: "a" }, state: "APPROVED" }] } })).approvals).toMatchObject({ approved: 1 });
     expect(mergeStatus({ ...base, state: "merged" }).tone).toBe("merged");
     expect(mergeStatus({ ...base, state: "draft" }, d({})).tone).toBe("draft");
+  });
+  test("markdown splits into plain runs and folded <details> blocks, nested ones too", () => {
+    const md = "Intro\n\n<details>\n<!-- note -->\n<summary>Authoring <b>session</b></summary>\n\n| a |\n| - |\n<details open><summary>Inner</summary>deep</details>\n</details>\n\nAfter";
+    expect(markdownBlocks(md)).toEqual([
+      { kind: "md", text: "Intro" },
+      { kind: "details", summary: "Authoring session", open: false, blocks: [{ kind: "md", text: "| a |\n| - |" }, { kind: "details", summary: "Inner", open: true, blocks: [{ kind: "md", text: "deep" }] }] },
+      { kind: "md", text: "After" },
+    ]);
+    expect(markdownBlocks("<details><summary>x</summary>never closed")).toEqual([{ kind: "details", summary: "x", open: false, blocks: [{ kind: "md", text: "never closed" }] }]);
+    expect(markdownBlocks("plain")).toEqual([{ kind: "md", text: "plain" }]);
+  });
+
+  test("the timeline is newest first, with runs of commits by one author folded", () => {
+    const commit = (oid, at, login) => ({ __typename: "PullRequestCommit", commit: { oid, abbreviatedOid: oid.slice(0, 7), messageHeadline: "c " + oid, committedDate: at, url: "u", author: { user: { login } } } });
+    const data = { node: { timelineItems: { totalCount: 7, nodes: [
+      commit("a1", "2026-01-01T00:00:00Z", "me"), commit("a2", "2026-01-02T00:00:00Z", "me"), commit("a3", "2026-01-03T00:00:00Z", "me"),
+      { __typename: "IssueComment", id: "C", author: { login: "bot" }, body: "hi", createdAt: "2026-01-04T00:00:00Z", url: "cu" },
+      { __typename: "LabeledEvent", createdAt: "2026-01-05T00:00:00Z", actor: { login: "me" }, label: { name: "v1", color: "fff" } },
+      commit("a4", "2026-01-06T00:00:00Z", "me"), { __typename: "PullRequestRevisionMarker" } ] } } };
+    const tl = timelineOf(data);
+    expect(tl.events.map(e => e.kind + ":" + (e.oid ?? e.id ?? e.type))).toEqual(["commit:a4", "event:LabeledEvent", "comment:C", "commit:a3", "commit:a2", "commit:a1"]);
+    expect(timelineRows(tl.events).map(r => r.kind + (r.count ? r.count : ""))).toEqual(["commit", "event", "comment", "commit", "fold2"]);
+    expect(timelineRows(tl.events, { expanded: new Set(["run:a3"]) }).map(r => r.kind)).toEqual(["commit", "event", "comment", "commit", "commit", "commit"]);
+    expect(tl.events[1]).toMatchObject({ text: "added", label: { name: "v1" } });
   });
 });

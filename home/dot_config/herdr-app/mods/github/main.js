@@ -11,7 +11,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -70,6 +70,7 @@ async function graphql(query, vars, opts) {
   return { data: d.data, error: d.errors?.[0]?.message ?? null };
 }
 
+const lower = (v) => String(v ?? "").toLowerCase();
 const stripComments = (s) => String(s ?? "").replace(/<!--[\s\S]*?-->/g, "").trim();
 
 export default class GitHub extends View {
@@ -87,11 +88,14 @@ export default class GitHub extends View {
     this.cache = new Map(); // "scope|state" -> { result, at }: at is the last refresh of first pages
     this.saved = new Map(); // "scope|state" -> what the cache files held, until first used
     this.details = new Map(); // item id -> { updatedAt, detail }
+    this.timelines = new Map(); // pull request id -> { updatedAt, total, events, loading, error }
+    this.folds = new Set(); // opened <details> blocks and commit runs, by key
     this.ready = false;
     this.history = []; this.selected = null; this.detailId = null; this.query = ""; this.width = 0;
     this.status = "loading"; this.error = null; this.recent = []; this.loading = new Set();
     this.handle = cx.focus_handle(); this.scopeTrigger = cx.focus_handle(); this.scopeList = cx.focus_handle(); this.scopeHot = 0;
-    this.scroll = ScrollHandle.new();
+    this.scroll = ScrollHandle.new(); this.detailScroll = ScrollHandle.new();
+    this.activityFirst = Boolean(p.activityFirst); // for checking the timeline in a short pane
     this.filter = InputState.new({ placeholder: "Filter  text · repo:name · @author · #label · is:draft · ci:fail · review:approved · -term" });
     this.filter.on("change", (_e, cx) => { this.query = this.filter.value(); cx.notify(); });
     this.filter.on("focus", (_e, cx) => { this.filtering = true; cx.notify(); });
@@ -310,7 +314,7 @@ export default class GitHub extends View {
     if (this.loading.has(key)) return;
     if (!force && Date.now() - entry.at < POLL_MS) return;
     this.loading.add(key); cx.notify();
-    if (force) for (const d of this.details.values()) d.stale = true;
+    if (force) { for (const d of this.details.values()) d.stale = true; for (const d of this.timelines.values()) d.stale = true; }
     cx.spawn(async (cx) => {
       const queue = [...entry.plan];
       let failures = 0;
@@ -369,8 +373,22 @@ export default class GitHub extends View {
     });
   }
 
+  // A pull request's activity, newest first (the last 100 entries), refetched when it changes.
+  fetchTimeline(item, cx) {
+    if (item.kind !== "pr" || checking()) return;
+    const have = this.timelines.get(item.id);
+    if (have?.loading || (have?.events && have.updatedAt === item.updatedAt && !have.stale)) return;
+    this.timelines.set(item.id, { ...(have ?? {}), loading: true, error: null });
+    cx.spawn(async (cx) => {
+      try { this.timelines.set(item.id, { ...timelineOf((await graphql(TIMELINE_QUERY, { id: item.id, last: 100 }, this.opts(30000))).data), updatedAt: item.updatedAt, loading: false, error: null }); }
+      catch (e) { this.timelines.set(item.id, { ...(this.timelines.get(item.id) ?? {}), loading: false, error: String(e?.message ?? e) }); }
+      cx.notify();
+    });
+  }
+
   // Body, checks, reviews, comments and links come per item, refetched when it changes.
   fetchDetail(item, cx) {
+    this.fetchTimeline(item, cx);
     const have = this.details.get(item.id);
     if (have && have.updatedAt === item.updatedAt && !have.stale) return;
     if (this.fetching?.has(item.id)) return;
@@ -1021,8 +1039,22 @@ export default class GitHub extends View {
   }
 
   // Markdown keeps the layout it first measured: keyed by the panel's width, a resize (or the full-width detail) redraws it.
+  // <details> blocks, which the markdown view would print flat, are drawn folded with their summary, as on GitHub.
   markdown(id, text, t) {
-    return div().text_size(13).text_color(t.foreground).child(TextView.markdown(id + "@" + Math.round(this.width / 40), text).selectable(true));
+    return v_flex().gap(6).text_size(13).text_color(t.foreground).children(this.mdBlocks(id, markdownBlocks(text), t));
+  }
+  mdBlocks(id, blocks, t) {
+    return blocks.map((b, n) => {
+      const key = id + "/" + n;
+      if (b.kind === "md") return TextView.markdown(key + "@" + Math.round(this.width / 40), b.text).selectable(true);
+      const open = this.folds.has(key) !== b.open;
+      return v_flex().gap(4)
+        .child(h_flex().id("gh-fold-" + key).gap(5).items_center().cursor_pointer().text_size(13).text_color(t.foreground).hover(st => st.text_color(t.accent))
+          .on_click((_e, cx) => { if (this.folds.has(key)) this.folds.delete(key); else this.folds.add(key); cx.notify(); })
+          .child(svg(ICON(open ? "chevron-down" : "chevron-right")).size(11).flex_none().text_color(t.dim))
+          .child(div().flex_1().min_w(0).child(b.summary)))
+        .when(open, el => el.child(v_flex().pl(16).gap(6).border_l(1).border_color(t.border).children(this.mdBlocks(key, b.blocks, t))));
+    });
   }
 
   linkRow(id, l, t, mono) {
@@ -1062,8 +1094,9 @@ export default class GitHub extends View {
     const notable = checks.filter(c => c.state === "fail" || c.state === "pending");
     const showAll = this.expandedChecks === i.id;
     const body = stripComments(detail?.body);
-    return v_flex().id("gh-detail").flex_1().min_h(0).min_w(0).overflow_y_scrollbar()
+    return v_flex().id("gh-detail").flex_1().min_h(0).min_w(0).overflow_y_scrollbar().track_scroll(this.detailScroll)
       .child(v_flex().p(14).gap(14)
+        .when(this.activityFirst && i.kind === "pr", el => el.child(this.activity(i, t, mono)))
         .child(v_flex().gap(6)
           .child(h_flex().gap(6).items_center()
             .child(this.iconButton("gh-back", "arrow-left", "Close (esc)", (cx) => this.close(cx), t))
@@ -1101,7 +1134,7 @@ export default class GitHub extends View {
             .when(Boolean(c.url), el => el.cursor_pointer().hover(s => s.bg(t.hover)).on_click((_e, cx) => cx.open_url(c.url)))
             .child(div().size(7).flex_none().rounded(4).bg(this.ciColor(c.state, t)))
             .child(div().flex_1().min_w(0).truncate().text_color(c.state === "fail" ? t.foreground : t.muted).child(c.name)))), t)))
-        .when((detail?.reviews ?? []).length > 0, el => el.child(this.section("Reviews", v_flex().gap(2).children(detail.reviews.map(r => h_flex().gap(8).text_size(12)
+        .when(i.kind !== "pr" && (detail?.reviews ?? []).length > 0, el => el.child(this.section("Reviews", v_flex().gap(2).children(detail.reviews.map(r => h_flex().gap(8).text_size(12)
           .child(h_flex().w(130).flex_none().gap(6).items_center().child(this.avatar("gh-rv-av-" + r.author, r.author, t, 16)).child(div().min_w(0).truncate().text_color(t.muted).child(r.author)))
           .child(div().flex_1().text_color({ approved: t.done, changes_requested: t.blocked }[r.state] ?? t.dim).child(r.state.replace("_", " ")))
           .child(div().flex_none().text_color(t.dim).child(age(r.at))))), t)))
@@ -1109,11 +1142,60 @@ export default class GitHub extends View {
         .child(this.section("Description", d ? (d.error ? div().text_size(12).text_color(t.blocked).child(d.error)
           : body ? this.markdown("gh-body-" + i.id, body.length > 20000 ? body.slice(0, 20000) + "\n\n…" : body, t) : div().text_size(12).text_color(t.dim).child("No description."))
           : div().text_size(12).text_color(t.dim).child("Loading…"), t))
-        .when((detail?.comments ?? []).length > 0, el => el.child(this.section("Comments (" + detail.commentCount + ")" + (detail.commentCount > detail.comments.length ? " · latest " + detail.comments.length : ""),
+        .when(i.kind === "pr" && !this.activityFirst, el => el.child(this.activity(i, t, mono)))
+        .when(i.kind !== "pr" && (detail?.comments ?? []).length > 0, el => el.child(this.section("Comments (" + detail.commentCount + ")" + (detail.commentCount > detail.comments.length ? " · latest " + detail.comments.length : ""),
           v_flex().gap(8).children(detail.comments.map((m, n) => v_flex().gap(3).p(8).rounded(6).bg(t.surface).border_1().border_color(t.border)
             .child(h_flex().gap(6).items_center().text_size(11).text_color(t.dim).child(this.avatar("gh-cm-av-" + n, m.author, t, 16)).child(div().font_semibold().text_color(t.muted).child(m.author)).child(age(m.createdAt) + " ago")
               .child(div().flex_1()).child(div().id("gh-c-web-" + n).cursor_pointer().hover(s => s.text_color(t.foreground)).on_click((_e, cx) => cx.open_url(m.url)).child("↗")))
             .child(this.markdown("gh-c-" + i.id + "-" + n, stripComments(m.body).slice(0, 8000), t)))), t))));
+  }
+
+  // A pull request's activity as GitHub's timeline: comments and reviews as cards, commits and events as one-line
+  // entries on a rail, newest first; a run of commits by one author folds into "n more commits by …".
+  activity(i, t, mono) {
+    const tl = this.timelines.get(i.id);
+    const head = "Activity" + (tl?.events ? " (" + tl.total + ")" + (tl.total > tl.events.length ? " · latest " + tl.events.length : "") : "");
+    if (!tl?.events) return this.section(head, div().text_size(12).text_color(tl?.error ? t.blocked : t.dim).child(tl?.error ? "Couldn't load: " + tl.error : "Loading…"), t);
+    const rows = timelineRows(tl.events, { expanded: this.folds });
+    const rail = (icon, color, body) => h_flex().min_h(26).gap(8).items_center()
+      .child(div().w(22).flex_none().flex().justify_center().child(svg(ICON(icon)).size(13).text_color(color ?? t.dim)))
+      .child(h_flex().flex_1().min_w(0).gap(6).items_center().text_size(12).text_color(t.muted).child(body));
+    const when = (at) => div().flex_none().text_size(11).text_color(t.dim).child(age(at) + " ago");
+    const card = (e, n, title, color) => v_flex().ml(30).my(4).rounded(6).border_1().border_color(color ?? t.border).overflow_hidden()
+      .child(h_flex().px(9).py(6).gap(6).items_center().bg(t.surface).border_b(e.body.trim() ? 1 : 0).border_color(t.border).text_size(11.5)
+        .child(this.avatar("gh-tl-av-" + n, e.actor, t, 18)).child(div().font_semibold().text_color(t.foreground).child(e.actor))
+        .when(Boolean(title), el => el.child(div().text_color(color ?? t.muted).child(title)))
+        .child(when(e.at))
+        .when(Boolean(e.role) && !["NONE", "CONTRIBUTOR"].includes(e.role), el => el.child(this.chip(lower(e.role), t.dim, t)))
+        .child(div().flex_1())
+        .child(div().id("gh-tl-web-" + n).cursor_pointer().text_color(t.dim).hover(s => s.text_color(t.foreground)).tooltip("Open on GitHub").on_click((_e, cx) => cx.open_url(e.url)).child(svg(ICON("external")).size(11))))
+      .when(Boolean(e.body.trim()), el => el.child(div().px(10).py(8).child(this.markdown("gh-tl-" + i.id + "-" + (e.id ?? n), e.body.slice(0, 12000), t))));
+    const items = rows.map((e, n) => {
+      if (e.kind === "comment") return card(e, n, null, null);
+      if (e.kind === "review") {
+        const look = { approved: ["approved these changes", t.done], changes_requested: ["requested changes", t.blocked], commented: ["reviewed", t.muted], dismissed: ["review dismissed", t.dim] }[e.state] ?? [e.state, t.muted];
+        return card(e, n, look[0] + (e.threads ? " · " + e.threads + " comment" + (e.threads === 1 ? "" : "s") : ""), e.state === "approved" || e.state === "changes_requested" ? look[1] : null);
+      }
+      if (e.kind === "commit") return rail("commit", t.dim, h_flex().flex_1().min_w(0).gap(6).items_center()
+        .child(this.avatar("gh-tl-cav-" + n, e.actor, t, 16))
+        .child(div().id("gh-tl-c-" + n).flex_1().min_w(0).truncate().text_color(t.foreground).cursor_pointer().hover(s => s.text_color(t.accent)).on_click((_e, cx) => cx.open_url(e.url)).child(e.title))
+        .child(when(e.at))
+        .child(div().id("gh-tl-sha-" + n).flex_none().text_size(11).font_family(mono).text_color(t.dim).cursor_pointer().hover(s => s.text_color(t.foreground)).tooltip("Copy " + e.oid)
+          .on_click((_e, cx) => this.copy(e.oid, cx)).child(e.short)));
+      if (e.kind === "fold") return h_flex().id("gh-tl-fold-" + n).min_h(24).gap(8).items_center().cursor_pointer().hover(s => s.bg(t.hover)).rounded(5)
+        .on_click((_e, cx) => { this.folds.add(e.key); cx.notify(); })
+        .child(div().w(22).flex_none().flex().justify_center().child(svg(ICON("chevron-down")).size(11).text_color(t.dim)))
+        .child(div().text_size(12).text_color(t.muted).child(e.count + " more commit" + (e.count === 1 ? "" : "s") + " by " + e.actor));
+      const icon = { label: "tag", push: "commit", merged: "pr-merged", closed: "pr-closed", open: "pr-open", draft: "pr-draft", link: "link", edit: "edit", milestone: "milestone", person: "person", review: "eye" }[e.icon] ?? "dot";
+      return rail(icon, e.icon === "merged" ? t.ansi5 : e.icon === "closed" ? t.ansi1 : null, h_flex().flex_1().min_w(0).gap(5).items_center()
+        .child(this.avatar("gh-tl-eav-" + n, e.actor, t, 16)).child(div().flex_none().font_semibold().text_color(t.foreground).child(e.actor ?? "someone"))
+        .child(div().min_w(0).truncate().child(e.text))
+        .when(Boolean(e.label), el => el.child(this.filterChip("gh-tl-lb-" + n, e.label.name, this.labelColor(e.label.color, t), filterToken("label", e.label.name), t)))
+        .when(Boolean(e.link), el => el.child(div().id("gh-tl-ln-" + n).min_w(0).truncate().text_color(t.accent).cursor_pointer().on_click((_e, cx) => cx.open_url(e.link.url))
+          .child((e.link.repo !== i.repo ? e.link.repo : "") + "#" + e.link.number + " " + e.link.title)))
+        .child(div().flex_1()).child(when(e.at)));
+    });
+    return this.section(head, v_flex().gap(0).children(items), t);
   }
 
   // GitHub's merge box: a status (conflicts first) and three cells, checks, conversations and approvals.

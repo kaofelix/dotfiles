@@ -539,6 +539,111 @@ export function mergeStatus(item, detail = null) {
   return say("ready", "Ready to merge", "No conflicts with " + (item.base ?? "the base branch") + ".");
 }
 
+// Markdown in pieces: plain runs and <details> blocks (with their <summary>), nested ones inside, so each block can be
+// drawn folded, as GitHub does. HTML comments go first; an unclosed <details> runs to the end.
+export const stripHtmlComments = (s) => String(s ?? "").replace(/<!--[\s\S]*?-->/g, "");
+export function markdownBlocks(text) {
+  const src = stripHtmlComments(text), out = [];
+  const open = /<details(\s[^>]*)?>/gi, tag = /<(\/?)details(?:\s[^>]*)?>/gi;
+  let at = 0;
+  for (let m; (open.lastIndex = at, m = open.exec(src));) {
+    if (m.index > at && src.slice(at, m.index).trim()) out.push({ kind: "md", text: src.slice(at, m.index).trim() });
+    let depth = 0, end = src.length, close = src.length;
+    tag.lastIndex = m.index;
+    for (let t; (t = tag.exec(src));) {
+      depth += t[1] ? -1 : 1;
+      if (depth === 0) { close = t.index; end = t.index + t[0].length; break; }
+    }
+    let inner = src.slice(m.index + m[0].length, close);
+    const sm = /<summary(?:\s[^>]*)?>([\s\S]*?)<\/summary>/i.exec(inner);
+    const summary = sm ? sm[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "Details";
+    if (sm) inner = inner.slice(0, sm.index) + inner.slice(sm.index + sm[0].length);
+    out.push({ kind: "details", summary: summary || "Details", open: /\sopen(\s|=|$)/i.test(m[1] ?? ""), blocks: markdownBlocks(inner) });
+    at = end;
+  }
+  if (src.slice(at).trim()) out.push({ kind: "md", text: src.slice(at).trim() });
+  return out;
+}
+
+// A pull request's activity, as GitHub's timeline shows it: commits (runs of them by one author folded), comments,
+// reviews and events, newest first.
+export const TIMELINE_QUERY = `query($id: ID!, $last: Int!) { node(id: $id) { ... on PullRequest { timelineItems(last: $last) { totalCount nodes { __typename
+  ... on PullRequestCommit { commit { oid abbreviatedOid messageHeadline committedDate url author { user { login } name } } }
+  ... on IssueComment { id author { login } body createdAt url authorAssociation }
+  ... on PullRequestReview { id author { login } state body createdAt url comments { totalCount } }
+  ... on ReviewRequestedEvent { createdAt actor { login } requestedReviewer { ... on User { login } ... on Team { slug } } }
+  ... on ReviewRequestRemovedEvent { createdAt actor { login } requestedReviewer { ... on User { login } ... on Team { slug } } }
+  ... on LabeledEvent { createdAt actor { login } label { name color } }
+  ... on UnlabeledEvent { createdAt actor { login } label { name color } }
+  ... on HeadRefForcePushedEvent { createdAt actor { login } beforeCommit { abbreviatedOid } afterCommit { abbreviatedOid } }
+  ... on BaseRefChangedEvent { createdAt actor { login } previousRefName currentRefName }
+  ... on MergedEvent { createdAt actor { login } mergeRefName commit { abbreviatedOid } }
+  ... on ClosedEvent { createdAt actor { login } }
+  ... on ReopenedEvent { createdAt actor { login } }
+  ... on ReadyForReviewEvent { createdAt actor { login } }
+  ... on ConvertToDraftEvent { createdAt actor { login } }
+  ... on CrossReferencedEvent { createdAt actor { login } source { ... on Issue { __typename number title url state stateReason repository { nameWithOwner } } ... on PullRequest { __typename number title url state isDraft repository { nameWithOwner } } } }
+  ... on RenamedTitleEvent { createdAt actor { login } previousTitle currentTitle }
+  ... on MilestonedEvent { createdAt actor { login } milestoneTitle }
+  ... on DemilestonedEvent { createdAt actor { login } milestoneTitle }
+  ... on AssignedEvent { createdAt actor { login } assignee { ... on User { login } } }
+  ... on UnassignedEvent { createdAt actor { login } assignee { ... on User { login } } }
+  ... on AutoMergeEnabledEvent { createdAt actor { login } }
+  ... on AutoMergeDisabledEvent { createdAt actor { login } }
+} } } } }`;
+const who = (x) => x?.login ?? x?.slug ?? null;
+export function timelineOf(data) {
+  const nodes = data?.node?.timelineItems?.nodes ?? [], total = data?.node?.timelineItems?.totalCount ?? nodes.length;
+  const events = [];
+  for (const n of nodes) {
+    const ev = (text, extra = {}) => events.push({ kind: "event", type: n.__typename, actor: n.actor?.login ?? null, at: n.createdAt, text, ...extra });
+    switch (n.__typename) {
+      case "PullRequestCommit": { const k = n.commit; events.push({ kind: "commit", oid: k.oid, short: k.abbreviatedOid, title: k.messageHeadline, at: k.committedDate, url: k.url, actor: k.author?.user?.login ?? k.author?.name ?? "someone" }); break; }
+      case "IssueComment": events.push({ kind: "comment", id: n.id, actor: n.author?.login ?? "ghost", at: n.createdAt, body: n.body ?? "", url: n.url, role: n.authorAssociation }); break;
+      case "PullRequestReview": events.push({ kind: "review", id: n.id, actor: n.author?.login ?? "ghost", at: n.createdAt, body: n.body ?? "", url: n.url, state: lower(n.state), threads: n.comments?.totalCount ?? 0 }); break;
+      case "ReviewRequestedEvent": ev("requested a review from " + (who(n.requestedReviewer) ?? "someone"), { icon: "review" }); break;
+      case "ReviewRequestRemovedEvent": ev("removed the review request for " + (who(n.requestedReviewer) ?? "someone"), { icon: "review" }); break;
+      case "LabeledEvent": ev("added", { icon: "label", label: n.label }); break;
+      case "UnlabeledEvent": ev("removed", { icon: "label", label: n.label }); break;
+      case "HeadRefForcePushedEvent": ev("force-pushed " + (n.beforeCommit?.abbreviatedOid ?? "?") + " → " + (n.afterCommit?.abbreviatedOid ?? "?"), { icon: "push" }); break;
+      case "BaseRefChangedEvent": ev("changed the base from " + n.previousRefName + " to " + n.currentRefName, { icon: "push" }); break;
+      case "MergedEvent": ev("merged " + (n.commit?.abbreviatedOid ?? "") + " into " + (n.mergeRefName ?? "the base"), { icon: "merged" }); break;
+      case "ClosedEvent": ev("closed this", { icon: "closed" }); break;
+      case "ReopenedEvent": ev("reopened this", { icon: "open" }); break;
+      case "ReadyForReviewEvent": ev("marked this ready for review", { icon: "open" }); break;
+      case "ConvertToDraftEvent": ev("marked this as a draft", { icon: "draft" }); break;
+      case "CrossReferencedEvent": if (n.source?.number) ev("mentioned this in", { icon: "link", link: linkOf(n.source) }); break;
+      case "RenamedTitleEvent": ev("changed the title from “" + n.previousTitle + "” to “" + n.currentTitle + "”", { icon: "edit" }); break;
+      case "MilestonedEvent": ev("added this to " + n.milestoneTitle, { icon: "milestone" }); break;
+      case "DemilestonedEvent": ev("removed this from " + n.milestoneTitle, { icon: "milestone" }); break;
+      case "AssignedEvent": ev(n.assignee?.login === n.actor?.login ? "self-assigned this" : "assigned " + (n.assignee?.login ?? "someone"), { icon: "person" }); break;
+      case "UnassignedEvent": ev("unassigned " + (n.assignee?.login ?? "someone"), { icon: "person" }); break;
+      case "AutoMergeEnabledEvent": ev("enabled auto-merge", { icon: "merged" }); break;
+      case "AutoMergeDisabledEvent": ev("disabled auto-merge", { icon: "merged" }); break;
+    }
+  }
+  events.sort((x, y) => time(y.at) - time(x.at));
+  return { total, events };
+}
+
+// Newest first, with runs of three or more commits by one author folded after the first, as GitHub shows
+// "3 additional commits by …". Opening a run (by its key) shows them all.
+export function timelineRows(events, { expanded = new Set() } = {}) {
+  const rows = [];
+  for (let n = 0; n < events.length; n++) {
+    const e = events[n];
+    if (e.kind !== "commit") { rows.push({ ...e, key: e.id ?? e.kind + ":" + n }); continue; }
+    let end = n;
+    while (end + 1 < events.length && events[end + 1].kind === "commit" && events[end + 1].actor === e.actor) end++;
+    const run = events.slice(n, end + 1), key = "run:" + e.oid;
+    rows.push({ ...e, key: "c:" + e.oid });
+    if (run.length >= 3 && !expanded.has(key)) rows.push({ kind: "fold", key, actor: e.actor, count: run.length - 1 });
+    else for (const k of run.slice(1)) rows.push({ ...k, key: "c:" + k.oid });
+    n = end;
+  }
+  return rows;
+}
+
 export function checkSummary(checks) {
   const out = { pass: 0, fail: 0, pending: 0, skipped: 0, cancelled: 0 };
   for (const c of checks) out[c.state]++;
