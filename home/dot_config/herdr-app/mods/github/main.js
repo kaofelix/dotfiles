@@ -806,7 +806,8 @@ export default class GitHub extends View {
   stateIcon(item, t, size = 14) { const [icon, color] = this.stateLook(item, t); return svg(ICON(icon)).size(size).flex_none().text_color(color); }
   // Where an owner's avatar would be when there's none: an empty dashed circle of the same size, so the column stays aligned.
   nobody(id, t, size) {
-    return div().id(id).size(size).flex_none().rounded(size / 2).border_1().border_dashed().border_color(t.working).tooltip("Nobody is assigned");
+    // Drawn, not a dashed border: a border's dashes are short and close, this one's few and long enough to read.
+    return div().id(id).size(size).flex_none().tooltip("Nobody is assigned").child(svg(ICON("nobody")).size(size).text_color(t.dim));
   }
 
   // The CI dot. Failing only in checks that aren't required is green ringed in red: it can still merge.
