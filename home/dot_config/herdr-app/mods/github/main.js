@@ -11,12 +11,14 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces, run } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows, parseHttp, checksOf, rollupOf, checkRunsPath, statusesPath,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
 const SIDEBAR_W = 180;
 const POLL_MS = 120000, TICK_MS = 15000, PARALLEL = 3;
+// An open pull request's checks are asked for this often while any is running, and every SETTLED_MS once none is.
+const CHECKS_MS = 3000, CHECKS_SETTLED_MS = 30000;
 // Results, opened items and prefs are kept in files every pane shares (localStorage is per pane, so a new pane would start
 // empty): it opens with what was shown last and refreshes behind it.
 const KEEP_RESULTS = 8, KEEP_DETAILS = 40;
@@ -150,6 +152,8 @@ export default class GitHub extends View {
       }
     });
     cx.timer.every(TICK_MS, (cx) => this.poll(cx));
+    this.live = new Map(); // path -> etag and what it last said, so an unchanged answer is a 304
+    cx.timer.every(CHECKS_MS, (cx) => this.pollChecks(cx));
     this.scanCheckouts(cx);
     // What the last pane showed comes first; loading starts after, so it refreshes the cache rather than replacing it.
     cx.spawn(async (cx) => {
@@ -419,6 +423,50 @@ export default class GitHub extends View {
       catch (e) { this.timelines.set(item.id, { ...(this.timelines.get(item.id) ?? {}), loading: false, error: String(e?.message ?? e) }); }
       cx.notify();
     });
+  }
+
+  // Live checks for the open pull request: two ETag requests (check runs, statuses) that cost nothing when unchanged.
+  // Only while it's shown and open; fast while any check runs, slow once they've settled.
+  pollChecks(cx) {
+    if (checking() || !this.isShown()) return;
+    const item = this.current(), have = item && this.details.get(item.id), d = have?.detail;
+    if (!item || item.kind !== "pr" || isClosed(item) || !d?.headOid || this.checksBusy) return;
+    const running = d.checks.some(c => c.state === "pending") || item.ci === "pending";
+    const at = this.checksAt?.get(item.id) ?? 0;
+    if (!running && Date.now() - at < CHECKS_SETTLED_MS) return;
+    this.checksBusy = true;
+    (this.checksAt ??= new Map()).set(item.id, Date.now());
+    cx.spawn(async (cx) => {
+      try {
+        const [runs, statuses] = await Promise.all([this.getLive(checkRunsPath(item.repo, d.headOid)), this.getLive(statusesPath(item.repo, d.headOid))]);
+        if (!runs.changed && !statuses.changed) return;
+        const now = this.details.get(item.id);
+        if (!now?.detail || now.detail.headOid !== d.headOid) return;
+        const checks = checksOf(runs.value, statuses.value, now.detail.checks);
+        if (!checks.length && now.detail.checks.length) return;
+        now.detail = { ...now.detail, checks };
+        // The list's CI dot follows, wherever the item is listed.
+        const ci = rollupOf(checks);
+        for (const e of this.cache.values()) { const x = e.result.items.get(item.id); if (x) x.ci = ci; }
+        for (const p of this.prefs.pinnedItems ?? []) if (p.id === item.id) p.ci = ci;
+        if (this.shown?.id === item.id) this.shown.ci = ci;
+        this.persistDetails();
+        cx.notify();
+      } catch (e) { console.warn("github: checks: " + (e?.message ?? e)); }
+      finally { this.checksBusy = false; }
+    });
+  }
+  // A REST GET with the last ETag: { changed, value } — unchanged (304) gives what it said last time.
+  async getLive(path) {
+    const had = this.live.get(path), args = ["api", "-i", path];
+    if (had?.etag) args.push("-H", "If-None-Match: " + had.etag);
+    const out = parseHttp((await gh(args, this.opts(15000))).stdout);
+    if (out.status === 304 && had) return { changed: false, value: had.value };
+    if (out.status !== 200) throw new Error("HTTP " + out.status + " for " + path);
+    const value = json(out.body);
+    this.live.set(path, { etag: out.headers.etag ?? null, value });
+    if (this.live.size > 40) this.live.delete(this.live.keys().next().value);
+    return { changed: true, value };
   }
 
   // Body, checks, reviews, comments and links come per item, refetched when it changes.

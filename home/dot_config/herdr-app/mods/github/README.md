@@ -39,6 +39,9 @@ A read-only dashboard of your pull requests and issues across repositories, or o
 - **Where it's open:** a pull request whose head branch is checked out in a terminal (a clone of its repository, matched by remote
   and Herdr's live branch) gets a robot on its row, after its chips, tinted by its agent's state (a count when in several places; hover names them); click it, or `J`, to go
   there (space, tab and pane). Its details list every such place under **Open in**. Folders are asked for their remote once each.
+- **Live checks:** an open pull request's checks are asked for every 3 s while any is running (every 30 s once they've settled), over REST
+  with the last ETag, so an unchanged answer is a bodiless 304; a change updates the merge box, the checks list and its CI dot in every list.
+  Only for the one open in details, and only while the panel is shown.
 - **Merge box** (a pull request's details, at the top, as on GitHub's new PR page): what stands between it and merging, in GitHub's order
   (merge conflicts, draft, failing checks, changes requested, out of date, review required, running checks, open conversations), else ready to merge,
   A draft offers **Ready for review** (runs `gh pr ready`; the panel's first write action, undone on GitHub with Convert to draft).

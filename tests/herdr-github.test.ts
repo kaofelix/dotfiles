@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, cardLayout, chipWidth, CARD_H, rowColumns, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { parseHttp, checksOf, rollupOf, checkRunsPath, workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, cardLayout, chipWidth, CARD_H, rowColumns, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -366,5 +366,24 @@ describe("github model", () => {
     expect(events[2].link.number).toBe(2);
     const done = timelineOf({ node: { timelineItems: { nodes: [node("ClosedEvent", 1, { stateReason: "COMPLETED", closer: { __typename: "PullRequest", number: 9, title: "P", url: "p", state: "MERGED", repository: { nameWithOwner: "o/r" } } })] } } });
     expect(done.events[0]).toMatchObject({ text: "closed this as completed in", icon: "closed", link: { number: 9 } });
+  });
+  test("live checks: gh -i output parses, REST runs and statuses become the same entries, and roll up", () => {
+    const ok = parseHttp('HTTP/2.0 200 OK\r\nEtag: W/"abc"\r\nX-Ratelimit-Used: 3\r\n\r\n{"total_count":1}');
+    expect(ok).toEqual({ status: 200, headers: { etag: 'W/"abc"', "x-ratelimit-used": "3" }, body: '{"total_count":1}' });
+    expect(parseHttp("HTTP/2.0 304 Not Modified\nEtag: W/\"abc\"\n\n").status).toBe(304);
+    const runs = { check_runs: [
+      { name: "build", status: "completed", conclusion: "success", html_url: "b" },
+      { name: "e2e", status: "in_progress", conclusion: null, html_url: "e" },
+      { name: "lint", status: "completed", conclusion: "failure", html_url: "l" },
+      { name: "docs", status: "completed", conclusion: "skipped", html_url: "d" },
+    ] };
+    const known = [{ name: "CI / build", state: "pending", url: "" }];
+    const got = checksOf(runs, { statuses: [{ context: "coverage", state: "success", target_url: "c" }] }, known);
+    expect(got.map(k => k.name + ":" + k.state)).toEqual(["lint:fail", "e2e:pending", "CI / build:pass", "coverage:pass", "docs:skipped"]);
+    expect(rollupOf(got)).toBe("fail");
+    expect(rollupOf(got.filter(k => k.state !== "fail"))).toBe("pending");
+    expect(rollupOf([{ state: "pass" }, { state: "skipped" }])).toBe("pass");
+    expect(rollupOf([])).toBe(null);
+    expect(checkRunsPath("o/r", "abc")).toBe("repos/o/r/commits/abc/check-runs?per_page=100&filter=latest");
   });
 });

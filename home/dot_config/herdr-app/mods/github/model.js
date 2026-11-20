@@ -526,7 +526,40 @@ export function normalizeDetail(node) {
     comments: (node.comments?.nodes ?? []).map(c => ({ author: c.author?.login ?? "ghost", body: c.body ?? "", createdAt: c.createdAt, url: c.url })),
     reviews: (node.latestOpinionatedReviews?.nodes ?? []).map(r => ({ author: r.author?.login ?? "ghost", state: lower(r.state), at: r.submittedAt })),
     checks, linked: linked.filter(l => l && !seen.has(l.url) && seen.add(l.url)),
+    headOid: node.commits?.nodes?.[0]?.commit?.oid ?? null,
   };
+}
+
+// Live checks: a head commit's check runs and statuses over REST, asked with its ETag so an unchanged answer is a bodiless 304.
+export const checkRunsPath = (repo, oid) => "repos/" + repo + "/commits/" + oid + "/check-runs?per_page=100&filter=latest";
+export const statusesPath = (repo, oid) => "repos/" + repo + "/commits/" + oid + "/status?per_page=100";
+// `gh api -i` output: the status line and headers, a blank line, then the body.
+export function parseHttp(out) {
+  const text = String(out ?? ""), split = text.search(/\r?\n\r?\n/);
+  const head = split < 0 ? text : text.slice(0, split), body = split < 0 ? "" : text.slice(split).replace(/^\r?\n\r?\n/, "");
+  const lines = head.split(/\r?\n/), status = Number(/^HTTP\/[\d.]+\s+(\d+)/.exec(lines[0] ?? "")?.[1] ?? 0);
+  const headers = {};
+  for (const l of lines.slice(1)) { const i = l.indexOf(":"); if (i > 0) headers[l.slice(0, i).trim().toLowerCase()] = l.slice(i + 1).trim(); }
+  return { status, headers, body };
+}
+const RUN = { success: "pass", failure: "fail", timed_out: "fail", startup_failure: "fail", action_required: "fail", cancelled: "cancelled", skipped: "skipped", neutral: "skipped", stale: "skipped" };
+const STATUS = { success: "pass", failure: "fail", error: "fail", pending: "pending" };
+// The same entries normalizeDetail makes, failing first. Workflow names come from the checks already shown, matched by run name.
+export function checksOf(runs, statuses, known = []) {
+  const prefix = new Map();
+  for (const k of known) { const i = k.name.lastIndexOf(" / "); if (i > 0) prefix.set(k.name.slice(i + 3), k.name.slice(0, i)); }
+  const out = [
+    ...(runs?.check_runs ?? []).map(r => ({ name: prefix.has(r.name) ? prefix.get(r.name) + " / " + r.name : r.name, state: r.status !== "completed" ? "pending" : RUN[r.conclusion] ?? "pending", url: r.html_url ?? r.details_url ?? null })),
+    ...(statuses?.statuses ?? []).map(s => ({ name: s.context, state: STATUS[s.state] ?? "pending", url: s.target_url ?? null })),
+  ];
+  return out.sort((x, y) => CHECK_ORDER[x.state] - CHECK_ORDER[y.state] || x.name.localeCompare(y.name));
+}
+// The list's CI dot from the checks: failing beats running beats passed; none is none.
+export function rollupOf(checks) {
+  if (!checks.length) return null;
+  if (checks.some(c => c.state === "fail")) return "fail";
+  if (checks.some(c => c.state === "pending")) return "pending";
+  return "pass";
 }
 
 // The merge box at the top of a pull request, as GitHub's new PR page has it: what stands between it and merging
