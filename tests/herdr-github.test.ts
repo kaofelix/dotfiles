@@ -397,6 +397,13 @@ describe("github model", () => {
     expect(ciLook("pass", true)).toBe("pass");
     expect(ciLook(null)).toBe(null);
   });
+  test("branch deletions and restores show in a pull request's timeline", () => {
+    const { events } = timelineOf({ node: { timelineItems: { nodes: [
+      { __typename: "HeadRefDeletedEvent", createdAt: "2026-11-21T20:45:31Z", actor: { login: "cv" }, headRefName: "fix/export" },
+      { __typename: "HeadRefRestoredEvent", createdAt: "2026-11-22T00:00:00Z", actor: { login: "kao" } },
+    ] } } });
+    expect(events.map(e => e.actor + " " + e.text + " " + e.icon)).toEqual(["kao restored the head branch branch", "cv deleted the fix/export branch branch"]);
+  });
   test("dark label colours are lifted to be readable, keeping their hue; light ones stay", () => {
     const hsl = (hex) => { const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i + 1, i + 3), 16) / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b); return { l: (mx + mn) / 2, max: [r, g, b].indexOf(mx) }; };
     const app = readableLabel("401e87");

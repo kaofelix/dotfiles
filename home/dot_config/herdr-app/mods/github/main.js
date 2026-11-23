@@ -1435,7 +1435,7 @@ export default class GitHub extends View {
         .child(div().text_size(12).text_color(t.muted).child(e.count + " more commit" + (e.count === 1 ? "" : "s") + " by " + e.actor));
       // Issues close as done (purple check) or not planned (grey slash); pull requests merge or close.
       const issue = i.kind !== "pr";
-      const icon = { label: "tag", tag: "tag", push: "commit", commit: "commit", merged: "pr-merged", closed: issue ? "issue-closed" : "pr-closed", skip: "issue-skip", open: issue ? "issue-open" : "pr-open", draft: "pr-draft", link: "link", edit: "edit", milestone: "milestone", person: "person", review: "eye" }[e.icon] ?? "dot";
+      const icon = { label: "tag", tag: "tag", push: "commit", commit: "commit", merged: "pr-merged", closed: issue ? "issue-closed" : "pr-closed", skip: "issue-skip", open: issue ? "issue-open" : "pr-open", draft: "pr-draft", link: "link", edit: "edit", milestone: "milestone", person: "person", review: "eye", branch: "branch" }[e.icon] ?? "dot";
       return rail(icon, e.icon === "merged" || (e.icon === "closed" && issue) ? t.ansi5 : e.icon === "closed" ? t.ansi1 : null, h_flex().flex_1().min_w(0).gap(5).items_center()
         .child(this.avatar("gh-tl-eav-" + n, e.actor, t, 16)).child(div().flex_none().font_semibold().text_color(t.foreground).child(e.actor ?? "someone"))
         .child(div().min_w(0).truncate().child(e.text))

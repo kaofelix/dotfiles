@@ -678,6 +678,9 @@ export const TIMELINE_QUERY = `query($id: ID!, $last: Int!) { node(id: $id) {
   ... on LabeledEvent { createdAt actor { login } label { name color } }
   ... on UnlabeledEvent { createdAt actor { login } label { name color } }
   ... on HeadRefForcePushedEvent { createdAt actor { login } beforeCommit { abbreviatedOid } afterCommit { abbreviatedOid } }
+  ... on HeadRefDeletedEvent { createdAt actor { login } headRefName }
+  ... on HeadRefRestoredEvent { createdAt actor { login } }
+  ... on BaseRefDeletedEvent { createdAt actor { login } baseRefName }
   ... on BaseRefChangedEvent { createdAt actor { login } previousRefName currentRefName }
   ... on MergedEvent { createdAt actor { login } mergeRefName commit { abbreviatedOid } }
   ... on ClosedEvent { createdAt actor { login } stateReason closer { ... on PullRequest { __typename number title url state isDraft repository { nameWithOwner } } } }
@@ -731,6 +734,9 @@ export function timelineOf(data) {
       case "LabeledEvent": ev("added", { icon: "label", label: n.label }); break;
       case "UnlabeledEvent": ev("removed", { icon: "label", label: n.label }); break;
       case "HeadRefForcePushedEvent": ev("force-pushed " + (n.beforeCommit?.abbreviatedOid ?? "?") + " → " + (n.afterCommit?.abbreviatedOid ?? "?"), { icon: "push" }); break;
+      case "HeadRefDeletedEvent": ev("deleted the " + (n.headRefName ?? "head") + " branch", { icon: "branch" }); break;
+      case "HeadRefRestoredEvent": ev("restored the head branch", { icon: "branch" }); break;
+      case "BaseRefDeletedEvent": ev("deleted the " + (n.baseRefName ?? "base") + " base branch", { icon: "branch" }); break;
       case "BaseRefChangedEvent": ev("changed the base from " + n.previousRefName + " to " + n.currentRefName, { icon: "push" }); break;
       case "MergedEvent": ev("merged " + (n.commit?.abbreviatedOid ?? "") + " into " + (n.mergeRefName ?? "the base"), { icon: "merged" }); break;
       case "ClosedEvent": {

@@ -53,7 +53,7 @@ A read-only dashboard of your pull requests and issues across repositories, or o
   **Approvals**, each with a bar; clicking Checks lists them all.
 - **Activity** (a pull request's or issue's details, after its description): the timeline as GitHub draws it, newest first (the latest 100 entries).
   Comments and reviews are cards (approvals and requested changes coloured), commits and events one line each on a rail: labels (clickable),
-  review requests, force-pushes, renames, milestones, assignments, mentions, merge and close; for issues also their type, sub-issues and
+  review requests, force-pushes, branch deletions and restores, renames, milestones, assignments, mentions, merge and close; for issues also their type, sub-issues and
   parent, duplicates, commits that reference them, and how they closed (completed, not planned, by which pull request). Three or more commits in a row by one author fold
   into "n more commits by …"; a commit's short SHA copies the full one.
 - **Collapsible sections:** `<details>`/`<summary>` in any description, comment or review is drawn folded with its summary (open if it says `open`),
