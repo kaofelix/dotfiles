@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { requiredQuery, requiredOf, ciLook, parseHttp, checksOf, rollupOf, checkRunsPath, workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, cardLayout, chipWidth, CARD_H, rowColumns, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
+import { readableLabel, requiredQuery, requiredOf, ciLook, parseHttp, checksOf, rollupOf, checkRunsPath, workPlaces, markdownBlocks, timelineOf, timelineRows, mergeStatus, tokens, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, shortNames, avatarFile, avatarUrl, initials, withSubIssues, subIssuesOf, subIssuesQuery, normalizeMilestones, milestoneItems, milestoneRows, epicGroups, ownerGroups, homeRows, projectsOf, kindSettled, kindPending, seedResult, scopeOptions, togglePin, applyPage, buildRows, deserialize, emptyResult, isLoaded, kindCount, kindHasMore, normalize, normalizeDetail, parseQuery, plan, repoCounts, repoFromRemote, repoFromRemotes, cardLayout, chipWidth, CARD_H, rowColumns, searchString, sectionQuery, sectionsFor, serialize } from "../home/dot_config/herdr-app/mods/github/model.js";
 
 const pr = (id, repo, number, extra = {}) => ({ __typename: "PullRequest", id, number, title: "PR " + number, url: "https://github.com/" + repo + "/pull/" + number, state: "OPEN", isDraft: false,
   repository: { nameWithOwner: repo }, author: { login: "me" }, updatedAt: "2026-01-0" + (number % 9 + 1) + "T00:00:00Z", labels: { nodes: [] }, assignees: { nodes: [] }, ...extra });
@@ -396,6 +396,16 @@ describe("github model", () => {
     expect(ciLook("fail", false)).toBe("fail");
     expect(ciLook("pass", true)).toBe("pass");
     expect(ciLook(null)).toBe(null);
+  });
+  test("dark label colours are lifted to be readable, keeping their hue; light ones stay", () => {
+    const hsl = (hex) => { const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i + 1, i + 3), 16) / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b); return { l: (mx + mn) / 2, max: [r, g, b].indexOf(mx) }; };
+    const app = readableLabel("401e87");
+    expect(hsl(app).l).toBeGreaterThanOrEqual(0.6);
+    expect(hsl(app).max).toBe(2); // still mostly blue: a purple
+    expect(readableLabel("a2eeef")).toBe("#a2eeef");
+    expect(readableLabel("FBCA04")).toBe("#fbca04");
+    expect(hsl(readableLabel("000000")).l).toBeGreaterThanOrEqual(0.6);
+    expect(readableLabel("nope")).toBe(null);
   });
   test("live checks: gh -i output parses, REST runs and statuses become the same entries, and roll up", () => {
     const ok = parseHttp('HTTP/2.0 200 OK\r\nEtag: W/"abc"\r\nX-Ratelimit-Used: 3\r\n\r\n{"total_count":1}');

@@ -11,7 +11,7 @@ import { v_flex, h_flex, InputState, Input, TextView, ScrollHandle, Select, Popu
 import { exec, theme, settings, props, nextCommand, openOverlay, appHome, checking, layout, panes, spaces, run } from "herdr";
 import { readFile, writeFile, readdir, mkdir, unlink } from "fs/promises";
 import { KINDS, STATES, DETAIL_QUERY, PAGE, PROJECTS_QUERY, REPOS_QUERY, MILESTONES_QUERY, MILESTONE_ITEMS_QUERY, homeRows, projectsOf, avatarFile, avatarUrl, initials, normalizeMilestones, milestoneItems, milestoneRows, subIssuesQuery, subIssuesOf, age, applyPage, buildRows, checkSummary, deserialize, emptyResult, isClosed, isLoaded,
-  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows, parseHttp, checksOf, rollupOf, DETAIL_V, requiredQuery, requiredOf, ciLook, checkRunsPath, statusesPath,
+  isRepoScope, seedResult, kindCount, kindHasMore, kindPending, kindSettled, normalizeDetail, plan, ref, repoCounts, repoFromRemotes, repoUrl, cardLayout, rowColumns, scopeOptions, searchUrl, sectionOf, shortNames, togglePin, filterToken, hasToken, toggleToken, nodesQuery, nodesOf, mergeStatus, workPlaces, markdownBlocks, TIMELINE_QUERY, timelineOf, timelineRows, parseHttp, checksOf, rollupOf, DETAIL_V, requiredQuery, requiredOf, ciLook, readableLabel, checkRunsPath, statusesPath,
   sectionQuery, serialize } from "./model.js";
 
 const ICON = (n) => "mods/github/icons/" + n + ".svg";
@@ -854,7 +854,8 @@ export default class GitHub extends View {
   }
   ciColor(ci, t) { return { pass: t.done, fail: t.blocked, pending: t.working, skipped: t.dim, cancelled: t.dim }[ci] ?? t.dim; }
   reviewLook(review, t) { return { approved: ["approved", t.done], changes: ["changes", t.blocked], required: ["review", t.working] }[review] ?? null; }
-  labelColor(hex, t) { return /^[0-9a-f]{6}$/i.test(hex ?? "") ? "#" + hex : t.muted; }
+  // GitHub's label colour, lifted when it's too dark to read here (keeping its hue).
+  labelColor(hex, t) { return readableLabel(hex) ?? t.muted; }
 
   chip(label, color, t) {
     return div().flex_none().px(5).h(17).flex().items_center().rounded(4).border_1().border_color(color ?? t.border).text_color(color ?? t.muted).text_size(10.5).child(label);

@@ -575,6 +575,23 @@ export function requiredOf(data, prs) {
   });
   return out;
 }
+// A label's colour, readable as text and border on a dark background: too dark ones are lifted in lightness, keeping their hue,
+// so a navy or deep purple label stays that colour but can be read. Lightness is HSL's, 0..1; min is the floor.
+export function readableLabel(hex, min = 0.62) {
+  if (!/^[0-9a-f]{6}$/i.test(hex ?? "")) return null;
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b), lo = Math.min(r, g, b), l = (max + lo) / 2, d = max - lo;
+  // Perceived brightness decides; blues and purples look darker than their lightness says.
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (luma >= 0.45 && l >= 0.45) return "#" + hex.toLowerCase();
+  const h = d === 0 ? 0 : max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  const L = Math.max(min, l), C = (1 - Math.abs(2 * L - 1)) * Math.min(sat, 0.85), X = C * (1 - Math.abs((h % 2 + 2) % 2 - 1)), M = L - C / 2;
+  const hh = ((h % 6) + 6) % 6;
+  const [rr, gg, bb] = hh < 1 ? [C, X, 0] : hh < 2 ? [X, C, 0] : hh < 3 ? [0, C, X] : hh < 4 ? [0, X, C] : hh < 5 ? [X, 0, C] : [C, 0, X];
+  return "#" + [rr, gg, bb].map(v => Math.round((v + M) * 255).toString(16).padStart(2, "0")).join("");
+}
+
 // The CI dot: pass, fail, pending, or "optional" (failing, but only checks that aren't required, so it can still merge).
 export function ciLook(ci, optionalOnly = false) { return ci === "fail" && optionalOnly ? "optional" : ci ?? null; }
 
